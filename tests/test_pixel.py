@@ -56,8 +56,13 @@ class PixelTests(unittest.TestCase):
         r = c.get(f"/me/dogs/{did}/pixel")
         self.assertEqual(r.status, 200)
         for s in ('id="pxm"', "/pixelpal.js", "/pixelmaker.js", "Tap to select", "Keep brush", "Erase brush", "Crop",
-                  "Classic", "Retro 8-bit", "Soft", "Use as avatar", "Download PNG", "Start over", 'aria-label="Pixel art preview'):
+                  "Classic", "Retro 8-bit", "Soft", "Use as avatar", "Download PNG", "Start over", 'aria-label="Pixel art preview',
+                  "Game Sprite", 'value="eyes"', 'value="nose"', 'id="pxface"', 'id="pxblush"', 'id="pxmouth"', 'id="pxchibi"',
+                  "Reset eyes &amp; nose", '<option value="ink">'):
             self.assertIn(s, r.text)
+        # Game Sprite is the default (first, pressed) style
+        self.assertIn('data-preset="game" aria-pressed="true"', r.text)
+        self.assertLess(r.text.index('data-preset="game"'), r.text.index('data-preset="classic"'))
         self.assertEqual(other.get(f"/me/dogs/{did}/pixel").status, 404)
         anon = Client("10.11.0.9").get(f"/me/dogs/{did}/pixel")
         self.assertEqual(anon.status, 303)

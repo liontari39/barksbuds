@@ -140,14 +140,19 @@ class PixelRoutes:
 <label><input type="radio" name="tool" value="tap" checked><span><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>Tap to select</span></label>
 <label><input type="radio" name="tool" value="keep"><span>Keep brush</span></label>
 <label><input type="radio" name="tool" value="erase"><span>Erase brush</span></label>
-<label><input type="radio" name="tool" value="crop"><span>Crop</span></label></div>
+<label><input type="radio" name="tool" value="crop"><span>Crop</span></label>
+<label><input type="radio" name="tool" value="eyes"><span>Eyes</span></label>
+<label><input type="radio" name="tool" value="nose"><span>Nose</span></label></div>
 <div class="pxbrush"><label for="pxbsize">Brush size</label><input id="pxbsize" type="range" min="4" max="60" value="18"></div>
 <div class="pxcanvas"><canvas id="pxsrc" tabindex="0" role="img" aria-label="Photo of {nm}. The selected area is highlighted." aria-describedby="pxkeys"></canvas></div>
 <p class="small muted" id="pxkeys">Tap on {nm} to select; tap more spots to add missed parts. Use the brushes to touch up edges.
+For cartoon eyes, pick Eyes and tap the center of each eye, then pick Nose and tap the nose.
 Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <div class="pxrowbtn"><button type="button" class="btn btn-ghost btn-sm" id="pxundo" disabled>Undo</button>
 <button type="button" class="btn btn-ghost btn-sm" id="pxclear">Clear selection</button>
-<button type="button" class="btn btn-ghost btn-sm" id="pxall">Keep everything in crop</button></div>
+<button type="button" class="btn btn-ghost btn-sm" id="pxall">Keep everything in crop</button>
+<button type="button" class="btn btn-ghost btn-sm" id="pxfacereset">Reset eyes &amp; nose</button></div>
+<p class="small" id="pxfacest" aria-live="polite"></p>
 <p class="small" id="pxstatus" role="status" aria-live="polite"></p></div>
 
 <div class="panel pxstyle"><h2><span class="stepn">3</span> Style it</h2>
@@ -156,13 +161,16 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <canvas id="pxout" width="384" height="384" role="img" aria-label="Pixel art preview of {nm}"></canvas>
 <canvas id="pxbefore" width="384" height="384" role="img" aria-label="The selected part of the photo" hidden></canvas></div>
 <div class="pxpresets" role="group" aria-label="Style presets">
-<button type="button" data-preset="classic" aria-pressed="true">Classic</button><button type="button" data-preset="retro" aria-pressed="false">Retro 8-bit</button><button type="button" data-preset="soft" aria-pressed="false">Soft</button></div>
+<button type="button" data-preset="game" aria-pressed="true">Game Sprite</button><button type="button" data-preset="classic" aria-pressed="false">Classic</button><button type="button" data-preset="retro" aria-pressed="false">Retro 8-bit</button><button type="button" data-preset="soft" aria-pressed="false">Soft</button></div>
 <div class="pxctl">
 <div><label for="pxsize">Size</label><select id="pxsize"><option value="32">Small (32 px)</option><option value="48" selected>Medium (48 px)</option><option value="64">Large (64 px)</option></select></div>
 <div><label for="pxdetail">Detail</label><input id="pxdetail" type="range" min="0" max="4" step="1" value="2"></div>
-<div><label for="pxcolors">Colors <output id="pxcolorsv">10</output></label><input id="pxcolors" type="range" min="6" max="24" step="1" value="10"></div>
-<div><label for="pxoutline">Outline</label><select id="pxoutline"><option value="dark">Dark</option><option value="soft">Soft</option><option value="none">None</option></select></div>
+<div><label for="pxcolors">Colors <output id="pxcolorsv">10</output></label><input id="pxcolors" type="range" min="4" max="24" step="1" value="6"></div>
+<div><label for="pxoutline">Outline</label><select id="pxoutline"><option value="ink">Ink (game)</option><option value="dark">Dark</option><option value="soft">Soft</option><option value="none">None</option></select></div>
 <div class="pxchecks"><label><input type="checkbox" id="pxshadow" checked> Shadow</label><label><input type="checkbox" id="pxdither"> Retro dither</label></div>
+<div class="pxchecks"><label><input type="checkbox" id="pxface" checked> Cartoon eyes &amp; nose</label><label><input type="checkbox" id="pxblush" checked> Blush</label></div>
+<div><label for="pxmouth">Mouth</label><select id="pxmouth"><option value="none">None</option><option value="smile" selected>Smile</option><option value="tongue">Tongue out</option></select></div>
+<div><label for="pxchibi">Big head</label><input id="pxchibi" type="range" min="0" max="1.5" step="0.25" value="1" aria-describedby="pxchibih"><span class="small muted" id="pxchibih">Needs the eyes marked</span></div>
 <fieldset class="pxsw"><legend>Background</legend>{sw}</fieldset></div>
 <div class="pxsave"><div class="pxrowbtn"><button type="button" class="btn" id="pxsavebtn" data-primary="1">Use as avatar</button>
 <button type="button" class="btn btn-ghost" id="pxsave2" data-primary="0">Save, keep photo as avatar</button>
@@ -170,5 +178,5 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
 <p class="small" id="pxsaved" role="status" aria-live="polite"></p></div></div>
 </div></div></section>"""
-        js = '<script src="/pixelpal.js?v=1"></script><script type="module" src="/pixelmaker.js?v=1"></script>'
+        js = '<script src="/pixelpal.js?v=2"></script><script type="module" src="/pixelmaker.js?v=2"></script>'
         return self.page(f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")

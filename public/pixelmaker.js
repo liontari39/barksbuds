@@ -14,11 +14,18 @@ const DETAIL = [                        // "Detail" slider: smoother/cleaner  ->
   { smooth: 2, cluster: 1, sharpen: 0.4, features: 0.75 },
   { smooth: 1, cluster: 1, sharpen: 0.5, features: 0.8 },
   { smooth: 0, cluster: 0, sharpen: 0.6, features: 0.85 }];
-const PRESET_UI = { classic: { detail: 1 }, retro: { detail: 3 }, soft: { detail: 2 } };
+const GAME_DETAIL = [                   // Game Sprite: flat cel color, so "detail" only changes how much gets smoothed away
+  { smooth: 3, smoothPasses: 3, cluster: 4 },
+  { smooth: 3, smoothPasses: 2, cluster: 3 },
+  { smooth: 2, smoothPasses: 2, cluster: 2 },
+  { smooth: 2, smoothPasses: 1, cluster: 1 },
+  { smooth: 1, smoothPasses: 1, cluster: 1 }];
+const PRESET_UI = { game: { detail: 1, face: true }, classic: { detail: 1 }, retro: { detail: 3 }, soft: { detail: 2 } };
 
 let seg = null, segState = "idle", segWaiters = [];
 let W = 0, H = 0, work = null, rgba = null, auto = null, edit = null, crop = null, undo = [];
-let tool = "tap", preset = "classic", sprite = null, view = "after", cursor = null, cropA = null;
+let face = { eyes: [], nose: null };   // normalized eye/nose points for the cartoon face stickers
+let tool = "tap", preset = "game", sprite = null, view = "after", cursor = null, cropA = null;
 const src = $("pxsrc"), sctx = src.getContext("2d");
 const status = (t) => { $("pxstatus").textContent = t; };
 
@@ -77,6 +84,7 @@ async function useImage(source) {
   wctx.imageSmoothingQuality = "high"; wctx.drawImage(bmp, 0, 0, W, H);
   rgba = wctx.getImageData(0, 0, W, H);
   auto = new Uint8Array(W * H); edit = new Uint8Array(W * H); crop = { x0: 0, y0: 0, x1: W, y1: H }; undo = []; cropA = null;
+  face = { eyes: [], nose: null }; faceStatus();
   src.width = W; src.height = H;
   $("pxpick").hidden = true; $("pxed").hidden = false;
   $("pxundo").disabled = true; $("pxsaved").textContent = "";
@@ -88,6 +96,7 @@ async function useImage(source) {
     const n = segmentAt(0.5, 0.48);
     status(n ? `Selected the middle of the photo. Tap any part of ${cfg.name} that's missing, or use the Erase brush to remove extras.`
              : `Tap on ${cfg.name} to select.`);
+    if (n) guessFaceNow();
   } else {
     $("pxtooltap").disabled = true;
     setTool("keep");
@@ -107,6 +116,34 @@ function setTool(t) {
   $("pxbsize").closest(".pxbrush").classList.toggle("off", !(t === "keep" || t === "erase"));
   cropA = null; draw();
 }
+
+// ---------------------------------------------------------------- cartoon face: eye and nose points
+function guessFaceNow() {
+  if (face.eyes.length || face.nose) return;
+  try {
+    const g = PP.guessFace({ width: W, height: H, data: rgba.data, mask: finalMask() });
+    if (g) { face = { eyes: g.eyes, nose: g.nose, guessed: true }; faceStatus(); draw(); }
+  } catch (err) { console.warn("pixel pal: face guess failed", err); }
+}
+function faceStatus() {
+  const e = face.eyes.length, n = face.nose ? 1 : 0, el = $("pxfacest"); if (!el) return;
+  el.textContent = !e && !n ? `No eyes marked yet. Choose Eyes and tap the middle of each of ${cfg.name}'s eyes for cartoon eyes.`
+    : (face.guessed ? "We guessed where the eyes and nose are (white and dark dots). If they're off, choose Eyes or Nose and tap the right spot. " : "")
+      + `${e} of 2 eyes marked${n ? ", nose marked" : ", nose not marked"}.`;
+}
+function faceTap(p) {
+  const q = [p.x / W, p.y / H];
+  if (face.guessed) face = { eyes: tool === "eyes" ? [] : face.eyes, nose: tool === "nose" ? null : face.nose };
+  if (tool === "nose") face.nose = q;
+  else if (face.eyes.length < 2) face.eyes.push(q);
+  else {                              // a third tap moves whichever eye is closer
+    const d = face.eyes.map((e) => Math.hypot(e[0] - q[0], e[1] - q[1]));
+    face.eyes[d[0] <= d[1] ? 0 : 1] = q;
+  }
+  if (tool === "eyes" && face.eyes.length === 2 && !face.nose) status(`Both eyes marked. Choose Nose and tap ${cfg.name}'s nose.`);
+  faceStatus(); draw(); schedule();
+}
+$("pxfacereset").addEventListener("click", () => { face = { eyes: [], nose: null }; faceStatus(); draw(); schedule(); });
 
 function finalMask() {
   const out = new Uint8Array(W * H);
@@ -136,6 +173,15 @@ function draw() {
   if (crop.x0 > 0 || crop.y0 > 0 || crop.x1 < W || crop.y1 < H) {
     sctx.setLineDash([lw * 4, lw * 3]); sctx.strokeStyle = "#FBB321";
     sctx.strokeRect(crop.x0 + lw / 2, crop.y0 + lw / 2, crop.x1 - crop.x0 - lw, crop.y1 - crop.y0 - lw); sctx.setLineDash([]);
+  }
+  const fr = Math.max(4, W / 70);
+  face.eyes.forEach((e) => {             // eye markers: white dot with a dark ring; nose: dark dot with a white ring
+    sctx.beginPath(); sctx.arc(e[0] * W, e[1] * H, fr, 0, Math.PI * 2); sctx.fillStyle = "#fff"; sctx.fill();
+    sctx.lineWidth = lw * 1.5; sctx.strokeStyle = "#2a2622"; sctx.stroke();
+  });
+  if (face.nose) {
+    sctx.beginPath(); sctx.arc(face.nose[0] * W, face.nose[1] * H, fr, 0, Math.PI * 2); sctx.fillStyle = "#2a2622"; sctx.fill();
+    sctx.lineWidth = lw * 1.5; sctx.strokeStyle = "#fff"; sctx.stroke();
   }
   if (cropA && cursor) { sctx.strokeStyle = "#C8201E"; sctx.strokeRect(Math.min(cropA.x, cursor.x), Math.min(cropA.y, cursor.y), Math.abs(cursor.x - cropA.x), Math.abs(cursor.y - cropA.y)); }
   if (cursor && (document.activeElement === src || hover)) {
@@ -206,6 +252,7 @@ src.addEventListener("pointerleave", () => { hover = false; redraw(); });
 src.addEventListener("pointerup", (ev) => {
   if (!drag) return; const p = pt(ev), moved = Math.hypot(p.x - drag.start.x, p.y - drag.start.y);
   if (tool === "tap" && moved < W / 40) tapAt(p);
+  else if ((tool === "eyes" || tool === "nose") && moved < W / 40) faceTap(p);
   else if (tool === "crop") { cropA = null; if (setCrop(drag.start, p)) status("Cropped. Everything outside the yellow box is ignored."); draw(); }
   else if (tool === "keep" || tool === "erase") schedule();
   drag = null;
@@ -224,6 +271,7 @@ src.addEventListener("keydown", (ev) => {
   } else if (ev.key === "Enter" || ev.key === " ") {
     ev.preventDefault();
     if (tool === "tap") tapAt(cursor);
+    else if (tool === "eyes" || tool === "nose") faceTap(cursor);
     else if (tool === "keep" || tool === "erase") { pushUndo(); dab(cursor.x, cursor.y, tool === "keep" ? 1 : 2); draw(); schedule(); }
     else if (tool === "crop") {
       if (!cropA) { cropA = Object.assign({}, cursor); status("First corner set. Move to the opposite corner and press Enter."); }
@@ -235,8 +283,12 @@ src.addEventListener("keydown", (ev) => {
 
 // ---------------------------------------------------------------- step 3: style + preview
 function opts() {
-  const base = Object.assign({}, PP.PRESETS[preset], DETAIL[+$("pxdetail").value]);
+  const det = +$("pxdetail").value;
+  const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? GAME_DETAIL[det] : DETAIL[det]);
+  const hasFace = $("pxface").checked && (face.eyes.length || face.nose);
   return Object.assign(base, {
+    face: hasFace ? { eyes: face.eyes, nose: face.nose } : null,
+    chibi: hasFace ? +$("pxchibi").value : 0, blush: $("pxblush").checked, mouth: $("pxmouth").value,
     size: +$("pxsize").value, colors: +$("pxcolors").value, outline: $("pxoutline").value,
     shadow: $("pxshadow").checked, dither: $("pxdither").checked ? (preset === "retro" ? PP.PRESETS.retro.dither : 0.45) : 0,
     backdrop: (document.querySelector('input[name="backdrop"]:checked') || {}).value || "none" });
@@ -283,11 +335,13 @@ function applyPreset(name) {
   $("pxsize").value = String(p.size); $("pxcolors").value = p.colors; $("pxcolorsv").textContent = p.colors;
   $("pxoutline").value = p.outline; $("pxshadow").checked = !!p.shadow; $("pxdither").checked = p.dither > 0;
   $("pxdetail").value = PRESET_UI[name].detail;
+  $("pxface").checked = !!PRESET_UI[name].face;
+  $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; $("pxchibi").value = String(p.chibi || 0);
   document.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.preset === name ? "true" : "false"));
   schedule();
 }
 document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
-["pxsize", "pxdetail", "pxoutline", "pxshadow", "pxdither"].forEach((id) => $(id).addEventListener("input", schedule));
+["pxsize", "pxdetail", "pxoutline", "pxshadow", "pxdither", "pxface", "pxblush", "pxmouth", "pxchibi"].forEach((id) => $(id).addEventListener("input", schedule));
 $("pxcolors").addEventListener("input", () => { $("pxcolorsv").textContent = $("pxcolors").value; schedule(); });
 document.querySelectorAll('input[name="backdrop"]').forEach((r) => r.addEventListener("change", schedule));
 document.querySelectorAll(".pxba button").forEach((b) => b.addEventListener("click", () => {
@@ -328,8 +382,11 @@ $("pxreset").addEventListener("click", () => {
   $("pxed").hidden = true; $("pxpick").hidden = false; status(""); $("pxsaved").textContent = "";
   $("pxpick").scrollIntoView({ behavior: "smooth", block: "start" });
 });
-applyPreset("classic");
+applyPreset("game");
 loadSeg();
 window.__pixelpal = { status: () => segState, useImage, tapAt: (x, y) => tapAt({ x: x * W, y: y * H }), setTool,
   eraseRect: (x0, y0, x1, y1) => { pushUndo(); for (let y = Math.round(y0 * H); y < Math.round(y1 * H); y++) edit.fill(2, y * W + Math.round(x0 * W), y * W + Math.round(x1 * W)); draw(); schedule(); },
-  applyPreset, sprite: () => sprite, rerender: renderNow };
+  applyPreset, sprite: () => sprite, rerender: renderNow, guessFace: guessFaceNow,
+  setFace: (f) => { face = { eyes: (f && f.eyes) || [], nose: (f && f.nose) || null }; faceStatus(); draw(); schedule(); },
+  face: () => JSON.parse(JSON.stringify(face)), faceTap: (x, y) => faceTap({ x: x * W, y: y * H }),
+  state: () => ({ W, H, data: Array.from(rgba.data), mask: Array.from(finalMask()) }) };

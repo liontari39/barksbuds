@@ -104,6 +104,116 @@ test("dither and colors change the result; empty masks don't throw", () => {
   for (let i = 3; i < e.data.length; i += 4) assert.strictEqual(e.data[i], 0);
 });
 
+// ---------------------------------------------------------------- Game Sprite preset
+const FACE = { eyes: [[95 / 240, 90 / 180], [145 / 240, 90 / 180]], nose: [120 / 240, 112 / 180] };
+const G = (extra) => PP.render(scene(), Object.assign({}, PP.PRESETS.game, { backdrop: "none" }, extra || {}));
+const rgbOf = (lab) => PP.toRgb(lab[0], lab[1], lab[2]);
+const near = (a, b, tol = 2) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol && Math.abs(a[2] - b[2]) <= tol;
+function findColor(s, rgb, x0 = 0, y0 = 0, x1 = s.width, y1 = s.height) {
+  for (let y = Math.max(0, y0); y < Math.min(s.height, y1); y++) for (let x = Math.max(0, x0); x < Math.min(s.width, x1); x++) {
+    const p = px(s, x, y); if (p[3] === 255 && near(p, rgb)) return [x, y];
+  }
+  return null;
+}
+// where a source point lands on the sprite (scene's dog bbox is x 40..200, y 45..155)
+const toSprite = (s, sx, sy) => [s.grid.x + (sx - 40) / 161 * s.grid.w, s.grid.y + (sy - 45) / 111 * s.grid.h];
+
+test("Game Sprite is the first preset: flat colors, ink outline, N x N", () => {
+  assert.strictEqual(Object.keys(PP.PRESETS)[0], "game");
+  const s = G({ face: null });
+  assert.strictEqual(s.width, 48); assert.strictEqual(s.height, 48);
+  assert.ok(s.palette.length <= 16, "few colors: " + s.palette.length);
+  // every opaque pixel touching the transparent outside is the one ink color
+  const ink = new Set();
+  for (let y = 0; y < s.height; y++) for (let x = 0; x < s.width; x++) {
+    const p = px(s, x, y); if (p[3] !== 255) continue;
+    const out = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = px(s, x + dx, y + dy); return x + dx < 0 || y + dy < 0 || x + dx >= s.width || y + dy >= s.height || q[3] === 0; });
+    if (out) ink.add(p.slice(0, 3).join(","));
+  }
+  assert.strictEqual(ink.size, 1, "one outline color: " + [...ink].join(" "));
+  const c = [...ink][0].split(",").map(Number);
+  assert.ok(Math.max(...c) < 90, "outline is very dark: " + c);
+});
+
+test("Game Sprite eye stamps: white highlights at the tapped eyes, none without taps", () => {
+  const plain = G({ face: null }), white = [255, 255, 255];
+  assert.strictEqual(findColor(plain, white), null, "no pure white without face stickers");
+  const s = G({ face: FACE, chibi: 0 });
+  for (const [sx, sy] of [[95, 90], [145, 90]]) {
+    const [gx, gy] = toSprite(s, sx, sy);
+    assert.ok(findColor(s, white, Math.floor(gx - 4), Math.floor(gy - 4), Math.ceil(gx + 4), Math.ceil(gy + 4)), `eye shine near ${gx.toFixed(1)},${gy.toFixed(1)}`);
+  }
+  // a dark pupil sits next to each shine
+  const shine = findColor(s, white);
+  let darkest = 999;
+  for (let dy = -1; dy <= 2; dy++) for (let dx = -1; dx <= 2; dx++) { const q = px(s, shine[0] + dx, shine[1] + dy); darkest = Math.min(darkest, q[0] + q[1] + q[2]); }
+  assert.ok(darkest < 200, "dark pupil beside the shine: " + darkest);
+});
+
+test("Game Sprite nose, blush and tongue stamps use their colors only when asked", () => {
+  const shineRgb = rgbOf(PP.STAMP_COLORS.h), blushRgb = rgbOf(PP.STAMP_COLORS.blush), tongueRgb = rgbOf(PP.STAMP_COLORS.t);
+  const s = G({ face: FACE, chibi: 0, blush: true, mouth: "tongue" });
+  const [nx, ny] = toSprite(s, 120, 112);
+  assert.ok(findColor(s, shineRgb, Math.floor(nx - 4), Math.floor(ny - 4), Math.ceil(nx + 4), Math.ceil(ny + 4)), "nose shine near the nose tap");
+  assert.ok(findColor(s, blushRgb), "blush");
+  const t = findColor(s, tongueRgb); assert.ok(t && t[1] > ny, "tongue below the nose");
+  const off = G({ face: FACE, chibi: 0, blush: false, mouth: "none" });
+  assert.strictEqual(findColor(off, blushRgb), null); assert.strictEqual(findColor(off, tongueRgb), null);
+  assert.ok(findColor(off, shineRgb), "nose stays without mouth/blush");
+  const noFace = G({ face: FACE, chibi: 0, faceStamps: false });
+  assert.strictEqual(findColor(noFace, [255, 255, 255]), null, "stickers can be turned off");
+});
+
+test("big head (chibi) enlarges the head and moves the face points apart", () => {
+  const src = scene(), face = { eyes: [[95, 90], [145, 90]], nose: [120, 112] };
+  const w = PP.bigHead(src, face, 1);
+  const d0 = face.eyes[1][0] - face.eyes[0][0], d1 = w.face.eyes[1][0] - w.face.eyes[0][0];
+  assert.ok(d1 > d0 * 1.12, `eyes spread ${d0} -> ${d1.toFixed(1)}`);
+  const area = (m) => m.reduce((a, v) => a + (v > 127 ? 1 : 0), 0);
+  assert.ok(area(w.src.mask) >= area(src.mask), "the silhouette does not shrink");
+  assert.strictEqual(PP.bigHead(src, face, 0).face.eyes[0][0].toFixed(3), "95.000", "amount 0 is a no-op");
+  // the eye stamps grow with the head
+  const a = G({ face: FACE, chibi: 0 }), b = G({ face: FACE, chibi: 1.5 });
+  const count = (s) => { let n = 0; for (let i = 0; i < s.data.length; i += 4) if (s.data[i] === 255 && s.data[i + 1] === 255 && s.data[i + 2] === 255) n++; return n; };
+  assert.ok(count(b) >= count(a), "eye shines at least as big with a big head");
+});
+
+test("guessFace finds the two eyes of the synthetic dog (or declines)", () => {
+  const g = PP.guessFace(scene());
+  assert.ok(g, "found a face");
+  const [l, r] = g.eyes;
+  assert.ok(Math.abs(l[0] * 240 - 95) < 8 && Math.abs(l[1] * 180 - 90) < 8, "left eye " + l.map((v) => v.toFixed(3)));
+  assert.ok(Math.abs(r[0] * 240 - 145) < 8 && Math.abs(r[1] * 180 - 90) < 8, "right eye " + r.map((v) => v.toFixed(3)));
+  // a featureless blob has no face
+  const flat = scene(); for (let i = 0; i < flat.data.length; i += 4) if (flat.mask[i / 4]) { flat.data[i] = 150; flat.data[i + 1] = 110; flat.data[i + 2] = 75; }
+  assert.strictEqual(PP.guessFace(flat), null);
+});
+
+test("mergeIslands folds specks into their surroundings but keeps vivid accents", () => {
+  const w = 6, h = 6, pal = [[0.6, 0.02, 0.03], [0.4, 0.02, 0.03], [0.55, 0.2, 0.1]];
+  const ix = new Int16Array(w * h).fill(0); ix[2 * w + 2] = 1; ix[3 * w + 4] = 2;
+  PP.mergeIslands(ix, w, h, pal, 3);
+  assert.strictEqual(ix[2 * w + 2], 0, "grey speck merged"); assert.strictEqual(ix[3 * w + 4], 2, "vivid accent kept");
+});
+
+test("celShade lights the top-left rim and shades the bottom-right", () => {
+  const w = 8, h = 8, pal = [[0.6, 0.01, 0.02]], ix = new Int16Array(w * h).fill(-1);
+  for (let y = 1; y < 7; y++) for (let x = 1; x < 7; x++) ix[y * w + x] = 0;
+  PP.celShade(ix, w, h, pal, 1, false);
+  assert.strictEqual(pal.length, 3, "one highlight + one shadow tone");
+  assert.ok(pal[ix[1 * w + 3]][0] > 0.6, "top rim lighter"); assert.ok(pal[ix[6 * w + 3]][0] < 0.6, "bottom rim darker");
+  assert.strictEqual(ix[3 * w + 3], 0, "interior keeps the base color");
+});
+
+test("Game Sprite is deterministic and turns a black coat into readable charcoal", () => {
+  const a = G({ face: FACE }), b = G({ face: FACE });
+  assert.deepStrictEqual(Array.from(a.data), Array.from(b.data));
+  const blk = scene(); for (let i = 0; i < blk.data.length; i += 4) if (blk.mask[i / 4]) { const v = 18 + (i % 13); blk.data[i] = v; blk.data[i + 1] = v; blk.data[i + 2] = v + 2; }
+  const s = PP.render(blk, Object.assign({}, PP.PRESETS.game, { backdrop: "none" }));
+  const [cx, cy] = [s.grid.x + (s.grid.w >> 1), s.grid.y + (s.grid.h >> 1)], c = px(s, cx, cy);
+  assert.ok(c[0] >= 30 && c[0] <= 90, "charcoal body, not pitch black: " + c);
+});
+
 test("upscale is exact nearest-neighbor", () => {
   const s = PP.render(scene(), { size: 32 }), u = PP.upscale(s, 4);
   assert.strictEqual(u.width, 128);

@@ -99,7 +99,16 @@ Members can turn a photo of their dog into a crisp pixel-art sprite (`public/pix
   4. Stray-pixel cleanup, a 1-px dark or soft outline and an optional ground shadow.
   5. A transparent or brand-color backdrop.
   6. Nearest-neighbor upscale.
-- Presets: Classic (48 px, 10 colors), Retro 8-bit (32 px, 8 colors, dither) and Soft (64 px, 16 colors). The live preview has an after/before toggle.
+- Presets: **Game Sprite** (the default; see below), Classic (48 px, 10 colors), Retro 8-bit (32 px, 8 colors, dither) and Soft (64 px, 16 colors). The live preview has an after/before toggle.
+- Game Sprite (`cel: true`): a cartoony 16-bit game look, modeled on the sprites in the Maggie the Merle "Floor Vacuum" game (used only as a style reference, never as output). The rules:
+  - Color: heavy smoothing, about 6 flat colors with small islands merged, and vivid accents kept (Lily's red tag). Light coats are lifted to a friendly pastel; black coats become a readable charcoal ramp.
+  - Shading: one highlight tone on the top-left rims and one shadow tone on the bottom-right ("cel" shading).
+  - Outline and silhouette: a single dark "ink" outline color tinted to the coat, and a smoothed silhouette.
+  - Face stickers: the **Eyes** and **Nose** tools mark points on the photo. The maker tries to guess them (`PixelPal.guessFace`, dark spots in the upper part of the dog) and shows the guess as dots to fix. The marked points get hand-drawn stamps:
+    - Eyes: a dark pupil with a white shine. Light dogs get an iris colored from the photo, plus an ink ring on big eyes.
+    - Nose: a rounded nose with a shine. Dark dogs also get a grey muzzle.
+    - Optional smile or tongue, and blush.
+  - "Big head" (`chibi`, 0–1.5): a smooth bulge warp around the head, done before pixelation, so the head and eyes grow.
 - Saving: `POST /me/dogs/<id>/pixel` (CSRF, owner only, 30/hour) accepts only square 16–128 px PNGs up to 200 KB with visible pixels. The server re-encodes the sprite (dropping all metadata) and stores it in the `photos` table as `kind='pixel'`, with `dogs.pixel_photo_id` and `dogs.pixel_primary`. "Use as avatar" makes the sprite the profile picture; the other save button keeps the photo. The edit page can switch between them, download or remove the sprite.
 - Images: `/px/<id>-1x.png` (native size; displayed with `image-rendering: pixelated`), `/px/<id>.png` (≥512 px nearest-neighbor download) and `/px/<id>-og.png` (1200×630 share card, used as og:image when the sprite is the profile picture). Hidden dogs' sprites return 404.
 - Where sprites show: dog cards (as the image, or a small badge), a Photo/Pixel toggle and a "pixel pal" panel on the dog page, and meetup attendee and pack member lists when the sprite is the profile picture.
