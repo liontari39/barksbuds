@@ -871,7 +871,7 @@ class MeetupRoutes:
             host_tools = f'<div class="formfoot mtools"><span class="small muted">You\'re the host:</span>{"".join(tools)}</div>'
         cal = ""
         if m["status"] == "active":
-            cal = (f'<div class="formfoot"><a class="btn btn-sm" href="/meetups/{mid}.ics"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Add to calendar</a>'
+            cal = (f'<div class="formfoot"><a class="btn btn-gold btn-sm mjump" href="#rsvp">RSVP</a><a class="btn btn-sm" href="/meetups/{mid}.ics"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Add to calendar</a>'
                    f'<a class="btn btn-ghost btn-sm" href="{e(gcal_url(base, m))}" target="_blank" rel="noopener">Google Calendar</a>'
                    f'<a class="btn btn-ghost btn-sm" href="{e(directions_url(m, r))}" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg>Directions</a></div>')
         scripts = ""

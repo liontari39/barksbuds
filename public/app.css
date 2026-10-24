@@ -304,8 +304,9 @@ footer .bottom p{margin:0}
 .mhero .wrap{grid-template-columns:1.1fr .9fr;align-items:start}
 .mtitle{font-size:clamp(2.1rem,5vw,3.3rem)}
 .emailpref{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:14px;border-top:1.5px dashed var(--line)}
+.mjump{display:none!important}
 .locset{border:0;padding:0;margin:0 0 6px}
 .locset legend{font-weight:800;color:var(--black);margin-bottom:6px;padding:0}
 .loc-run,.loc-custom{margin-top:10px}
-@media (max-width:920px){.nshore,.mhero .wrap{grid-template-columns:1fr}.nshore{padding:26px 22px;gap:22px}.mmap{height:420px}}
+@media (max-width:920px){.mjump{display:inline-flex!important}.nshore,.mhero .wrap{grid-template-columns:1fr}.nshore{padding:26px 22px;gap:22px}.mmap{height:420px}}
 @media (max-width:640px){.mgrid{grid-template-columns:1fr}.mcard{padding:14px;gap:12px}.mdate.big{width:58px;font-size:1.55rem}.mbar{display:block}}
