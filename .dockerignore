@@ -16,3 +16,7 @@ cloudflared
 shot.py
 railway.json
 .railwayignore
+deploy_render.sh
+gh_login.log
+*.bundle
+*.tmp
