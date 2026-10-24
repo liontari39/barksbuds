@@ -16,3 +16,4 @@ cloudflared
 shot.py
 railway.json
 .railwayignore
+deploy_render.sh
