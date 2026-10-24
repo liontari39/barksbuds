@@ -12,6 +12,7 @@ Security notes
 import hashlib, hmac, io, json, os, re, secrets, threading, time, unicodedata
 from collections import deque
 from datetime import date
+from urllib.parse import urlsplit
 
 LINK_TTL = 20 * 60                 # magic link lifetime
 SESSION_TTL = 30 * 24 * 3600       # session cookie lifetime
@@ -30,9 +31,10 @@ REGIONS = {"nyc": ("New York City", ["Manhattan", "Brooklyn", "Queens", "Bronx",
            "li": ("Long Island", ["Nassau", "Suffolk"]), "wc": ("Westchester", ["Westchester"])}
 TEMPERAMENT = ["Friendly with big dogs", "Friendly with small dogs", "Loves people", "Great with kids",
                "Shy at first", "Gentle", "Chill", "High energy", "Puppy energy", "Ball obsessed",
-               "Loves water", "Loves a good sniff", "Vocal", "Prefers a small group", "Still learning manners"]
+               "Loves water", "Loves a good sniff", "Vocal", "Prefers a small group", "Still learning manners",
+               "Smart", "Loyal", "Speedy", "Snuggler", "Food motivated"]
 PLAY_STYLES = ["Chaser", "Wrestler", "Fetcher", "Tug-of-war fan", "Explorer and sniffer",
-               "Social butterfly", "Gentle player", "Watcher (likes to observe)"]
+               "Social butterfly", "Gentle player", "Watcher (likes to observe)", "Zoomies", "Toy lover"]
 SIZES = [("small", "Small (under 20 lb)"), ("medium", "Medium (20–50 lb)"),
          ("large", "Large (50–90 lb)"), ("giant", "Giant (90+ lb)")]
 SEXES = [("female", "Girl"), ("male", "Boy")]
@@ -103,6 +105,13 @@ def init_schema(store):
     ]
     for s in ddl:
         store.q(s)
+    # additive migrations (safe to re-run)
+    cols = ({r[0] for r in store.q("SELECT column_name FROM information_schema.columns WHERE table_name='dogs'")} if pg
+            else {r[1] for r in store.q("PRAGMA table_info(dogs)")})
+    if "website" not in cols:
+        store.q("ALTER TABLE dogs ADD COLUMN website TEXT NOT NULL DEFAULT ''")
+    if "seed_rev" not in cols:
+        store.q(f"ALTER TABLE dogs ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
 
 
 # ---------------------------------------------------------------- rate limiting (in-memory, per process)
@@ -235,7 +244,7 @@ def delete_user(user_id):
 
 # ---------------------------------------------------------------- dogs
 DOG_COLS = ("id,user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,"
-            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at")
+            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev")
 
 
 def _dog(r):
@@ -306,15 +315,15 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
     t = now()
     vals = dict(n=f["name"], b=f["breed"], bd=f["birthday"], by=f["birth_year"], sx=f["sex"], sz=f["size"],
                 tm=json.dumps(f["temperament"]), ps=json.dumps(f["play_style"]), v=1 if f["vaccinated"] else 0,
-                fr=json.dumps(f["fav_runs"]), bio=f["bio"], t=t)
+                fr=json.dumps(f["fav_runs"]), bio=f["bio"], w=f.get("website", ""), t=t)
     if dog_id:
         q("""UPDATE dogs SET name=:n,breed=:b,birthday=:bd,birth_year=:by,sex=:sx,size=:sz,temperament=:tm,play_style=:ps,
-             vaccinated=:v,fav_runs=:fr,bio=:bio,updated_at=:t WHERE id=:i AND user_id=:u""", i=dog_id, u=user_id, **vals)
+             vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,updated_at=:t WHERE id=:i AND user_id=:u""", i=dog_id, u=user_id, **vals)
         return dog_id
     for attempt in range(3):
         try:
             r = one("""INSERT INTO dogs(user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,
-                       fav_runs,bio,seed_key,created_at,updated_at) VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:sk,:t,:t)
+                       fav_runs,bio,website,seed_key,created_at,updated_at) VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:sk,:t,:t)
                        RETURNING id""", u=user_id, s=unique_slug(f["name"]), sk=seed_key, **vals)
             return r[0]
         except Exception:
@@ -497,3 +506,20 @@ def set_report_status(report_id, status):
 
 def set_dog_hidden(dog_id, hidden):
     q("UPDATE dogs SET hidden=:h WHERE id=:d", h=1 if hidden else 0, d=dog_id)
+
+
+def clean_website(url):
+    """Return a normalized http(s) URL, '' for blank, or None when invalid."""
+    url = (url or "").strip()
+    if not url:
+        return ""
+    if "://" not in url and re.match(r"^[A-Za-z0-9.-]+\.[A-Za-z]{2,}(/|$)", url):
+        url = "https://" + url
+    try:
+        p = urlsplit(url)
+    except ValueError:
+        return None
+    if p.scheme not in ("http", "https") or not p.hostname or "." not in p.hostname or len(url) > 200 \
+            or p.username or p.password or any(c in url for c in ' "<>\'\\') or any(ord(c) < 33 for c in url):
+        return None
+    return url

@@ -35,6 +35,7 @@ ICONS = """<svg width="0" height="0" style="position:absolute" aria-hidden="true
 <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9-9.2C2 7.6 4.2 5 7 5c2 0 3.3 1.1 5 3 1.7-1.9 3-3 5-3 2.8 0 5 2.6 4 5.8-1.5 4.6-9 9.2-9 9.2z"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.01M10.3 3.9L2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></symbol>
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
 </svg>"""
 
@@ -247,7 +248,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=1">
+<link rel="stylesheet" href="/app.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -650,6 +651,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
 <div class="field"><span class="lab" id="runs-lab">Favorite dog runs <span class="opt">(up to {A.MAX_FAV_RUNS})</span></span>
 <div class="runpick" role="group" aria-labelledby="runs-lab"><input class="rp-search" type="search" placeholder="Search runs by name or town" aria-label="Search dog runs" hidden>
 <div class="rp-chosen" aria-live="polite"></div><div class="rp-list">{self.run_picker(set(get("fav_runs", []) or []))}</div></div>{err("runs")}</div>
+<div class="field"><label for="website">Website or social link <span class="opt">(optional)</span></label><input id="website" name="website" type="url" inputmode="url" maxlength="200" placeholder="https://instagram.com/yourdog" value="{e(get("website"))}"{inv("website")}>{err("website")}<span class="help">Shown on {dn or 'your dog'}'s public page. Must start with http:// or https://.</span></div>
 <div class="field"><label for="bio">Bio <span class="opt">(optional)</span></label><textarea id="bio" name="bio" maxlength="600" rows="4" placeholder="Favorite toy, best trick, what makes them happiest at the run…">{e(get("bio"))}</textarea></div>
 <div class="formfoot"><button class="btn" type="submit">{'Create profile' if is_new else 'Save changes'}</button><a href="/me">Cancel</a><span class="spacer"></span>{delete_link}</div>
 </form></div></section>"""
@@ -712,7 +714,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                  age=f.get("age").strip()[:3], sex=f.get("sex"), size=f.get("size"),
                  temperament=[t for t in A.TEMPERAMENT if t in f.getlist("temperament")],
                  play_style=[t for t in A.PLAY_STYLES if t in f.getlist("play_style")],
-                 vaccinated=f.get("vaccinated") == "1", bio=clean(f.get("bio"), 600, multiline=True))
+                 vaccinated=f.get("vaccinated") == "1", bio=clean(f.get("bio"), 600, multiline=True),
+                 website=f.get("website").strip()[:300])
         runs = run_index()
         picked = []
         for r in f.getlist("runs"):
@@ -722,6 +725,11 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         errs = {}
         if not v["name"]:
             errs["name"] = "What's your dog's name?"
+        site = A.clean_website(v["website"])
+        if site is None:
+            errs["website"] = "Please enter a full web address starting with http:// or https:// (or leave it blank)."
+        else:
+            v["website"] = site
         v["birth_year"] = None
         if v["birthday"]:
             bd = None
@@ -925,6 +933,12 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                 for i, p in enumerate(photos)) + "</div></div>")
         if not main:
             main.append(f'<div class="panel"><p class="muted" style="margin:0">{e(d["name"])}\'s profile is just getting started.</p></div>')
+        site_line = ""
+        if d.get("website") and A.clean_website(d["website"]):
+            host = urlsplit(d["website"]).hostname or ""
+            host = host[4:] if host.startswith("www.") else host
+            site_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-link"/></svg>'
+                         f'<a href="{e(d["website"])}" rel="nofollow noopener noreferrer ugc" target="_blank">{e(host)}</a></p>')
         owner_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-user"/></svg>'
                       f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
         edit = (f'<p style="margin-top:18px"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
@@ -950,7 +964,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         body = f"""{hidden_note}<section class="dhero"><div class="wrap">{cov}<div>
 <div class="who">{av}<div><span class="eyebrow" style="margin:0">meet</span><h1 class="dname">{e(d["name"])}</h1></div></div>
 {f'<p class="dsub">{e(sub)}</p>' if sub else ''}
-<ul class="facts">{''.join(facts)}</ul>{owner_line}{edit}</div></div></section>
+<ul class="facts">{''.join(facts)}</ul>{owner_line}{site_line}{edit}</div></div></section>
 <section class="section" style="padding-top:40px"><div class="wrap"><div class="dgrid2"><div>{''.join(main)}</div><div>{''.join(side)}
 <div class="panel" style="background:var(--black);color:#E9E1D3;box-shadow:6px 6px 0 var(--red)"><h2 style="color:#fff">Bring your pup</h2>
 <p>Give your dog a profile, pick their favorite runs and meet the regulars.</p><a class="btn btn-gold btn-sm" href="{cta}">Add your dog</a></div></div></div>

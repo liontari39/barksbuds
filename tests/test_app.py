@@ -292,6 +292,19 @@ class ProfileTests(unittest.TestCase):
         self.assertIsNone(A.dog_by_id(dog_id))
         self.assertEqual(Client().get("/dogs/" + d["slug"]).status, 404)
 
+    def test_website_field(self):
+        r = self.c.post("/me/dogs/new", {"name": "Webby", "website": "javascript:alert(1)"})
+        self.assertEqual(r.status, 422)
+        self.assertEqual(self.c.post("/me/dogs/new", {"name": "Webby", "website": "ftp://x.com"}).status, 422)
+        dog_id = new_dog(self.c, name="Webby", website="example.com/webby")
+        d = A.dog_by_id(dog_id)
+        self.assertEqual(d["website"], "https://example.com/webby")
+        page = Client().get("/dogs/" + d["slug"]).text
+        self.assertIn('<a href="https://example.com/webby" rel="nofollow noopener noreferrer ugc" target="_blank">example.com</a>', page)
+        self.c.post(f"/me/dogs/{dog_id}/edit", {"name": "Webby", "website": ""})
+        self.assertEqual(A.dog_by_id(dog_id)["website"], "")
+        self.assertNotIn("example.com/webby", Client().get("/dogs/" + d["slug"]).text)
+
     def test_slugs_are_unique(self):
         a, b = new_dog(self.c, name="Luna"), new_dog(self.c, name="Luna")
         self.assertNotEqual(A.dog_by_id(a)["slug"], A.dog_by_id(b)["slug"])
@@ -399,6 +412,15 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(n, 2)
         lily = A.dog_by_id(A.one("SELECT id FROM dogs WHERE seed_key='mike-lily'")[0])
         self.assertEqual(len(A.gallery(lily["id"])), 3)
+        self.assertEqual(lily["sex"], "female")
+        self.assertIn("Smart", lily["temperament"])
+        self.assertEqual(lily["seed_rev"], 2)
+        maggie = A.dog_by_id(A.one("SELECT id FROM dogs WHERE seed_key='mike-maggie'")[0])
+        self.assertEqual((maggie["sex"], maggie["size"], maggie["birth_year"]), ("female", "medium", 2023))
+        self.assertEqual(len(A.gallery(maggie["id"])), 4)  # 2 originals + 2 from the site, not duplicated on re-run
+        mp = Client().get("/dogs/" + maggie["slug"]).text
+        self.assertIn('href="https://maggiethemerle.com/" rel="nofollow noopener noreferrer ugc"', mp)
+        self.assertIn("couch monster", mp)
         page = Client().get("/dogs/" + lily["slug"]).text
         self.assertIn("6 years old", page)
         self.assertIn("Manhasset", page)

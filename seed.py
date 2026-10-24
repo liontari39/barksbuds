@@ -20,21 +20,40 @@ import accounts as A
 
 OWNER = dict(email="mike.karachalios@gmail.com", display_name="Mike", area="Nassau", town="Manhasset", bio="")
 
+LILY_BIO = ("Lily is a 6-year-old standard poodle mix with a curly black-and-grey coat and a red heart tag. "
+            "She's absurdly smart, loyal and loves kids, and when she takes off at the run she goes like a horse. "
+            "Good luck keeping up!")
+MAGGIE_BIO = ("Meet Maggie, a.k.a. the couch monster: a merle French Bulldog born in the summer of 2023, about 26 pounds "
+              "of snuggler, snorter and self-appointed floor cleaner. Her favorite spots are the extra-large bean bag and "
+              "the gap between the couch cushions. She's a jealous girl who will try to steal your cuddles, and for a dog "
+              "who loves lounging, she's surprisingly agile. Favorite toys: Lamb Chop and her squeaky Gumby. "
+              "Her big sister is Lily.")
+
+# "rev" bumps re-apply "profile" (and add "extra_photos") once per revision, so later edits made on the site
+# are only overwritten when a new revision is deliberately added here.
 DOGS = [
     dict(seed_key="mike-lily", name="Lily", breed="Standard Poodle mix", age=6, size="large",
          bio="Say hi to Lily! She's a standard poodle mix with a curly black-and-grey coat. "
              "Look for the red heart tag on her collar.",
-         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg"),
+         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg",
+         rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
+                             play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg"),
+         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg",
+         rev=2, profile=dict(sex="female", size="medium", birth_year=2023,
+                             temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
+                             bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
+         extra_photos=["maggie-site/maggie-beanbag-nap-960.webp", "maggie-site/maggie-g-cream-rug-960.webp"]),
 ]
+
+PROFILE_COLS = {"sex", "size", "birth_year", "birthday", "breed", "bio", "website", "temperament", "play_style"}
 
 
 def asset_names():
     out = []
     for spec in DOGS:
-        out += [f"dogs/{fn}" for fn in spec["photos"]] + [f"sprites/{spec['sprite']}"]
+        out += [f"dogs/{fn}" for fn in spec["photos"]] + [f"sprites/{spec['sprite']}"] + spec.get("extra_photos", [])
     return out
 
 
@@ -67,7 +86,31 @@ def run(load, log=print):
                 pid = A.add_photo(dog_id, raw, kind="avatar")
                 A.set_avatar(dog_id, pid)
                 log(f"  + avatar {spec['sprite']} -> {pid}")
-        log(f"  page: /dogs/{A.dog_by_id(dog_id)['slug']}")
+        d = A.dog_by_id(dog_id)
+        missing = [rel for rel in spec.get("extra_photos", []) if not load(rel)]
+        if spec.get("rev") and (d.get("seed_rev") or 0) < spec["rev"] and missing:
+            log(f"  ! revision {spec['rev']} not applied, missing {', '.join(missing)}")
+        elif spec.get("rev") and (d.get("seed_rev") or 0) < spec["rev"]:
+            sets, vals = [], {}
+            for k, v in spec.get("profile", {}).items():
+                assert k in PROFILE_COLS, k
+                sets.append(f"{k}=:{k}")
+                vals[k] = json.dumps(v) if isinstance(v, list) else v
+            A.q(f"UPDATE dogs SET {', '.join(sets)}, seed_rev=:rev, updated_at=:t WHERE id=:i",
+                rev=spec["rev"], t=A.now(), i=dog_id, **vals)
+            have = {r[0] for r in A.q("SELECT sha FROM photos WHERE dog_id=:d", d=dog_id)}
+            for rel in spec.get("extra_photos", []):
+                raw = load(rel)
+                if not raw:
+                    log(f"  ! missing {rel}")
+                elif A.sha(raw) in have:
+                    log(f"  = photo {rel} already there")
+                elif A.photo_count(dog_id) < A.MAX_PHOTOS:
+                    log(f"  + photo {rel} -> {A.add_photo(dog_id, raw)}")
+            log(f"  profile updated to revision {spec['rev']}")
+        else:
+            log(f"  profile at revision {d.get('seed_rev') or 0}, nothing to update")
+        log(f"  page: /dogs/{d['slug']}")
     return uid
 
 
