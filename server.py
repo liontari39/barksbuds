@@ -10,11 +10,16 @@ Admin (requires ADMIN_KEY env var; disabled when unset):
 Dog run finder:
   GET  /runs       map + list page (public/runs.html, rendered with the run list for SEO)
   GET  /api/runs   dog run dataset from data-seed/dog_runs_region.json (cached, ETag, gzip)
+Waitlist emails (see mailer.py; off until EMAIL_* env vars are set):
+  GET  /api/config                    {"email_confirmations": true|false}
+  GET  /unsubscribe?e=EMAIL&t=TOKEN   confirm page; POST removes the signup (also RFC 8058 one-click)
 """
 import csv, gzip, hashlib, html, hmac, io, json, os, re, sqlite3, ssl, threading, time
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
+
+import mailer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(ROOT, "public")
@@ -314,6 +319,10 @@ class H(SimpleHTTPRequestHandler):
                    f'<url><loc>{base}/</loc><lastmod>{lm}</lastmod></url>'
                    f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url></urlset>\n')
             return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
+        if u.path == "/api/config":
+            return self._json(200, {"email_confirmations": mailer.enabled()})
+        if u.path == "/unsubscribe":
+            return self._unsub_page(q.get("e", [""])[0].strip().lower(), q.get("t", [""])[0].strip(), confirm=False)
         if u.path == "/api/runs":
             c = load_runs()
             hdr = {"Cache-Control": "public, max-age=3600", "ETag": c["etag"], "Access-Control-Allow-Origin": "*"}
@@ -348,6 +357,13 @@ class H(SimpleHTTPRequestHandler):
             if not email:
                 return self._json(400, {"ok": False, "error": "email required"})
             return self._json(200, {"ok": True, "deleted": STORE.delete(email)})
+        if u.path == "/unsubscribe":
+            n = min(int(self.headers.get("Content-Length", 0) or 0), 2000)
+            form = {k: v[0] for k, v in parse_qs(self.rfile.read(n).decode("utf-8", "replace")).items()}
+            email = (form.get("e") or q.get("e", [""])[0]).strip().lower()
+            token = (form.get("t") or q.get("t", [""])[0]).strip()
+            one_click = form.get("List-Unsubscribe") == "One-Click"
+            return self._unsub_page(email, token, confirm=True, one_click=one_click)
         if u.path != "/api/waitlist":
             return self.send_error(404)
         try:
@@ -383,8 +399,47 @@ class H(SimpleHTTPRequestHandler):
             print("signup error:", type(e).__name__, e, flush=True)
             return self._json(503, {"ok": False, "error": "Our servers are napping. Please try again in a moment."})
         print("new signup stored", flush=True)
-        return self._json(201, {"ok": True,
-                                "message": f"Woof! Thanks {first}, you and {dog} are on the BarksBuds waitlist. We'll email you when we open the gates."})
+        queued = mailer.send_welcome_async(SITE_URL or self._host_url(), first, dog, email)
+        if queued:
+            msg = (f"Woof! Thanks {first}, you and {dog} are on the BarksBuds waitlist. "
+                   f"We're sending a welcome email to {email} (check your Promotions or spam folder if you don't see it).")
+        else:
+            msg = (f"Woof! Thanks {first}, you and {dog} are on the BarksBuds waitlist. "
+                   "While you wait, explore the dog run map to find runs near you.")
+        return self._json(201, {"ok": True, "email_sent": queued, "message": msg})
+
+    def _unsub_page(self, email, token, confirm, one_click=False):
+        """Tokenized remove-me flow. GET shows a button (so link scanners can't unsubscribe people); POST removes."""
+        valid = bool(email) and mailer.check_token(email, token)
+        if one_click:
+            if valid:
+                STORE.delete(email); print("unsubscribe: one-click removal", flush=True)
+            return self._json(200 if valid else 400, {"ok": valid})
+        e = html.escape
+        if not valid:
+            title, body = "That link didn't work", ("<p>This remove-me link is incomplete or has expired. "
+                                                     "Reply to any BarksBuds email and we'll remove you by hand.</p>")
+            code = 400
+        elif confirm:
+            STORE.delete(email); print("unsubscribe: removed via link", flush=True)
+            title, body, code = "You're off the list", (f"<p><strong>{e(email)}</strong> has been removed from the BarksBuds "
+                                                         "waitlist and we've deleted your details. Sorry to see you go!</p>"
+                                                         '<p><a href="/">Back to BarksBuds</a> &middot; <a href="/runs">Dog run map</a></p>'), 200
+        else:
+            title, code = "Leave the waitlist?", 200
+            body = (f"<p>This removes <strong>{e(email)}</strong> from the BarksBuds waitlist and deletes your details.</p>"
+                    f'<form method="post" action="/unsubscribe"><input type="hidden" name="e" value="{e(email)}">'
+                    f'<input type="hidden" name="t" value="{e(token)}"><button type="submit">Remove me</button></form>'
+                    '<p class="small"><a href="/">Never mind, keep me on the list</a></p>')
+        page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>{e(title)} | BarksBuds</title><link rel="icon" href="/favicon.ico">
+<style>body{{margin:0;background:#FFF8EA;font:400 17px/1.6 Nunito,system-ui,sans-serif;color:#2a2622;display:grid;place-items:center;min-height:100vh;padding:20px;box-sizing:border-box}}
+main{{max-width:460px;background:#fff;border:1px solid #EADBB9;border-radius:24px;padding:32px;text-align:center}}
+img{{border-radius:18px;border:3px solid #FBB321}}h1{{font:800 28px/1.15 system-ui,sans-serif;color:#141414;margin:14px 0 10px}}
+a{{color:#C8201E}}button{{font:700 17px system-ui,sans-serif;background:#C8201E;color:#fff;border:0;border-radius:999px;padding:13px 26px;cursor:pointer;box-shadow:0 4px 0 #9E1714}}
+.small{{font-size:15px}}</style></head><body><main><img src="/img/icon-96.webp" width="72" height="72" alt="BarksBuds">
+<h1>{e(title)}</h1>{body}</main></body></html>"""
+        return self._send(code, page.encode(), "text/html; charset=utf-8", {"Cache-Control": "no-store"})
 
     def log_message(self, fmt, *a):
         if a and "/admin/" in str(a[0]):
@@ -406,7 +461,7 @@ def make_store():
 
 if __name__ == "__main__":
     STORE = make_store()
-    print(f"BarksBuds running on 0.0.0.0:{PORT} (store: {STORE.kind}, admin: {'on' if ADMIN_KEY else 'off'})", flush=True)
+    print(f"BarksBuds running on 0.0.0.0:{PORT} (store: {STORE.kind}, admin: {'on' if ADMIN_KEY else 'off'}, email: {mailer.status()})", flush=True)
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), H)
     srv.daemon_threads = True
     srv.serve_forever()
