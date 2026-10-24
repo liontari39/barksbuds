@@ -37,12 +37,12 @@ DOGS = [
     dict(seed_key="mike-lily", name="Lily", breed="Standard Poodle mix", age=6, size="large",
          bio="Say hi to Lily! She's a standard poodle mix with a curly black-and-grey coat. "
              "Look for the red heart tag on her collar.",
-         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg",
+         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg", pixel="sprites/lily-pixel-64.png",
          rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
                              play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg",
+         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-pixel-64.png",
          rev=2, profile=dict(sex="female", size="medium", birth_year=2023,
                              temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
                              bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
@@ -80,6 +80,7 @@ def asset_names():
     out = []
     for spec in DOGS:
         out += [f"dogs/{fn}" for fn in spec["photos"]] + [f"sprites/{spec['sprite']}"] + spec.get("extra_photos", [])
+        out += [spec["pixel"]] if spec.get("pixel") else []
     return out + [SAMPLE_PACK["cover"]]
 
 
@@ -112,6 +113,12 @@ def run(load, log=print):
                 pid = A.add_photo(dog_id, raw, kind="avatar")
                 A.set_avatar(dog_id, pid)
                 log(f"  + avatar {spec['sprite']} -> {pid}")
+        # pixel pal made with the site's own maker (/me/dogs/N/pixel); only added when the dog has none, and the photo
+        # stays the profile picture
+        if spec.get("pixel") and not A.dog_by_id(dog_id).get("pixel_photo_id"):
+            raw = load(spec["pixel"])
+            if raw:
+                log(f"  + pixel pal {spec['pixel']} -> {A.set_pixel(dog_id, raw, primary=False)}")
         d = A.dog_by_id(dog_id)
         missing = [rel for rel in spec.get("extra_photos", []) if not load(rel)]
         if spec.get("rev") and (d.get("seed_rev") or 0) < spec["rev"] and missing:

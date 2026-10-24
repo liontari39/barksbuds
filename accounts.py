@@ -112,6 +112,10 @@ def init_schema(store):
         store.q("ALTER TABLE dogs ADD COLUMN website TEXT NOT NULL DEFAULT ''")
     if "seed_rev" not in cols:
         store.q(f"ALTER TABLE dogs ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
+    if "pixel_photo_id" not in cols:  # pixel-pal sprite (a photos row with kind='pixel')
+        store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
+    if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
+        store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
     import meetups, packs
     meetups.init_schema(store)
     packs.init_schema(store)
@@ -250,7 +254,7 @@ def delete_user(user_id):
 
 # ---------------------------------------------------------------- dogs
 DOG_COLS = ("id,user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,"
-            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev")
+            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev,pixel_photo_id,pixel_primary")
 
 
 def _dog(r):
@@ -450,12 +454,12 @@ def add_photo(dog_id, raw, kind="gallery"):
 
 def photo_blob(photo_id, which):
     col = "full_jpeg" if which == "full" else "thumb_webp"
-    r = one(f"""SELECT p.{col} FROM photos p JOIN dogs d ON d.id=p.dog_id WHERE p.id=:i AND d.hidden=0""", i=photo_id)
+    r = one(f"""SELECT p.{col} FROM photos p JOIN dogs d ON d.id=p.dog_id WHERE p.id=:i AND d.hidden=0 AND p.kind<>'pixel'""", i=photo_id)
     return bytes(r[0]) if r else None
 
 
 def delete_photo(dog_id, photo_id):
-    q("DELETE FROM photos WHERE id=:p AND dog_id=:d", p=photo_id, d=dog_id)
+    q("DELETE FROM photos WHERE id=:p AND dog_id=:d AND kind<>'pixel'", p=photo_id, d=dog_id)
     q("UPDATE dogs SET avatar_photo_id=NULL WHERE id=:d AND avatar_photo_id=:p", d=dog_id, p=photo_id)
 
 
@@ -467,6 +471,124 @@ def set_avatar(dog_id, photo_id):
             q("DELETE FROM photos WHERE id=:o AND kind='avatar'", o=old[0])
         return True
     return False
+
+
+# ---------------------------------------------------------------- pixel pals (sprites made in the browser)
+PIXEL_MAX_BYTES = 200 * 1024
+PIXEL_MIN, PIXEL_MAX = 16, 128
+PIXEL_BIG = 512  # stored nearest-neighbor upscale is at least this wide
+
+
+def process_pixel_png(raw):
+    """Validate and re-encode a sprite upload. Returns (native_png, big_png, size). Drops all metadata."""
+    from PIL import Image
+    if not raw:
+        raise BadImage("No sprite was uploaded.")
+    if len(raw) > PIXEL_MAX_BYTES:
+        raise BadImage("That sprite file is too big.")
+    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise BadImage("Sprites must be PNG images.")
+    try:
+        im = Image.open(io.BytesIO(raw))
+        if im.format != "PNG":
+            raise BadImage("Sprites must be PNG images.")
+        if im.width != im.height or not PIXEL_MIN <= im.width <= PIXEL_MAX:
+            raise BadImage("Sprites must be square, %d to %d pixels." % (PIXEL_MIN, PIXEL_MAX))
+        im.load()
+        im = im.convert("RGBA")
+    except BadImage:
+        raise
+    except Exception:
+        raise BadImage("We couldn't read that sprite.")
+    if im.getextrema()[3][1] == 0:
+        raise BadImage("That sprite is empty.")
+    n = im.width
+    clean = Image.new("RGBA", (n, n))
+    clean.putdata(list(im.getdata()))  # fresh image: no text chunks, ICC or EXIF carried over
+    b1 = io.BytesIO(); clean.save(b1, "PNG", optimize=True)
+    k = -(-PIXEL_BIG // n)
+    b2 = io.BytesIO(); clean.resize((n * k, n * k), Image.NEAREST).save(b2, "PNG", optimize=True)
+    return b1.getvalue(), b2.getvalue(), n
+
+
+def set_pixel(dog_id, raw, primary=False):
+    """Store a new sprite for the dog (replacing any old one). Returns the new photo id."""
+    native, big, n = process_pixel_png(raw)
+    r = one("""INSERT INTO photos(dog_id,kind,position,width,height,full_jpeg,thumb_webp,bytes,sha,created_at)
+               VALUES(:d,'pixel',0,:w,:w,:f,:th,:b,:s,:t) RETURNING id""",
+            d=dog_id, w=n, f=native, th=big, b=len(native) + len(big), s=sha(raw), t=now())
+    old = one("SELECT pixel_photo_id FROM dogs WHERE id=:d", d=dog_id)
+    q("UPDATE dogs SET pixel_photo_id=:p, pixel_primary=:pp, updated_at=:t WHERE id=:d",
+      p=r[0], pp=1 if primary else 0, d=dog_id, t=now())
+    if old and old[0]:
+        q("DELETE FROM photos WHERE id=:o AND dog_id=:d AND kind='pixel'", o=old[0], d=dog_id)
+    return r[0]
+
+
+def set_pixel_primary(dog_id, primary):
+    q("UPDATE dogs SET pixel_primary=:pp, updated_at=:t WHERE id=:d AND pixel_photo_id IS NOT NULL",
+      pp=1 if primary else 0, d=dog_id, t=now())
+
+
+def clear_pixel(dog_id):
+    q("DELETE FROM photos WHERE dog_id=:d AND kind='pixel'", d=dog_id)
+    q("UPDATE dogs SET pixel_photo_id=NULL, pixel_primary=0, updated_at=:t WHERE id=:d", d=dog_id, t=now())
+
+
+def pixel_blob(photo_id, which):
+    """'big' (upscaled, default) or 'native' PNG bytes, plus the dog's name; None for hidden dogs/unknown ids."""
+    col = "full_jpeg" if which == "native" else "thumb_webp"
+    r = one(f"""SELECT p.{col}, d.name FROM photos p JOIN dogs d ON d.id=p.dog_id
+                WHERE p.id=:i AND p.kind='pixel' AND d.hidden=0""", i=photo_id)
+    return (bytes(r[0]), r[1]) if r else None
+
+
+def pixel_og_png(native_png, name):
+    """1200x630 share card: the sprite, big and crisp, on the brand cream/gold backdrop with the dog's name."""
+    from PIL import Image, ImageDraw, ImageFont
+    spr = Image.open(io.BytesIO(native_png)).convert("RGBA")
+    W, H = 1200, 630
+    im = Image.new("RGB", (W, H), (255, 248, 234))
+    dr = ImageDraw.Draw(im)
+    for y in range(0, H, 30):  # soft pixel checker so the card reads as "game art"
+        for x in range(0, W, 30):
+            if (x // 30 + y // 30) % 2 == 0:
+                dr.rectangle([x, y, x + 29, y + 29], fill=(255, 242, 214))
+    dr.rounded_rectangle([60, 45, 615, 585], radius=36, fill=(255, 231, 168), outline=(42, 38, 34), width=6)
+    k = max(1, 500 // spr.width)
+    big = spr.resize((spr.width * k, spr.height * k), Image.NEAREST)
+    im.paste(big, (60 + (555 - big.width) // 2, 45 + (540 - big.height) // 2), big)
+    try:
+        f1, f2 = ImageFont.load_default(76), ImageFont.load_default(34)
+    except Exception:
+        f1 = f2 = ImageFont.load_default()
+    nm = (name or "")[:18]
+    while f1.getlength(nm) > 500 and len(nm) > 3:
+        nm = nm[:-2]
+    dr.text((660, 200), nm, font=f1, fill=(42, 38, 34))
+    dr.text((662, 300), "pixel pal on BarksBuds", font=f2, fill=(200, 32, 30))
+    dr.rectangle([662, 362, 900, 370], fill=(251, 179, 33))
+    dr.text((662, 400), "barksbuds.app", font=f2, fill=(110, 98, 88))
+    out = io.BytesIO(); im.save(out, "PNG", optimize=True)
+    return out.getvalue()
+
+
+def tile_img(d, size=72):
+    """<img> for a small dog tile (attendee/member lists): the sprite when the owner made it the avatar, else the photo."""
+    import html as _h
+    if d.get("pixel"):
+        return (f'<img class="pxav" src="/px/{int(d["pixel"])}-1x.png" alt="" loading="lazy" width="{size}" height="{size}">')
+    if d.get("photo"):
+        return f'<img src="/p/{int(d["photo"])}.webp" alt="" loading="lazy" width="{size}" height="{size}">'
+    return '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>'
+
+
+def avatar_info(d, photos=None):
+    """How to show a dog's avatar: dict(kind='pixel'|'photo'|None, id=..., photo=..., pixel=...)."""
+    cover, av = cover_and_avatar(d, photos)
+    px = d.get("pixel_photo_id")
+    kind = "pixel" if px and d.get("pixel_primary") else ("photo" if av else ("pixel" if px else None))
+    return dict(kind=kind, photo=av, pixel=px, id=px if kind == "pixel" else av)
 
 
 def cover_and_avatar(d, photos=None):

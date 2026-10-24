@@ -828,8 +828,7 @@ class MeetupRoutes:
             out = []
             for x in rows:
                 for d in x["dogs"]:
-                    img = (f'<img src="/p/{d["photo"]}.webp" alt="" loading="lazy" width="72" height="72">' if d["photo"] else
-                           '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>')
+                    img = A.tile_img(d, 72)
                     out.append(f'<li><a href="/dogs/{e(d["slug"])}">{img}<span>{e(d["name"])}</span></a></li>')
             return "".join(out)
         groups = []

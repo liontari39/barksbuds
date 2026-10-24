@@ -299,7 +299,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=5">
+<link rel="stylesheet" href="/app.css?v=6">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -510,12 +510,13 @@ It comes from hello@barksbuds.app.</div>
         cards = []
         for d in dogs:
             pid = firsts.get(d["id"])
-            ph = (f'<div class="ph"><img src="/p/{pid}.webp" alt="" loading="lazy"></div>' if pid else
+            ph = (self.card_ph(d, pid) if pid or d.get("pixel_photo_id") else
                   '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg></div>')
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
             cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
-<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div></div></article>""")
+<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div>
+<p class="small" style="margin:10px 0 0"><a href="/me/dogs/{d["id"]}/pixel">{"Remake" if d.get("pixel_photo_id") else "Make"} {e(d["name"])}'s pixel pal</a></p></div></article>""")
         if len(dogs) < A.MAX_DOGS:
             hint = ""
             wl = A.waitlist_dog_name(u.get("waitlist_id"))
@@ -685,7 +686,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0])
+        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.pixel_panel(d)
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
@@ -767,6 +768,27 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         grid = f'<div class="pgrid">{"".join(items)}</div>' if items else ""
         return f"""<div class="panel" id="photos-panel"><h2>Photos</h2><p class="hint">The first photo is the cover on {e(d["name"])}'s page.</p>
 {av_html}{grid}{upload}</div>"""
+
+    def pixel_panel(self, d):
+        """Edit-page panel for the dog's pixel-art sprite."""
+        px, did, nm = d.get("pixel_photo_id"), d["id"], e(d["name"])
+        if not px:
+            return (f'<div class="panel pxpanel" id="pixel-panel"><h2>Pixel pal</h2><div class="pxrow">'
+                    f'<span class="pxempty" aria-hidden="true"><svg class="ico"><use href="#i-paw"/></svg></span><div>'
+                    f'<p class="hint" style="margin-top:0">Turn a photo of {nm} into a little piece of game-style pixel art. '
+                    f'It all happens on your phone or computer, and it takes about a minute.</p>'
+                    f'<a class="btn btn-gold btn-sm" href="/me/dogs/{did}/pixel">Make my pixel pal</a></div></div></div>')
+        on = bool(d.get("pixel_primary"))
+        hint = f"Showing as {nm}&#39;s profile picture." if on else f"Shown on {nm}&#39;s page next to the photo."
+        tog = (f'<form method="post" action="/me/dogs/{did}/pixel/{"photo" if on else "primary"}">{self.csrf_field()}'
+               f'<button class="btn btn-ghost btn-sm" type="submit">{"Use the photo as profile pic" if on else "Use as profile pic"}</button></form>')
+        return (f'<div class="panel pxpanel" id="pixel-panel"><h2>Pixel pal</h2><div class="pxrow">'
+                f'<img class="pxbig" src="/px/{px}-1x.png" alt="{nm}\'s pixel pal" width="128" height="128"><div>'
+                f'<p class="hint" style="margin-top:0">{hint}</p>'
+                f'<div class="pxacts"><a class="btn btn-sm" href="/me/dogs/{did}/pixel">Remake</a>{tog}'
+                f'<a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a></div>'
+                f'<form method="post" action="/me/dogs/{did}/pixel/delete" onsubmit="return confirm(\'Remove the pixel pal?\')">{self.csrf_field()}'
+                f'<button class="linkbtn small" type="submit">Remove pixel pal</button></form></div></div></div>')
 
     def parse_dog(self, f):
         v = dict(name=clean(f.get("name"), 40), breed=clean(f.get("breed"), 60), birthday=f.get("birthday").strip()[:10],
@@ -899,9 +921,19 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         return self.redirect(f"/me/dogs/{d['id']}/edit?m=avatar#photos-panel")
 
     # ------------------------------------------------------------ dogs: public side
+    @staticmethod
+    def card_ph(d, pid, alt=""):
+        """Card image: the pixel pal when it's the avatar (or there's no photo), else the photo with a small sprite badge."""
+        px = d.get("pixel_photo_id")
+        if px and (d.get("pixel_primary") or not pid):
+            return (f'<div class="ph pxph"><img src="/px/{px}-1x.png" alt="{e(alt and alt + ", pixel art")}" loading="lazy"></div>')
+        if pid:
+            badge = f'<img class="pxbadge" src="/px/{px}-1x.png" alt="" width="52" height="52" loading="lazy">' if px else ""
+            return f'<div class="ph"><img src="/p/{pid}.webp" alt="{e(alt)}" loading="lazy">{badge}</div>'
+        return '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>'
+
     def dog_card(self, d, pid):
-        ph = (f'<div class="ph"><img src="/p/{pid}.webp" alt="{e(d["name"])}" loading="lazy"></div>' if pid else
-              '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>')
+        ph = self.card_ph(d, pid, d["name"])
         meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
         wh = where_text(d["town"], d["area"])
         loc = f'<p class="where"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>{e(wh)}</p>' if wh else ""
@@ -969,7 +1001,17 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         alt = f'{d["name"]}, ' + (d["breed"] or "a dog")
         cov = (f'<div class="cover"><img src="/p/{cover}.jpg" alt="{e(alt)}" fetchpriority="high"></div>' if cover else
                '<div class="cover empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>')
-        av = f'<img class="av" src="/p/{avatar}.webp" width="92" height="92" alt="">' if avatar else ""
+        px = d.get("pixel_photo_id")
+        av_photo = f'<img class="av" src="/p/{avatar}.webp" width="92" height="92" alt="{e(d["name"])}"' if avatar else ""
+        av_pixel = f'<img class="av pxav" src="/px/{px}-1x.png" width="92" height="92" alt="{e(d["name"])}, pixel art"' if px else ""
+        show_px = bool(px and (d.get("pixel_primary") or not avatar))
+        if av_photo and av_pixel:  # both: a little Photo / Pixel switch
+            av = (f'<div class="avsw">{av_photo} data-v="photo"{" hidden" if show_px else ""}>{av_pixel} data-v="pixel"{"" if show_px else " hidden"}>'
+                  f'<div class="avtog" role="group" aria-label="Profile picture style">'
+                  f'<button type="button" data-v="photo" aria-pressed="{"false" if show_px else "true"}">Photo</button>'
+                  f'<button type="button" data-v="pixel" aria-pressed="{"true" if show_px else "false"}">Pixel</button></div></div>')
+        else:
+            av = (av_pixel or av_photo) + ">" if (av_pixel or av_photo) else ""
         runs = run_index()
         fav = [runs[r] for r in d["fav_runs"] if r in runs]
         side, main = [], []
@@ -980,6 +1022,14 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                 li.append(f'<li><a href="/runs?q={quote(r["name"])}"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></span>'
                           f'<span>{e(r["name"])}<small>{e(sm)}</small></span></a></li>')
             side.append(f'<div class="panel"><h2>Favorite runs</h2><ul class="runlist">{"".join(li)}</ul></div>')
+        if px:
+            dl = (f'<p style="margin:14px 0 0"><a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a> '
+                  f'<a class="btn btn-sm" href="/me/dogs/{d["id"]}/pixel">Remake</a></p>') if is_owner else ""
+            side.insert(0, f'<div class="panel pxshow"><h2>{e(d["name"])}\'s pixel pal</h2><div class="pxstage">'
+                           f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy"></div>{dl}</div>')
+        elif is_owner:
+            side.insert(0, f'<div class="panel pxshow"><h2>Pixel pal</h2><p class="small">Turn a photo of {e(d["name"])} into game-style pixel art. '
+                           f'Only you can see this box.</p><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/pixel">Make my pixel pal</a></div>')
         if d["play_style"]:
             side.append('<div class="panel"><h2>Play style</h2><ul class="taglist dark">' + "".join(f"<li>{e(t)}</li>" for t in d["play_style"]) + "</ul></div>")
         if d["bio"]:
@@ -1000,7 +1050,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                          f'<a href="{e(d["website"])}" rel="nofollow noopener noreferrer ugc" target="_blank">{e(host)}</a></p>')
         owner_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-user"/></svg>'
                       f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
-        edit = (f'<p style="margin-top:18px"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
+        edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a>'
+                f'<a class="btn btn-ghost btn-sm" href="/me/dogs/{d["id"]}/pixel">{"Remake" if px else "Make"} my pixel pal</a></p>'
                 if is_owner else "")
         hidden_note = ('<div class="wrap" style="padding-top:20px"><p class="formerr">This profile is hidden from the public while our team reviews a report.</p></div>'
                        if d["hidden"] else "")
@@ -1019,6 +1070,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         og = {"title": og_title, "desc": desc, "type": "profile", "alt": f"Photo of {d['name']}",
               "image": self._base() + (f"/p/{cover}.jpg" if cover else "/img/og-image.jpg")}
         og.update(w=photos[0]["width"], h=photos[0]["height"]) if cover else og.update(w=1200, h=630)
+        if px and (d.get("pixel_primary") or not cover):  # share card with the sprite
+            og.update(image=self._base() + f"/px/{px}-og.png", w=1200, h=630, alt=f"{d['name']} as pixel art")
         cta = "/me/dogs/new" if u else self.signin_href("/me/dogs/new")
         body = f"""{hidden_note}<section class="dhero"><div class="wrap">{cov}<div>
 <div class="who">{av}<div><span class="eyebrow" style="margin:0">meet</span><h1 class="dname">{e(d["name"])}</h1></div></div>
@@ -1029,7 +1082,9 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
 <p>Give your dog a profile, pick their favorite runs and meet the regulars.</p><a class="btn btn-gold btn-sm" href="{cta}">Add your dog</a></div></div></div>
 {report}</div></section>
 <dialog class="lb" aria-label="Photo"><button class="x" type="button" aria-label="Close">&times;</button><img alt=""></dialog>"""
-        js = """<script>(function(){var dl=document.querySelector('dialog.lb');if(!dl||!dl.showModal)return;var im=dl.querySelector('img');
+        js = """<script>(function(){var sw=document.querySelector('.avsw');if(sw){sw.querySelectorAll('.avtog button').forEach(function(b){b.addEventListener('click',function(){
+sw.querySelectorAll('img.av').forEach(function(i){i.hidden=i.dataset.v!==b.dataset.v});sw.querySelectorAll('.avtog button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')})})})}})();
+(function(){var dl=document.querySelector('dialog.lb');if(!dl||!dl.showModal)return;var im=dl.querySelector('img');
 document.querySelectorAll('.gallery a').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();im.src=a.dataset.full;im.alt=a.querySelector('img').alt;dl.showModal()})});
 dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.contains('x'))dl.close()})})();</script>"""
         return self.page(og_title, body, index=not d["hidden"], canonical=f"/dogs/{d['slug']}", desc=desc, og=og,

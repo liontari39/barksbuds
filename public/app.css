@@ -361,3 +361,68 @@ footer .bottom p{margin:0}
 .mine{display:flex;gap:8px;align-items:center;font-weight:800}.mine .ico{color:var(--red);width:20px;height:20px}
 .prun{margin-top:10px;font-size:.9rem}.prun a{font-weight:800}
 @media (max-width:640px){.pgrid,.pgrid.sm{grid-template-columns:1fr}.pshore{padding:22px 18px}.pcform{flex-wrap:wrap}}
+/* pixel pals */
+.pxav,.pxph img,.pxbadge,.pxbig,.pxstage img,.pxinline,#pxout{image-rendering:pixelated}
+.dcard .ph{position:relative}
+.dcard .ph.pxph{background:var(--gold-l) repeating-conic-gradient(#FFF1CC 0 25%,transparent 0 50%) 0 0/24px 24px}
+.dcard .ph.pxph img{object-fit:contain;padding:6%}
+.pxbadge,.dcard .ph img.pxbadge,.ph img.pxbadge{object-fit:contain;position:absolute;right:8px;bottom:8px;width:52px;height:52px;background:var(--cream);border:2px solid var(--black);border-radius:12px;padding:2px}
+img.pxav{object-fit:contain!important;background:var(--gold-l)}
+.avsw{display:flex;flex-direction:column;align-items:center;gap:8px}
+.avtog,.pxba,.pxpresets{display:inline-flex;border:2px solid var(--black);border-radius:999px;overflow:hidden;background:#fff}
+.avtog button,.pxba button,.pxpresets button{font:700 .8rem/1 Nunito,system-ui,sans-serif;border:0;background:transparent;color:var(--ink);padding:6px 10px;cursor:pointer}
+.avtog button[aria-pressed=true],.pxba button[aria-pressed=true],.pxpresets button[aria-pressed=true]{background:var(--black);color:#fff}
+.pxpresets button{font-size:.95rem;padding:9px 14px}
+.ownacts{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.pxshow .pxstage{display:grid;place-items:center;background:var(--gold-l) repeating-conic-gradient(#FFF1CC 0 25%,transparent 0 50%) 0 0/24px 24px;border:2px solid var(--black);border-radius:16px;padding:12px}
+.pxshow .pxstage img{width:192px;height:192px}
+.pxpanel .pxrow{display:flex;gap:20px;align-items:flex-start}
+.pxbig{width:128px;height:128px;flex:none;border:2px solid var(--black);border-radius:14px;background:var(--gold-l)}
+.pxempty{width:96px;height:96px;flex:none;display:grid;place-items:center;border:2px dashed var(--gold-d);border-radius:14px;color:var(--gold-d)}
+.pxempty .ico{width:44px;height:44px}
+.pxacts{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.pxinline{display:inline-block;vertical-align:middle;width:40px;height:40px;border-radius:8px;background:var(--gold-l)}
+.stepn{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--red);color:#fff;font-size:.8em;margin-right:6px;vertical-align:.08em}
+.pxpicks{list-style:none;padding:0;margin:0 0 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
+.pxpick{display:block;width:100%;aspect-ratio:1;padding:0;border:2px solid var(--black);border-radius:14px;overflow:hidden;cursor:pointer;background:var(--gold-l);box-shadow:0 4px 0 var(--black);transition:transform .12s}
+.pxpick:hover{transform:translateY(-2px)}
+.pxpick img{width:100%;height:100%;object-fit:cover}
+.pxfile{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.vh-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.vh-file:focus-visible+span,.pxfile label:focus-within{outline:3px solid var(--red)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.pxed{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+.pxtools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.pxtools label{cursor:pointer}
+.pxtools input{position:absolute;opacity:0;width:1px;height:1px}
+.pxtools span{display:inline-flex;align-items:center;gap:6px;font:700 .92rem/1 Nunito,system-ui,sans-serif;border:2px solid var(--black);border-radius:999px;padding:8px 13px;background:#fff}
+.pxtools input:checked+span{background:var(--black);color:#fff}
+.pxtools input:focus-visible+span{outline:3px solid var(--red);outline-offset:2px}
+.pxtools input:disabled+span{opacity:.4;cursor:not-allowed}
+.pxbrush{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-weight:700;font-size:.92rem;white-space:nowrap}
+.pxbrush.off{opacity:.45}
+.pxcanvas{border:2px solid var(--black);border-radius:14px;overflow:hidden;background:#222;line-height:0}
+#pxsrc{width:100%;height:auto;touch-action:none;cursor:crosshair}
+.pxrowbtn{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.pxprev{position:relative;display:grid;justify-items:center;gap:10px;margin-bottom:16px}
+#pxout,#pxbefore{width:100%;max-width:384px;aspect-ratio:1;height:auto;border:2px solid var(--black);border-radius:16px;background:#FFF6E0 repeating-conic-gradient(#F3E6C8 0 25%,transparent 0 50%) 0 0/24px 24px}
+#pxout.solid{background:#fff}
+.pxprev [hidden]{display:none}
+.pxctl{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin:16px 0}
+.pxctl label,.pxctl legend{display:block;font-weight:800;font-size:.9rem;margin-bottom:4px}
+.pxctl select{width:100%;font:inherit;font-size:.95rem;padding:7px 10px;border:2px solid var(--black);border-radius:10px;background:#fff}
+.pxctl input[type=range],.pxbrush input{width:100%;accent-color:var(--red)}
+.pxchecks{display:flex;flex-direction:column;gap:6px;justify-content:center}
+.pxchecks label{font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+.pxchecks input{accent-color:var(--red);width:18px;height:18px}
+.pxsw{grid-column:1/-1;border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pxsw legend{float:left;margin-right:6px}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw>span{display:block;width:34px;height:34px;border-radius:50%;border:2px solid var(--black);cursor:pointer}
+.sw input:checked+span{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--red)}
+.sw input:focus-visible+span{outline:3px solid var(--red);outline-offset:4px}
+.sw-none>span{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/12px 12px}
+.sw-cream>span{background:#FFF8EA}.sw-sunny>span{background:#FFE7A8}.sw-sky>span{background:#CDE8F7}.sw-mint>span{background:#D6F0DE}.sw-rose>span{background:#FBDDD6}
+.pxsave{border-top:2px dashed var(--line);padding-top:14px}
+@media (max-width:920px){.pxed{grid-template-columns:1fr}}
+@media (max-width:640px){.pxctl{grid-template-columns:1fr}.pxpanel .pxrow{flex-direction:column}.pxpicks{grid-template-columns:repeat(3,1fr)}}

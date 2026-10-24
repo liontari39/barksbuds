@@ -101,8 +101,7 @@ def notify_pack_meetup(base, m):
 def dog_tiles(dogs, size=72):
     out = []
     for d in dogs:
-        img = (f'<img src="/p/{d["photo"]}.webp" alt="" loading="lazy" width="{size}" height="{size}">' if d.get("photo") else
-               '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>')
+        img = A.tile_img(d, size)
         out.append(f'<li><a href="/dogs/{e(d["slug"])}">{img}<span>{e(d["name"])}</span></a></li>')
     return "".join(out)
 

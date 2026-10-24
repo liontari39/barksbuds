@@ -85,3 +85,22 @@ Packs are regular groups of dogs and their people (`packs.py` data layer, `packw
 - Emails: join request (to organizers), approved and new pack meetup. They are sent only to addresses in `PACK_EMAIL_ALLOWLIST` (falling back to `MEETUP_EMAIL_ALLOWLIST`). Members can opt out on `/me`, and each email has an unsubscribe link (`/emails/packs`, which supports one-click). Sample packs never send email.
 - Admin (`?key=` ADMIN_KEY): `/admin/packs` hides or deletes packs and removes all sample packs and meetups at launch. `POST /admin/packs/test-email` (`id`, `kind`=request|approved|meetup) sends a "[Test]" email to the pack owner.
 - Sign-in keeps a safe, same-site `next` path. For example, "Host a meetup here" returns the member to the host form with the run preselected.
+
+## Pixel pals
+
+Members can turn a photo of their dog into a crisp pixel-art sprite (`public/pixelpal.js` pipeline, `public/pixelmaker.js` UI, `pixelweb.py` routes). It is free to run: all image work happens in the visitor's browser, with no paid APIs.
+
+- Maker: `/me/dogs/<id>/pixel` (owner only). It's linked as "Make my pixel pal" on the dog's page, the edit page and the dashboard card. Members pick one of the dog's photos or upload one. The photo never leaves the device, and only the finished PNG sprite is uploaded.
+- Background removal: MediaPipe Tasks Vision 1.1.1 with the MagicTouch interactive segmenter (both Apache-2.0, vendored in `public/vendor/mediapipe/` with LICENSE and NOTICE, served gzipped with week-long caching). Members tap the dog to select it and tap again to add missed parts. Keep and erase brushes and a crop box handle the rest. If the model can't load (an old browser without WebAssembly SIMD), the maker switches to these manual tools.
+- Pipeline (`PixelPal.render`, DOM-free and unit-tested in node):
+  1. Tight crop and edge-preserving smoothing.
+  2. Area-average to a 32, 48 or 64 px grid, with a tone remap for very dark or light coats and emphasis on small dark features such as eyes and nose.
+  3. OKLab k-means palette (8–24 colors, plus accent colors for small vivid details like a red tag), with a saturation and contrast boost, light/shadow shading and optional ordered dither.
+  4. Stray-pixel cleanup, a 1-px dark or soft outline and an optional ground shadow.
+  5. A transparent or brand-color backdrop.
+  6. Nearest-neighbor upscale.
+- Presets: Classic (48 px, 10 colors), Retro 8-bit (32 px, 8 colors, dither) and Soft (64 px, 16 colors). The live preview has an after/before toggle.
+- Saving: `POST /me/dogs/<id>/pixel` (CSRF, owner only, 30/hour) accepts only square 16–128 px PNGs up to 200 KB with visible pixels. The server re-encodes the sprite (dropping all metadata) and stores it in the `photos` table as `kind='pixel'`, with `dogs.pixel_photo_id` and `dogs.pixel_primary`. "Use as avatar" makes the sprite the profile picture; the other save button keeps the photo. The edit page can switch between them, download or remove the sprite.
+- Images: `/px/<id>-1x.png` (native size; displayed with `image-rendering: pixelated`), `/px/<id>.png` (≥512 px nearest-neighbor download) and `/px/<id>-og.png` (1200×630 share card, used as og:image when the sprite is the profile picture). Hidden dogs' sprites return 404.
+- Where sprites show: dog cards (as the image, or a small badge), a Photo/Pixel toggle and a "pixel pal" panel on the dog page, and meetup attendee and pack member lists when the sprite is the profile picture.
+- `seed.py` adds Lily's and Maggie's sprites (made with the maker) when they don't have one.

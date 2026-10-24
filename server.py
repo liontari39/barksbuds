@@ -28,6 +28,7 @@ import accounts
 import mailer
 import meetweb
 import packweb
+import pixelweb
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -186,7 +187,8 @@ INDEX_CACHE = {}
 RUNS_PATH = os.path.join(ROOT, "data-seed", "dog_runs_region.json")
 RUNS_CACHE = {}
 GZ_CACHE = {}
-GZ_TYPES = (".js", ".css", ".json", ".webmanifest", ".txt", ".xml")
+GZ_LOCK = threading.Lock()
+GZ_TYPES = (".js", ".mjs", ".css", ".json", ".webmanifest", ".txt", ".xml", ".wasm")
 
 
 def load_runs():
@@ -249,11 +251,12 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
-                      ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8"}
+                      ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8",
+                      ".mjs": "text/javascript", ".wasm": "application/wasm", ".tflite": "application/octet-stream"}
     sys_version = ""
 
     def __init__(self, *a, **k):
@@ -264,9 +267,11 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, SimpleHTTPRe
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
         p = urlsplit(self.path).path
-        if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
+        if p.startswith("/vendor/mediapipe/"):  # pinned third-party build; large, so cache it for a week
+            self.send_header("Cache-Control", "public, max-age=604800")
+        elif p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
-        elif p in ("/runs.js", "/app.css"):
+        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js"):
             self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
 
@@ -290,8 +295,12 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, SimpleHTTPRe
         mt = os.path.getmtime(fp)
         hit = GZ_CACHE.get(fp)
         if not hit or hit[0] != mt:
-            with open(fp, "rb") as f:
-                hit = (mt, gzip.compress(f.read(), 9)); GZ_CACHE[fp] = hit
+            with GZ_LOCK:  # one compression at a time (the 13 MB wasm takes ~0.5 s once, then stays cached)
+                hit = GZ_CACHE.get(fp)
+                if not hit or hit[0] != mt:
+                    with open(fp, "rb") as f:
+                        raw = f.read()
+                    hit = (mt, gzip.compress(raw, 9 if len(raw) < 1_000_000 else 6)); GZ_CACHE[fp] = hit
         ctype = self.guess_type(fp)
         if ctype.startswith(("text/", "application/javascript")) and "charset" not in ctype:
             ctype += "; charset=utf-8"
@@ -370,7 +379,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, SimpleHTTPRe
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -389,7 +398,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, SimpleHTTPRe
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
+        if self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):

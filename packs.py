@@ -256,9 +256,9 @@ def members(pid, status="active"):
     ids = sorted({d for r in rows for d in _dogs(r[2])})
     dogs = {}
     if ids:
-        for did, slug, name, av, uid, hidden in q("SELECT id, slug, name, avatar_photo_id, user_id, hidden FROM dogs WHERE id IN (%s)"
-                                                   % ",".join(str(i) for i in ids)):
-            dogs[did] = dict(id=did, slug=slug, name=name, avatar=av, user_id=uid, hidden=hidden)
+        for did, slug, name, av, uid, hidden, px, pxp in q("SELECT id, slug, name, avatar_photo_id, user_id, hidden, pixel_photo_id, pixel_primary "
+                                                            "FROM dogs WHERE id IN (%s)" % ",".join(str(i) for i in ids)):
+            dogs[did] = dict(id=did, slug=slug, name=name, avatar=av, user_id=uid, hidden=hidden, pixel=px if pxp else None)
         firsts = A.first_photos(ids)
         for d in dogs.values():
             d["photo"] = d["avatar"] or firsts.get(d["id"])
