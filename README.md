@@ -8,6 +8,7 @@ A dependency-light Python server (`server.py`) that serves `public/` and stores 
 
 ## Endpoints
 - `POST /api/waitlist` — JSON `{first_name, email, dog_name, zip?}`; validates, dedupes email case-insensitively.
+- `GET /api/runs` — all dog runs (static data plus approved member suggestions) with an ETag.
 - `GET /healthz` — health check (also pings the database).
 - `GET /admin/export.csv?key=ADMIN_KEY` — download all signups as CSV (404 without the right key).
 - `POST /admin/delete?key=ADMIN_KEY&email=ADDRESS` — remove one signup.
@@ -85,6 +86,23 @@ Packs are regular groups of dogs and their people (`packs.py` data layer, `packw
 - Emails: join request (to organizers), approved and new pack meetup. They are sent only to addresses in `PACK_EMAIL_ALLOWLIST` (falling back to `MEETUP_EMAIL_ALLOWLIST`). Members can opt out on `/me`, and each email has an unsubscribe link (`/emails/packs`, which supports one-click). Sample packs never send email.
 - Admin (`?key=` ADMIN_KEY): `/admin/packs` hides or deletes packs and removes all sample packs and meetups at launch. `POST /admin/packs/test-email` (`id`, `kind`=request|approved|meetup) sends a "[Test]" email to the pack owner.
 - Sign-in keeps a safe, same-site `next` path. For example, "Host a meetup here" returns the member to the host form with the run preselected.
+
+## Suggest a run
+
+Members help grow the dog run map (`runsugg.py` data layer, `runsweb.py` routes, `public/suggest.js`).
+
+- **Where to start:** a "+ Suggest a run" button on `/runs` (signed-out visitors go through sign-in first), a "Know a dog run here?" popup when you tap an empty spot on the map (the pin is prefilled), and "Suggest an edit" and "Report wrong pin" links on every run card.
+- **The form (`/runs/suggest`, sign-in required):** name, park, area and town, then an address and/or a pin you tap and drag on a Leaflet map (or "Use my location"). It also asks fenced, small-dog area and water (yes/no/not sure), surface, hours, notes, an optional photo (resized, EXIF/GPS stripped), a source link and whether to credit you by display name. "Somewhere else in the US" plus a state is allowed. Pins outside the US are rejected, and anything outside NYC, Long Island and Westchester is flagged.
+- **Edits:** `?edit=<run id>` (`&pin=1` for a wrong pin) asks what needs fixing (the pin, some details, closed, something else) and records only the changed fields.
+- **Safety:** CSRF, 5 suggestions per member per day (stored in the DB) plus an IP limit, everything escaped, and a duplicate warning when a pin is within about 150 m of a listed run or a pending suggestion. The warning has to be confirmed before a new run is sent.
+- **Status:** members see their recent suggestions on the form and a status page at `/runs/suggest/s/<id>`, which shows the reason if a suggestion was declined.
+- **Moderation (`/admin/runs?key=ADMIN_KEY`):** the queue shows flags, the pin, the photo and the source.
+  - New runs can be edited before approval, with pin precision `member` (as dropped) or `exact` (confirmed) and optional credit. They go live as `m-<id>` in the `member_runs` table and are merged with the static data in `/api/runs`, `/runs`, the sitemap and meetup/pack run pickers.
+  - Edits show a diff with per-field apply boxes, or "remove from the map" for closed runs.
+  - Rejecting needs a reason.
+  - The "Member changes" table can remove a member run or revert an edit.
+- **Email:** each new suggestion emails `RUN_SUGGEST_EMAIL`, which defaults to the single address on the runs/pack/meetup allowlist. It goes only to addresses on `RUNS_EMAIL_ALLOWLIST` (falling back to `PACK_EMAIL_ALLOWLIST`, then `MEETUP_EMAIL_ALLOWLIST`), and the admin key is never included.
+- There is no geocoding (no paid APIs). A run suggested with only an address goes live without a pin unless the admin adds coordinates.
 
 ## Pixel pals
 

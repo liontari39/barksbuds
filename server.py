@@ -9,7 +9,8 @@ Admin (requires ADMIN_KEY env var; disabled when unset):
   POST /admin/delete?key=KEY&email=ADDRESS   remove one signup (e.g. a test row or an opt-out)
 Dog run finder:
   GET  /runs       map + list page (public/runs.html, rendered with the run list for SEO)
-  GET  /api/runs   dog run dataset from data-seed/dog_runs_region.json (cached, ETag, gzip)
+  GET  /api/runs   dog run dataset from data-seed/dog_runs_region.json plus approved member suggestions (cached, ETag, gzip)
+  /runs/suggest, /admin/runs?key=KEY  member run suggestions + moderation queue (runsweb.py / runsugg.py)
 Member accounts + dog profiles (accounts.py = data, webapp.py = pages):
   /signin, /auth, /signout          passwordless sign-in by emailed magic link
   /me, /me/profile, /me/dogs/...    owner dashboard, owner profile, dog create/edit/delete, photo uploads
@@ -29,6 +30,8 @@ import mailer
 import meetweb
 import packweb
 import pixelweb
+import runsugg
+import runsweb
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -191,13 +194,23 @@ GZ_LOCK = threading.Lock()
 GZ_TYPES = (".js", ".mjs", ".css", ".json", ".webmanifest", ".txt", ".xml", ".wasm")
 
 
+STATIC_RUNS = []
+
+
+def runs_changed():
+    """Approved member suggestions changed: rebuild the merged run list and the pages that embed it."""
+    RUNS_CACHE.clear(); INDEX_CACHE.clear()
+
+
 def load_runs():
-    """Dog run dataset, read once and kept in memory with precomputed JSON, gzip and ETag."""
+    """Dog run dataset (static file + approved member runs/edits), kept in memory with precomputed JSON, gzip and ETag."""
     if "data" not in RUNS_CACHE:
-        with open(RUNS_PATH, encoding="utf-8") as f:
-            runs = json.load(f)
+        if not STATIC_RUNS:
+            with open(RUNS_PATH, encoding="utf-8") as f:
+                STATIC_RUNS.extend(json.load(f))
+        runs = runsugg.merge(STATIC_RUNS) if STORE is not None else list(STATIC_RUNS)
         body = json.dumps({"count": len(runs), "updated": max((r.get("last_checked") or "") for r in runs),
-                           "note": "pin_precision says how each map pin was placed: exact (mapped run), described (official location description), park-wide (whole park is off-leash) or approximate (still being verified). Blank fields are not yet confirmed.",
+                           "note": "pin_precision says how each map pin was placed: exact (mapped run or confirmed by BarksBuds), described (official location description), park-wide (whole park is off-leash), member (dropped by the BarksBuds member who suggested it) or approximate (still being verified). Blank fields are not yet confirmed.",
                            "runs": runs}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         RUNS_CACHE.update(data=runs, body=body, gz=gzip.compress(body, 9),
                           etag='"%s"' % hashlib.sha256(body).hexdigest()[:20])
@@ -221,7 +234,8 @@ def render_runs(host_url):
         for r in main:
             pl = {"@type": "Place", "name": r["name"],
                   "address": {"@type": "PostalAddress", "addressLocality": r.get("town_or_neighborhood") or "",
-                              "addressRegion": "NY", "addressCountry": "US"}}
+                              "addressRegion": r["county"] if re.fullmatch(r"[A-Z]{2}", r.get("county") or "") else "NY",
+                              "addressCountry": "US"}}
             if r.get("address"):
                 pl["address"]["streetAddress"] = r["address"]
             if isinstance(r.get("lat"), (int, float)):
@@ -251,7 +265,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -271,7 +285,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
             self.send_header("Cache-Control", "public, max-age=604800")
         elif p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
-        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js"):
+        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js", "/suggest.js"):
             self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
 
@@ -349,7 +363,10 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
         if u.path in ("/runs", "/runs/", "/runs.html"):
             self._app_reset()
             body, _gz = render_runs(self._host_url())
-            body = body.replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "runs").encode())
+            u = self.user()
+            body = (body.replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(u, "runs").encode())
+                    .replace(b"{{SUGGEST_CTA}}", (b'<a class="btn btn-ghost btn-sm sg-cta" href="/runs/suggest" data-signed-in="1">+ Suggest a run</a>' if u else
+                                                  b'<a class="btn btn-ghost btn-sm sg-cta" href="/signin?next=%2Fruns%2Fsuggest">+ Suggest a run</a>')))
             return self._send_maybe_gz(body, gzip.compress(body, 6), "text/html; charset=utf-8",
                                        {"Cache-Control": "no-cache", "Vary": "Accept-Encoding, Cookie"})
         if u.path == "/sitemap.xml":
@@ -381,7 +398,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -400,7 +417,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
+        if self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):
@@ -515,6 +532,10 @@ def init_app():
     global STORE
     STORE = make_store()
     accounts.init_schema(STORE)
+    runsugg.init_schema(STORE)
+    if runs_changed not in runsugg.CHANGED:
+        runsugg.CHANGED.append(runs_changed)
+    runs_changed()
     webapp.RUNS = lambda: load_runs()["data"]
     webapp.SITE_URL, webapp.ADMIN_KEY = SITE_URL, ADMIN_KEY
     return STORE

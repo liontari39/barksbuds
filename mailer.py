@@ -367,6 +367,8 @@ def send_signin_async(base, link, email, minutes=20):
 MEETUP_ALLOW = {a.strip().lower() for a in os.environ.get("MEETUP_EMAIL_ALLOWLIST", "").split(",") if a.strip()}
 # Pack emails use PACK_EMAIL_ALLOWLIST when set, otherwise the meetup allowlist (so testing limits cover both).
 PACK_ALLOW = {a.strip().lower() for a in os.environ.get("PACK_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or MEETUP_ALLOW
+# Run-suggestion notices (to the site owner) use RUNS_EMAIL_ALLOWLIST when set, otherwise the pack/meetup allowlist.
+RUNS_ALLOW = {a.strip().lower() for a in os.environ.get("RUNS_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or PACK_ALLOW
 
 
 def and_list(xs):
@@ -382,6 +384,9 @@ def send_async(to, subject, body, text, unsub, tag):
         return False
     if tag.startswith("meetup") and MEETUP_ALLOW and to.strip().lower() not in MEETUP_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on MEETUP_EMAIL_ALLOWLIST)", flush=True)
+        return False
+    if tag.startswith("runs") and RUNS_ALLOW and to.strip().lower() not in RUNS_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on the runs email allowlist)", flush=True)
         return False
     if tag.startswith("pack") and PACK_ALLOW and to.strip().lower() not in PACK_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on the pack email allowlist)", flush=True)

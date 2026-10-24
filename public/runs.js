@@ -39,9 +39,9 @@
 
   function destination(r) {
     // Verified pins (exact run or an officially described spot) route best; otherwise a written address/park name beats an approximate pin.
-    if (hasLL(r) && (r.pin_precision === "exact" || r.pin_precision === "described" || /^Centroid of NYC Open Data/.test(r.coord_source || ""))) return r.lat + "," + r.lng;
+    if (hasLL(r) && (r.pin_precision === "exact" || r.pin_precision === "described" || /^Centroid of NYC Open Data/.test(r.coord_source || "") || (r.pin_precision === "member" && !r.address))) return r.lat + "," + r.lng;
     if (r.address) return r.address;
-    return [r.park || r.name, r.town_or_neighborhood, "NY"].filter(Boolean).join(", ");
+    return [r.park || r.name, r.town_or_neighborhood, /^[A-Z]{2}$/.test(r.county || "") ? r.county : "NY"].filter(Boolean).join(", ");
   }
   function sources(r) {
     var out = [];
@@ -80,6 +80,7 @@
   function tags(r) {
     var t = [];
     t.push(isOff(r) ? '<li class="o">Off-leash area, set hours</li>' : '<li class="t">' + esc(r.county) + "</li>");
+    if (r.member_suggested) t.push("<li>Added by members</li>");
     if (r.fenced === "yes") t.push('<li class="y">Fenced</li>');
     else if (r.fenced === "no") t.push('<li class="n">Not fenced</li>');
     if (r.small_dog_area === "yes") t.push('<li class="y">Small-dog area</li>');
@@ -105,6 +106,7 @@
       '<ul class="tags" aria-label="Highlights">' + tags(r) + "</ul>" +
       '<div class="mu-slot">' + meetups(r) + "</div>" +
       '<details class="more" id="more-' + esc(r.id) + '"><summary><svg class="ico chev" aria-hidden="true"><use href="#i-chev"/></svg>Details, hours &amp; directions</summary><div class="body">' +
+      (r.photo && /^\/runs\/photo\/\d+\.jpg$/.test(r.photo) ? '<img class="ph" src="' + esc(r.photo) + '" alt="Photo of ' + esc(r.name) + '" loading="lazy">' : "") +
       '<dl class="amen">' + amen + "</dl>" +
       '<dl class="facts">' + facts + "</dl>" +
       '<div class="actions">' +
@@ -112,8 +114,10 @@
       '<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr=' + dest + '">Apple Maps<span class="sr-only"> directions to ' + esc(r.name) + ' (opens in new tab)</span></a>' +
       "</div>" +
       (srcs.length ? '<p class="src">Source: ' + srcs.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener nofollow">' + esc(host(u)) + "</a>"; }).join(", ") + (r.last_checked ? " · checked " + esc(r.last_checked) : "") + "</p>" : "") +
-      (hasLL(r) ? (r.pin_precision === "approximate" ? '<p class="src">Map pin is approximate. We\'re confirming the exact spot in the park.</p>' : r.pin_precision === "park-wide" ? '<p class="src">Off-leash use covers most of the park, so the pin marks the park.</p>' : "") : '<p class="src">This run isn\'t pinned on the map yet. We\'re confirming its exact location.</p>') +
-      '<p class="help"><svg class="ico" aria-hidden="true"><use href="#i-edit"/></svg><span>Know this run? <a href="/#join">Help us fill in details</a> by joining the waitlist.</span></p>' +
+      (r.added_by ? '<p class="src">Suggested by ' + esc(r.added_by) + ", a BarksBuds member. Thank you!</p>" : "") +
+      (r.edited_by ? '<p class="src">Updated with help from ' + esc(r.edited_by) + ".</p>" : "") +
+      (hasLL(r) ? (r.pin_precision === "member" ? '<p class="src">Map pin placed by the member who suggested it.</p>' : r.pin_precision === "approximate" ? '<p class="src">Map pin is approximate. We\'re confirming the exact spot in the park.</p>' : r.pin_precision === "park-wide" ? '<p class="src">Off-leash use covers most of the park, so the pin marks the park.</p>' : "") : '<p class="src">This run isn\'t pinned on the map yet. We\'re confirming its exact location.</p>') +
+      '<p class="help"><svg class="ico" aria-hidden="true"><use href="#i-edit"/></svg><span>Know this run? <a href="/runs/suggest?edit=' + encodeURIComponent(r.id) + '">Suggest an edit</a> <span class="sep">·</span> <a href="/runs/suggest?edit=' + encodeURIComponent(r.id) + '&amp;pin=1">Report wrong pin</a></span></p>' +
       "</div></details></li>";
   }
 
@@ -159,7 +163,7 @@
     countEl.innerHTML = list.length
       ? "<b>" + nRuns + "</b> dog run" + (nRuns === 1 ? "" : "s") + (state.off ? " + <b>" + nOff + "</b> off-leash area" + (nOff === 1 ? "" : "s") : "") + (onMap < list.length ? " · " + onMap + " on map" : "") + (state.me ? " · nearest first" : "")
       : "No matches";
-    listEl.innerHTML = list.length ? list.map(card).join("") : '<li class="empty">No dog runs match those filters. <button class="linkbtn" type="button" data-reset>Clear filters</button></li>';
+    listEl.innerHTML = list.length ? list.map(card).join("") : '<li class="empty">No dog runs match those filters. <button class="linkbtn" type="button" data-reset>Clear filters</button><br>Know one we\'re missing? <a href="/runs/suggest">Suggest a run</a></li>';
     var dirty = state.q || state.region || state.county || state.off || Object.keys(state.f).some(function (k) { return state.f[k]; });
     resetEl.hidden = !dirty;
     $("#lg-off").hidden = !state.off;
@@ -293,6 +297,13 @@
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
     map.on("focus click", function () { map.scrollWheelZoom.enable(); });
+    // Tap an empty spot: offer to suggest a run there (the pin is prefilled on the form).
+    map.on("click", function (ev) {
+      var z = map.getZoom(), href = "/runs/suggest?lat=" + ev.latlng.lat.toFixed(6) + "&lng=" + ev.latlng.lng.toFixed(6);
+      L.popup({ className: "sgpopw" }).setLatLng(ev.latlng).setContent(z >= 13
+        ? '<div class="sgpop"><b>Know a dog run here?</b><br><a href="' + href + '">Suggest a run at this spot</a></div>'
+        : '<div class="sgpop"><b>Know a dog run we\'re missing?</b><br>Zoom in and tap its spot, or <a href="/runs/suggest">suggest a run</a>.</div>').openOn(map);
+    });
     map.on("mouseout", function () { map.scrollWheelZoom.disable(); });
     layer = (L.markerClusterGroup ? L.markerClusterGroup({
       showCoverageOnHover: false, maxClusterRadius: SMALL ? 40 : 50, disableClusteringAtZoom: 14, spiderfyOnMaxZoom: true, chunkedLoading: true,

@@ -22,7 +22,7 @@ def setUpModule():
     global PORT, HTTPD
     st = server.init_app()
     if os.environ.get("TEST_DATABASE_URL"):  # clean slate for a reused test database
-        for t in ("pack_comments", "pack_posts", "pack_photos", "pack_members", "packs", "meetup_comments", "rsvps", "meetups", "reports", "photos", "dogs", "sessions", "login_tokens", "users"):
+        for t in ("run_suggestions", "member_runs", "pack_comments", "pack_posts", "pack_photos", "pack_members", "packs", "meetup_comments", "rsvps", "meetups", "reports", "photos", "dogs", "sessions", "login_tokens", "users"):
             st.q(f"DELETE FROM {t}")
     HTTPD = server.ThreadingHTTPServer(("127.0.0.1", 0), server.H)
     PORT = HTTPD.server_address[1]

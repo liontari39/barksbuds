@@ -59,7 +59,7 @@ a{color:var(--red);text-underline-offset:3px}
 .field>label,.field>.lab{display:block;font-weight:800;font-size:.95rem;margin-bottom:6px;color:var(--black)}
 .field .opt{color:var(--muted);font-weight:600}
 .field .help{display:block;color:var(--muted);font-size:.86rem;margin-top:5px}
-input[type=text],input[type=email],input[type=date],input[type=number],input[type=search],select,textarea{width:100%;font:inherit;font-size:1.02rem;padding:12px 14px;border-radius:14px;border:2px solid #D9CBAA;background:#FFFDF8;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+input[type=text],input[type=email],input[type=date],input[type=number],input[type=search],input[type=url],select,textarea{width:100%;font:inherit;font-size:1.02rem;padding:12px 14px;border-radius:14px;border:2px solid #D9CBAA;background:#FFFDF8;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 textarea{min-height:110px;resize:vertical;line-height:1.55}
 select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:18px;padding-right:40px}
 input:hover,select:hover,textarea:hover{border-color:#BFAE88}
