@@ -24,7 +24,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-002",
@@ -51,7 +52,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-003",
@@ -78,7 +80,8 @@
     "notes": "Open Data polygon is labeled \"Forest Park Dog Run\"; matched to K9 Korral by location; small-dog area per BringFido listing (third party)",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-004",
@@ -105,7 +108,8 @@
     "notes": "Small-dog area, water and shade per BringFido listing (third party)",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | https://www.bringfido.com/attraction/parks/city/freeport_ny_us/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-005",
@@ -132,7 +136,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-006",
@@ -159,7 +164,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-007",
@@ -186,7 +192,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-008",
@@ -213,7 +220,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-009",
@@ -240,7 +248,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-010",
@@ -267,7 +276,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-011",
@@ -294,7 +304,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-012",
@@ -321,7 +332,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-013",
@@ -348,7 +360,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-014",
@@ -375,7 +388,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "q-015",
@@ -388,7 +402,7 @@
     "address": "78th St between 25th & 30th Aves, Queens, NY",
     "lat": 40.762158,
     "lng": -73.889949,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Centroid of NYC Parks property Q393A (1.5-acre LaGuardia Landing Lights strip on 78th St between 25th & 30th Aves, which NYC Parks lists as the dog run location)",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -402,7 +416,8 @@
     "notes": "Listed by NYC Parks but not in the NYC Open Data dog-run polygons; pin is the park centroid",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "q-016",
@@ -413,9 +428,9 @@
     "type": "Fenced dog run",
     "operator": "NYC Parks",
     "address": "Beach 90th St & Shore Front Pkwy, Queens, NY",
-    "lat": 40.588601,
-    "lng": -73.776133,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.584428,
+    "lng": -73.81223,
+    "coord_source": "NYC Parks location \"Beach 90th St and Shore Front Pkwy\" (OSM street intersection), placed on the fenced sand enclosure visible in aerial imagery just south of it",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -429,7 +444,8 @@
     "notes": "Listed by NYC Parks but not in the NYC Open Data dog-run polygons; pin is the park centroid",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "q-017",
@@ -456,7 +472,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-018",
@@ -483,7 +500,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-019",
@@ -510,7 +528,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-020",
@@ -537,7 +556,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-021",
@@ -564,7 +584,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-022",
@@ -591,7 +612,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-023",
@@ -618,7 +640,8 @@
     "notes": "Dogs not permitted in playgrounds, fountains, natural areas/trails, ballfields or athletic courts",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-024",
@@ -645,7 +668,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-025",
@@ -658,7 +682,7 @@
     "address": "Grand Central Pkwy, 81st–82nd Sts & Astoria Blvd, 23rd–30th Aves, 77th–81st Sts, Queens, NY",
     "lat": 40.764015,
     "lng": -73.888345,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property Q393D; NYC Parks designates the Landing Lights strips along Grand Central Pkwy, 77th–82nd Sts and 23rd–30th Aves as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -672,7 +696,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "q-026",
@@ -699,7 +724,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-027",
@@ -726,7 +752,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-028",
@@ -753,7 +780,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-029",
@@ -780,7 +808,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-030",
@@ -791,9 +820,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Almeda Ave between Beach 51st & Beach 54th Sts, Queens, NY",
-    "lat": 40.603053,
-    "lng": -73.780758,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.598095,
+    "lng": -73.783456,
+    "coord_source": "NYC Parks off-leash location \"Almeda Ave between Beach 51st & Beach 54th Sts\" (OSM street geometry), placed inside the park (NYC Parks property Q371)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -807,7 +836,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "q-031",
@@ -834,7 +864,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "q-032",
@@ -845,9 +876,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Sitting area at 68th Rd & Yellowstone Blvd, Queens, NY",
-    "lat": 40.726265,
-    "lng": -73.847518,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.725907,
+    "lng": -73.847975,
+    "coord_source": "NYC Parks off-leash location \"sitting area at 68th Rd & Yellowstone Blvd\" (OSM street geometry), placed inside the park (NYC Parks property Q425)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -861,7 +892,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "n-001",
@@ -872,9 +904,9 @@
     "type": "Fenced dog run",
     "operator": "Nassau County",
     "address": "2 Marjorie Ln, East Rockaway, NY 11518",
-    "lat": 40.633192,
-    "lng": -73.662312,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"2 Marjorie Ln, East Rockaway, NY 11518\" (address point; approximate, verify pin)",
+    "lat": 40.629495,
+    "lng": -73.66102,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w590566252 (https://www.openstreetmap.org/way/590566252), inside Bay Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -888,7 +920,8 @@
     "notes": "6-ft fence; young trees planted for shade",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-002",
@@ -899,9 +932,9 @@
     "type": "Fenced dog run",
     "operator": "Nassau County",
     "address": "Merrick Rd east of Wantagh Ave, Seaford, NY",
-    "lat": 40.65981,
-    "lng": -73.506066,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Cedar Creek Park, Seaford, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.657122,
+    "lng": -73.504411,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w699104922 (https://www.openstreetmap.org/way/699104922), inside Cedar Creek Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "30 lb",
@@ -915,7 +948,8 @@
     "notes": "Double-gated entries; small trees for shade",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-003",
@@ -926,9 +960,9 @@
     "type": "Fenced dog run",
     "operator": "Nassau County",
     "address": "1 King Rd, Wantagh, NY 11793",
-    "lat": 40.643592,
-    "lng": -73.514045,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"1 King Rd, Wantagh, NY 11793\" (address point; approximate, verify pin)",
+    "lat": 40.649283,
+    "lng": -73.513798,
+    "coord_source": "OpenStreetMap leisure=dog_park features w658960184 and w658960185 (adjacent runs inside Wantagh Park); pin between them",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -942,7 +976,8 @@
     "notes": "About 1/4 acre; small dog pool; small trees for shade",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-004",
@@ -969,7 +1004,8 @@
     "notes": "About 1–1.5 acres; shade structures",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-005",
@@ -980,9 +1016,9 @@
     "type": "Fenced dog run",
     "operator": "Nassau County",
     "address": "1303 Round Swamp Rd, Old Bethpage, NY 11804",
-    "lat": 40.770299,
-    "lng": -73.443911,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"1303 Round Swamp Rd, Old Bethpage, NY 11804\" (address point; approximate, verify pin)",
+    "lat": 40.775177,
+    "lng": -73.447072,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w977037087 (https://www.openstreetmap.org/way/977037087), inside Old Bethpage Village Restoration, Dog Run; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -996,7 +1032,8 @@
     "notes": "Hours conflict: LI-DOG lists Wed–Sun 10am–5pm; water from rainwater collection system",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-006",
@@ -1007,9 +1044,9 @@
     "type": "Fenced dog run",
     "operator": "Nassau County",
     "address": "500 Searingtown Rd, Roslyn, NY 11576",
-    "lat": 40.795655,
-    "lng": -73.66851,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"500 Searingtown Rd, Roslyn, NY 11576\" (address point; approximate, verify pin)",
+    "lat": 40.786059,
+    "lng": -73.662943,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1174460996 (https://www.openstreetmap.org/way/1174460996), inside Christopher Morley Park Dog Run, Christopher Morley Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "no",
     "small_dog_weight_limit": "",
@@ -1023,7 +1060,8 @@
     "notes": "About 1/4 acre, 5-ft chain-link, double gate",
     "source_url": "https://www.nassaucountyny.gov/3501/Dog-Runs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-007",
@@ -1050,7 +1088,8 @@
     "notes": "5,000 sq ft; double-gated",
     "source_url": "https://www.hempsteadny.gov/739/Dog-Parks",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-008",
@@ -1061,9 +1100,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Hempstead",
     "address": "2600 Newbridge Rd, Bellmore, NY 11710",
-    "lat": 40.653828,
-    "lng": -73.535605,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"2600 Newbridge Rd, Bellmore, NY 11710\" (address point; approximate, verify pin)",
+    "lat": 40.650129,
+    "lng": -73.534159,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1408268414 (https://www.openstreetmap.org/way/1408268414), inside Newbridge Road Park, Newbridge Road Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1077,7 +1116,8 @@
     "notes": "14,025 sq ft; umbrellas over picnic tables",
     "source_url": "https://www.hempsteadny.gov/739/Dog-Parks",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-009",
@@ -1088,9 +1128,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Hempstead",
     "address": "880 Lido Blvd, Lido Beach, NY 11561",
-    "lat": 40.590362,
-    "lng": -73.603847,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Nickerson Beach Park, Lido Beach, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.589722,
+    "lng": -73.604454,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w242172235 (https://www.openstreetmap.org/way/242172235), inside Nickerson Beach Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "no",
     "small_dog_weight_limit": "",
@@ -1104,7 +1144,8 @@
     "notes": "All sizes together; double gates; some canopy shade",
     "source_url": "https://www.hempsteadny.gov/739/Dog-Parks",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-010",
@@ -1131,7 +1172,8 @@
     "notes": "7,500 sq ft; double gates",
     "source_url": "https://www.hempsteadny.gov/739/Dog-Parks",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-011",
@@ -1142,9 +1184,9 @@
     "type": "Dog run",
     "operator": "Village of Valley Stream",
     "address": "160 Verona Pl, Valley Stream, NY 11582",
-    "lat": "",
-    "lng": "",
-    "coord_source": "",
+    "lat": 40.662842,
+    "lng": -73.708098,
+    "coord_source": "Placed behind Valley Stream Village Hall (123 S Central Ave, OSM w499280492) beside the LIRR tracks, per the village description \"behind the Village Hall Complex, adjacent to the railroad tracks\"; enclosure not confirmed on imagery",
     "fenced": "",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "30 lb",
@@ -1155,10 +1197,11 @@
     "residency_permit_rules": "Members only; key-fob access; register at Valley Stream Village Hall",
     "fees": "Annual: $22 Village residents, $60 Central HS District residents, $125 Town of Hempstead residents, plus one-time $10 key fob",
     "hours": "7am to dusk",
-    "notes": "Shade shelters; LI-DOG lists older fees",
+    "notes": "Shade shelters; LI-DOG lists older fees; village page: behind the Village Hall Complex (123 S Central Ave), adjacent to the railroad tracks",
     "source_url": "https://valleystreamny.gov/dogs",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-012",
@@ -1169,9 +1212,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Oyster Bay",
     "address": "95 Clocks Blvd (Clocks Blvd & E Pine St), Massapequa, NY 11758",
-    "lat": 40.683073,
-    "lng": -73.427576,
-    "coord_source": "US Census geocoder match for \"95 Clocks Blvd (Clocks Blvd & E Pine St), Massapequa, NY 11758\" (address point; approximate, verify pin)",
+    "lat": 40.683837,
+    "lng": -73.426464,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w463491566 (https://www.openstreetmap.org/way/463491566), inside Town of Oyster Bay Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "25 lb",
@@ -1185,7 +1228,8 @@
     "notes": "About 1 acre; 8-ft wrought-iron fence; shade trees and structures",
     "source_url": "https://oysterbaytown.com/departments/parks/dog-parks/",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-013",
@@ -1196,9 +1240,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Oyster Bay",
     "address": "365 Bayville Ave, Bayville, NY 11709",
-    "lat": 40.908655,
-    "lng": -73.542506,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"365 Bayville Ave, Bayville, NY 11709\" (address point; approximate, verify pin)",
+    "lat": 40.911313,
+    "lng": -73.535755,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1062460552 (https://www.openstreetmap.org/way/1062460552), inside Centre Island Beach Park, Centre Island Beach Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1212,7 +1256,8 @@
     "notes": "Dogs not permitted on the beach; ADA compliant; LI-DOG lists 455 Bayville Ave",
     "source_url": "https://oysterbaytown.com/departments/parks/dog-parks/",
     "source_url_2": "https://lidog.org/nassau-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-014",
@@ -1239,7 +1284,8 @@
     "notes": "Shade structure",
     "source_url": "https://lidog.org/nassau-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-015",
@@ -1266,7 +1312,8 @@
     "notes": "Bring your own water",
     "source_url": "https://lidog.org/nassau-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-016",
@@ -1277,9 +1324,9 @@
     "type": "Fenced dog run",
     "operator": "City of Glen Cove",
     "address": "12 E Leech Cir, Glen Cove, NY 11542",
-    "lat": 40.857991,
-    "lng": -73.624482,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"12 E Leech Cir, Glen Cove, NY 11542\" (address point; approximate, verify pin)",
+    "lat": 40.856485,
+    "lng": -73.62515,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1080048782 (https://www.openstreetmap.org/way/1080048782), inside Dennis Brian Murray Park, Dennis Brian Murray Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "25 lb",
@@ -1293,7 +1340,8 @@
     "notes": "Double-gated entry; awnings and trees for shade",
     "source_url": "https://lidog.org/nassau-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-017",
@@ -1304,9 +1352,9 @@
     "type": "Dog run",
     "operator": "Village of East Hills",
     "address": "Harbor Hills Rd, East Hills, NY 11577",
-    "lat": 40.796712,
-    "lng": -73.62864,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"East Hills Park, East Hills, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.797778,
+    "lng": -73.627991,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1044341190 (https://www.openstreetmap.org/way/1044341190), inside The Park at East Hills; matched by park name and location",
     "fenced": "",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -1320,7 +1368,8 @@
     "notes": "",
     "source_url": "https://lidog.org/nassau-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-018",
@@ -1331,9 +1380,9 @@
     "type": "Fenced dog run",
     "operator": "Great Neck Park District",
     "address": "Colonial Rd, Great Neck, NY 11021",
-    "lat": 40.790582,
-    "lng": -73.710197,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Great Neck Park District Dog Park, Nassau County, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.790569,
+    "lng": -73.710371,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1103874010 (https://www.openstreetmap.org/way/1103874010), inside Great Neck Park DIstrict Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1347,7 +1396,8 @@
     "notes": "3.02 acres; separate large and small dog pens; gazebo, obstacle course, restrooms",
     "source_url": "https://www.gnparksny.gov/374/Dog-Park",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "n-019",
@@ -1374,7 +1424,8 @@
     "notes": "Official page gives no street number",
     "source_url": "https://manorhaven.gov/dog-park/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-020",
@@ -1385,9 +1436,9 @@
     "type": "Dog run",
     "operator": "City of Long Beach",
     "address": "Park Place (east of Posh Pets Rescue), Long Beach, NY 11561",
-    "lat": "",
-    "lng": "",
-    "coord_source": "",
+    "lat": 40.593414,
+    "lng": -73.66081,
+    "coord_source": "OpenStreetMap Nominatim location of Park Place, Long Beach (street-level; the temporary site is on Park Place)",
     "fenced": "",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -1401,7 +1452,8 @@
     "notes": "Temporary site while the original dog park by the Recreation Center is closed for bayfront construction",
     "source_url": "https://www.longbeachny.gov/index.asp?DE=F6F4484C-5D02-4E7A-B52E-202A3EDF3C14&SEC=615B1CB4-ECAB-41E0-BAFC-DDF8D85CD0E6",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "n-021",
@@ -1428,7 +1480,8 @@
     "notes": "Opened July 2022; agility equipment and small beach area; amenity details from BringFido (third party)",
     "source_url": "https://bronx.news12.com/cow-meadow-park-welcomes-new-dog-facility-for-pups-big-and-small",
     "source_url_2": "https://www.freeportny.gov/925/Cow-Meadow-Park | https://www.bringfido.com/attraction/parks/city/freeport_ny_us/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-001",
@@ -1455,7 +1508,8 @@
     "notes": "Opened June 2021; 6-ft fence, double gates; under trees at north end of parking lot",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-002",
@@ -1482,7 +1536,8 @@
     "notes": "Not wheelchair accessible",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-003",
@@ -1493,9 +1548,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "Veterans Memorial Hwy, Hauppauge, NY 11788",
-    "lat": 40.835711,
-    "lng": -73.223242,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Blydenburgh County Park, Hauppauge, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.834692,
+    "lng": -73.220543,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w961081146 (https://www.openstreetmap.org/way/961081146), inside Blydenburgh County Park, Dog Run; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1509,7 +1564,8 @@
     "notes": "1.8 acres",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-004",
@@ -1520,9 +1576,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "250 Cherry Ave, West Sayville, NY 11796",
-    "lat": 40.741164,
-    "lng": -73.095638,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"250 Cherry Ave, West Sayville, NY 11796\" (address point; approximate, verify pin)",
+    "lat": 40.742291,
+    "lng": -73.0974,
+    "coord_source": "OpenStreetMap feature w498649084 (https://www.openstreetmap.org/way/498649084) named \"West Sayville Dog Park\"",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1536,7 +1592,8 @@
     "notes": "1.5 acres; 4-ft chain-link; bring your own bags; dogs not allowed on adjacent soccer fields",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-005",
@@ -1547,9 +1604,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "Montauk Hwy, Bay Shore, NY 11706",
-    "lat": 40.696618,
-    "lng": -73.274766,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Gardiner County Park, West Bay Shore, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.699663,
+    "lng": -73.277484,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1081023746 (https://www.openstreetmap.org/way/1081023746), inside Gardiner County Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1563,7 +1620,8 @@
     "notes": "About 1.5 acres; small, large and agility areas; 4-ft fence; trees left for shade",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/latest-news/gardiner-dog-park-now-open/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-006",
@@ -1574,9 +1632,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "259 Sweet Hollow Rd, Melville, NY 11747",
-    "lat": 40.805931,
-    "lng": -73.431,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"West Hills County Park, Melville, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.800464,
+    "lng": -73.420793,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w960095078 (https://www.openstreetmap.org/way/960095078), inside West Hills Large Dog Run, West Hills County Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "no",
     "small_dog_weight_limit": "",
@@ -1590,7 +1648,8 @@
     "notes": "1.75 acres; 4-ft chain-link; separate small-dog park nearby on Highhold Dr",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-007",
@@ -1601,9 +1660,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "3-7 Highhold Dr, Huntington, NY 11743",
-    "lat": 40.805931,
-    "lng": -73.431,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"West Hills County Park, Huntington, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.812537,
+    "lng": -73.437174,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w960095077 (https://www.openstreetmap.org/way/960095077), inside West Hills Small Dog Run, West Hills County Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "25 lb (small dogs only)",
@@ -1617,7 +1676,8 @@
     "notes": "1/3 acre; small dogs only",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-008",
@@ -1628,9 +1688,9 @@
     "type": "Fenced dog run",
     "operator": "Suffolk County Parks",
     "address": "2958 Montauk Hwy, Brookhaven, NY 11719",
-    "lat": 40.801202,
-    "lng": -72.887533,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"2958 Montauk Hwy, Brookhaven, NY 11719\" (address point; approximate, verify pin)",
+    "lat": 40.800128,
+    "lng": -72.88967,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w321398662 (https://www.openstreetmap.org/way/321398662), inside Robinson Duck Farm County Park Dog Run Area, Robinson Duck Farm County Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "25 lb",
@@ -1644,7 +1704,8 @@
     "notes": "2.6 acres; livestock fencing; bring water and bags",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-009",
@@ -1671,7 +1732,8 @@
     "notes": "May close Mar 1–Jun 30 for nesting birds; caution: broken glass reported",
     "source_url": "https://www.suffolkcountyny.gov/Departments/Parks/Activities-and-Attractions/Dog-Parks",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-010",
@@ -1698,7 +1760,8 @@
     "notes": "About 1 acre; water fountain is just outside, by the ball field",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-011",
@@ -1708,10 +1771,10 @@
     "county": "Suffolk",
     "type": "Fenced dog run",
     "operator": "Town of Riverhead",
-    "address": "Route 25, Calverton, NY 11933",
-    "lat": "",
-    "lng": "",
-    "coord_source": "",
+    "address": "Veterans Memorial Park, 5789 Middle Country Rd (Route 25), Calverton, NY 11933",
+    "lat": 40.918594,
+    "lng": -72.819953,
+    "coord_source": "Centroid of Veterans Memorial Park, Calverton (OSM w978841220), which contains Isaac Dog Park; run itself not mapped",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1725,7 +1788,8 @@
     "notes": "About 1 acre",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-012",
@@ -1752,7 +1816,8 @@
     "notes": "About 2/3 acre; shade pavilion; the Town's only off-leash run",
     "source_url": "https://www.huntingtonny.gov/dogs",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-013",
@@ -1763,9 +1828,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Brookhaven",
     "address": "1075 Middle Country Rd, Middle Island, NY 11953",
-    "lat": 40.885154,
-    "lng": -72.933869,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"1075 Middle Country Rd, Middle Island, NY 11953\" (address point; approximate, verify pin)",
+    "lat": 40.880727,
+    "lng": -72.933719,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w971475678 (https://www.openstreetmap.org/way/971475678), inside Artist Lake Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "30 lb",
@@ -1779,7 +1844,8 @@
     "notes": "4 acres",
     "source_url": "https://www.brookhavenny.gov/DocumentCenter/View/1193/Pooch-Pass-Rules-Regulations-and-Application-PDF",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-014",
@@ -1790,9 +1856,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Brookhaven",
     "address": "West side of Boyle Rd (across from Donna Ct), Selden, NY 11784",
-    "lat": 40.870648,
-    "lng": -73.051062,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Selden Dog Park, Selden, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.870511,
+    "lng": -73.051031,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w970512154 (https://www.openstreetmap.org/way/970512154), inside Selden Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "25 lb",
@@ -1806,7 +1872,8 @@
     "notes": "1.3 acres",
     "source_url": "https://www.brookhavenny.gov/DocumentCenter/View/1193/Pooch-Pass-Rules-Regulations-and-Application-PDF",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-015",
@@ -1833,7 +1900,8 @@
     "notes": "Double entrances",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "https://www.smithtownny.gov/Facilities/Facility/Details/Charles-Toner-Park-28",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-016",
@@ -1844,9 +1912,9 @@
     "type": "Dog run",
     "operator": "Town of Babylon",
     "address": "Baylawn Ave & Kerrigan Rd, Copiague, NY 11726",
-    "lat": 40.657639,
-    "lng": -73.396202,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Tanner Park, Copiague, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.659509,
+    "lng": -73.394952,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1164701524 (https://www.openstreetmap.org/way/1164701524), inside Tanner Park; matched by park name and location",
     "fenced": "",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -1860,7 +1928,8 @@
     "notes": "",
     "source_url": "https://lidog.org/suffolk-county-dog-park-listing/tanner-park-dog-park/",
     "source_url_2": "https://lidog.org/suffolk-county-dog-parks/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "s-017",
@@ -1887,7 +1956,8 @@
     "notes": "About 1 acre; double gates; village plans to relocate the park (not yet moved as of last check)",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-018",
@@ -1914,7 +1984,8 @@
     "notes": "LI-DOG listing text appears copied from another park; amenities unverified",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-019",
@@ -1924,10 +1995,10 @@
     "county": "Suffolk",
     "type": "Fenced dog run",
     "operator": "Town of East Hampton",
-    "address": "Three Mile Harbor-Hog Creek Rd (between Wipple Rd & Manor Ln), East Hampton, NY 11937",
-    "lat": "",
-    "lng": "",
-    "coord_source": "",
+    "address": "Springs Park, 396 Three Mile Harbor-Hog Creek Rd, East Hampton, NY 11937",
+    "lat": 41.021626,
+    "lng": -72.165696,
+    "coord_source": "Centroid of Springs Park, East Hampton (OSM w967436361, 396 Three Mile Harbor-Hog Creek Rd), which contains the off-leash area",
     "fenced": "yes",
     "small_dog_area": "no",
     "small_dog_weight_limit": "",
@@ -1941,7 +2012,8 @@
     "notes": "20 acres with trails; 6-ft livestock fencing (very small dogs may fit through)",
     "source_url": "https://lidog.org/suffolk-county-dog-parks/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "s-020",
@@ -1968,7 +2040,8 @@
     "notes": "Opened May 2025; two fenced areas with ramps and jumps",
     "source_url": "https://suffolktimes.timesreview.com/2025/05/new-dog-park-in-laurel-is-open-for-business/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "x-001",
@@ -1979,9 +2052,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Unionport & Sagamore on Bronx Park East to 233rd Street, Bronx, NY",
-    "lat": 40.869426,
-    "lng": -73.868283,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.871608,
+    "lng": -73.871041,
+    "coord_source": "Point inside NYC Parks property X004 (nearest point inside the park to its centroid; exact location within the park not published; approximate, verify pin)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -1995,7 +2068,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "x-002",
@@ -2022,7 +2096,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "x-003",
@@ -2035,7 +2110,7 @@
     "address": "",
     "lat": 40.838586,
     "lng": -73.894896,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property X010; NYC Parks designates all areas of the park except playgrounds and signed areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2049,7 +2124,8 @@
     "notes": "Except for playgrounds and other areas where dogs are expressly prohibited via signage, all areas of the park are off-leash during designated hours.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "x-004",
@@ -2076,7 +2152,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-005",
@@ -2103,7 +2180,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-006",
@@ -2130,7 +2208,8 @@
     "notes": "Location: Center of the park, just north of the ballfields which would line up with around 155th Street.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-007",
@@ -2141,9 +2220,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Kappock Street and Independence Avenue, Bronx, NY",
-    "lat": 40.881331,
-    "lng": -73.919966,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.881081,
+    "lng": -73.919335,
+    "coord_source": "NYC Parks off-leash location \"Kappock St and Independence Ave\" (OSM street geometry), placed inside the park (NYC Parks property X080)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2157,7 +2236,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-008",
@@ -2184,7 +2264,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "x-009",
@@ -2195,9 +2276,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Middletown Road & Stadium Avenue, northwest of parking lot., Bronx, NY",
-    "lat": 40.868113,
-    "lng": -73.80418,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.848376,
+    "lng": -73.819224,
+    "coord_source": "NYC Parks note: about 100 yards east of where Watt Ave and Middletown Rd merge at the Middletown Rd parking-lot entrance (OSM street geometry), inside Pelham Bay Park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2211,7 +2292,8 @@
     "notes": "The dog run at Pelham Bay Park is close to Watt Avenue and Middletown Road. Both streets merge at the entrance to the parking lot on Middletown Road. The dog run is about 100 yards east of that point. Please download our map of permitted on-leash dog areas",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve | http://nycgovparks.org/parks/X039/map/pelhambay_dogonleasharea.pdf",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-010",
@@ -2238,7 +2320,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-011",
@@ -2251,7 +2334,7 @@
     "address": "",
     "lat": 40.845272,
     "lng": -73.895245,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property X010A; NYC Parks designates all areas of the park except playgrounds and signed areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2265,7 +2348,8 @@
     "notes": "Except for playgrounds and other areas where dogs are expressly prohibited via signage, all areas of the park are off-leash during designated hours.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "x-012",
@@ -2292,7 +2376,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | https://vancortlandt.org/visit/things-to-see-and-do/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-013",
@@ -2319,7 +2404,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | https://vancortlandt.org/visit/things-to-see-and-do/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-014",
@@ -2346,7 +2432,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-001",
@@ -2359,7 +2446,7 @@
     "address": "Surf Avenue, Sea Breeze Avenue, West 5th Street, Ocean Parkway, Brooklyn, NY",
     "lat": 40.57473,
     "lng": -73.973529,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B080; NYC Parks designates the park bounded by Surf Ave, Sea Breeze Ave, W 5th St and Ocean Pkwy as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2373,7 +2460,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-002",
@@ -2386,7 +2474,7 @@
     "address": "",
     "lat": 40.652515,
     "lng": -73.892503,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B247; NYC Parks designates all areas except the playground and ballfields as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2400,7 +2488,8 @@
     "notes": "All areas excluding the playground and ballfields",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-003",
@@ -2427,7 +2516,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-004",
@@ -2440,7 +2530,7 @@
     "address": "Cadman Plaza Park, Cadman Plaza West & East & Prospect Street, Brooklyn, NY",
     "lat": 40.698378,
     "lng": -73.990558,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B113A; NYC Parks designates Cadman Plaza Park, Cadman Plaza West & East & Prospect St as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2454,7 +2544,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-005",
@@ -2467,7 +2558,7 @@
     "address": "",
     "lat": 40.629977,
     "lng": -73.891832,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B018; NYC Parks designates all areas except the playground, ballfields and Natural Areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2481,7 +2572,8 @@
     "notes": "All areas excluding the playground, ballfields, and Natural Areas.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-006",
@@ -2508,7 +2600,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-007",
@@ -2535,7 +2628,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-008",
@@ -2546,9 +2640,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Cropsey Avenue, Bay 8th Street, and Poly Place, Brooklyn, NY",
-    "lat": 40.61128,
-    "lng": -74.018906,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.606878,
+    "lng": -74.016446,
+    "coord_source": "NYC Parks off-leash location \"Cropsey Ave, Bay 8th St and Poly Pl\" (OSM street geometry), placed inside the park (NYC Parks property B028)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2562,7 +2656,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-009",
@@ -2575,7 +2670,7 @@
     "address": "",
     "lat": 40.691525,
     "lng": -73.975511,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B032; NYC Parks designates all areas except playgrounds, tennis courts and signed lawns as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2589,7 +2684,8 @@
     "notes": "All areas excluding the playgrounds, tennis courts, and lawns with posted signs.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-010",
@@ -2602,7 +2698,7 @@
     "address": "East 4th Street, Avenue L, and McDonald Avenue, Brooklyn, NY",
     "lat": 40.618726,
     "lng": -73.972905,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B372; NYC Parks designates the park bounded by E 4th St, Ave L and McDonald Ave as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2616,7 +2712,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-011",
@@ -2643,7 +2740,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "b-012",
@@ -2670,7 +2768,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "b-013",
@@ -2697,7 +2796,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-014",
@@ -2724,7 +2824,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-015",
@@ -2751,7 +2852,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-016",
@@ -2762,9 +2864,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "4th Avenue and 101st Street, Brooklyn, NY",
-    "lat": 40.610912,
-    "lng": -74.034087,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.611596,
+    "lng": -74.034259,
+    "coord_source": "NYC Parks off-leash location \"4th Ave and 101st St\" (OSM street geometry), placed inside the park (NYC Parks property B035)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2778,7 +2880,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-017",
@@ -2789,9 +2892,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Neptune Avenue between West 24th Street & Bayview Avenue, Coney Island Creek, Brooklyn, NY",
-    "lat": 40.579178,
-    "lng": -73.995916,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.578229,
+    "lng": -73.994715,
+    "coord_source": "NYC Parks off-leash location \"Neptune Ave between W 24th St & Bayview Ave\" (OSM street geometry), placed inside the park (NYC Parks property B129)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2805,7 +2908,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-018",
@@ -2816,9 +2920,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "67th Street between 6th Avenue and 7th Avenue, Brooklyn, NY",
-    "lat": 40.633342,
-    "lng": -74.015963,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.633843,
+    "lng": -74.016952,
+    "coord_source": "NYC Parks off-leash location \"67th St between 6th and 7th Aves\" (OSM street geometry), placed inside the park (NYC Parks property B052)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2832,7 +2936,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-019",
@@ -2843,9 +2948,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Eastern Parkway between Buffalo and Rochester avenues, Brooklyn, NY",
-    "lat": 40.666787,
-    "lng": -73.926926,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.667965,
+    "lng": -73.927019,
+    "coord_source": "NYC Parks off-leash location \"Eastern Pkwy between Buffalo and Rochester Aves\" (OSM street geometry), placed inside the park (NYC Parks property B054)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2859,7 +2964,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-020",
@@ -2870,9 +2976,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Union Turnpike and Metropolitan Avenue, Brooklyn, NY",
-    "lat": 40.714393,
-    "lng": -73.952102,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.714431,
+    "lng": -73.95214,
+    "coord_source": "Inside NYC Parks property B223S; NYC Parks designates throughout this small park as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2886,7 +2992,8 @@
     "notes": "Off-leash dogs are permitted throughout this small park",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-021",
@@ -2913,7 +3020,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-022",
@@ -2926,7 +3034,7 @@
     "address": "",
     "lat": 40.596876,
     "lng": -73.920302,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B057; NYC Parks designates all areas except playgrounds, ballfields and Natural Areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -2940,7 +3048,8 @@
     "notes": "All areas excluding the playgrounds, ballfields, and Natural Areas.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-023",
@@ -2967,7 +3076,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-024",
@@ -2994,7 +3104,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-025",
@@ -3005,9 +3116,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Fort Hamilton Parkway, 7th Avenue, 73rd Street to 75th Street, Brooklyn, NY",
-    "lat": 40.626457,
-    "lng": -74.016936,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.627088,
+    "lng": -74.016328,
+    "coord_source": "NYC Parks off-leash location \"Fort Hamilton Pkwy, 7th Ave, 73rd St to 75th St\" (OSM street geometry), placed inside the park (NYC Parks property B060)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3021,7 +3132,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-026",
@@ -3032,9 +3144,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Eastern Parkway between Washington and Underhill avenues, Brooklyn, NY",
-    "lat": 40.671578,
-    "lng": -73.966644,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.67196,
+    "lng": -73.965748,
+    "coord_source": "NYC Parks off-leash location \"Eastern Pkwy between Washington and Underhill Aves\" (OSM street geometry), placed inside the park (NYC Parks property B159)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3048,7 +3160,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-027",
@@ -3075,7 +3188,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-028",
@@ -3102,7 +3216,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-029",
@@ -3113,9 +3228,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Middle & Upper Long Meadow (excludes ballfield area in the Lower Long Meadow), Nethermead, Peninsula., Brooklyn, NY",
-    "lat": 40.661356,
-    "lng": -73.969685,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.66486,
+    "lng": -73.972173,
+    "coord_source": "Long Meadow in Prospect Park (OSM w870594544), the main NYC Parks off-leash zone (Middle & Upper Long Meadow; also the Nethermead and Peninsula)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3129,7 +3244,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "b-030",
@@ -3156,7 +3272,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-031",
@@ -3169,7 +3286,7 @@
     "address": "Sunset Park Oval lawn area only, center of park 44th Street, 41st Street, 6th Avenue, Brooklyn, NY",
     "lat": 40.647976,
     "lng": -74.003743,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Point inside Sunset Park (NYC Parks property B087); NYC Parks says the off-leash area is the Oval lawn in the center of the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3183,7 +3300,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "m-001",
@@ -3210,7 +3328,8 @@
     "notes": "Pin is the centroid of 2 run polygons: Carl Schurz Park Large Dog Run, Carl Schurz Park Small Dog Run",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-002",
@@ -3223,7 +3342,7 @@
     "address": "",
     "lat": 40.782484,
     "lng": -73.965558,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property M010; NYC Parks designates 23 dog-friendly areas throughout the park (Central Park Conservancy) as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3237,7 +3356,8 @@
     "notes": "No enclosed dog runs; 23 dog-friendly areas (see Central Park Conservancy's Dog-Friendly Areas guide)",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve | http://assets.centralparknyc.org/pdfs/about/Dog_Owner_Guide_to_Central_Park.pdf",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "m-003",
@@ -3248,9 +3368,9 @@
     "type": "Fenced dog run",
     "operator": "Hudson River Park Trust",
     "address": "11th Ave and 22nd Street, Manhattan, NY",
-    "lat": 40.751177,
-    "lng": -74.010434,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Chelsea Waterside Park, New York\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.748703,
+    "lng": -74.007474,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w617506891 (https://www.openstreetmap.org/way/617506891), inside Chelsea Waterside Park, Chelsea Waterside Dog Park, Hudson River Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3264,7 +3384,8 @@
     "notes": "Administered by the Hudson River Park Trust; Listed by NYC Parks but not in the NYC Open Data dog-run polygons",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | http://www.hudsonriverpark.org/explore/dogruncw.html",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-004",
@@ -3291,7 +3412,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-005",
@@ -3318,7 +3440,8 @@
     "notes": "Pin is the centroid of 2 run polygons: DeWitt Clinton Park Large Dog Run, DeWitt Clinton Park Small Dog Run",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-006",
@@ -3345,7 +3468,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-007",
@@ -3372,7 +3496,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://www.ftdog.org/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-008",
@@ -3399,7 +3524,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-009",
@@ -3426,7 +3552,8 @@
     "notes": "More Information",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://www.highbridgek9club.org/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-010",
@@ -3437,9 +3564,9 @@
     "type": "Fenced dog run",
     "operator": "Hudson River Park Trust",
     "address": "Leroy Street at the northeast corner of Pier 40, Manhattan, NY",
-    "lat": 40.729457,
-    "lng": -74.01275,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Pier 40, New York\" (pier feature; run is at the northeast corner of Pier 40; approximate, verify pin)",
+    "lat": 40.730361,
+    "lng": -74.010938,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w244980064 (https://www.openstreetmap.org/way/244980064), inside Leroy Street Dog Run, Hudson River Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3453,7 +3580,8 @@
     "notes": "Administered by the Hudson River Park Trust; Listed by NYC Parks but not in the NYC Open Data dog-run polygons",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | http://www.hudsonriverpark.org/explore/dogrunleroyst.html",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-011",
@@ -3480,7 +3608,8 @@
     "notes": "Administered by the Hudson River Park Trust",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://www.hudsonriverpark.org/explore/dogrunpier84.html",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-012",
@@ -3507,7 +3636,8 @@
     "notes": "Seaman Avenue & Isham Street, just north of the flagpole. More information at www.inwoof.com",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://www.inwoof.com/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-013",
@@ -3534,7 +3664,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-014",
@@ -3561,7 +3692,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-015",
@@ -3588,7 +3720,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-016",
@@ -3615,7 +3748,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-017",
@@ -3642,7 +3776,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-018",
@@ -3653,9 +3788,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "",
-    "lat": 40.795753,
-    "lng": -73.921724,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.79427,
+    "lng": -73.916983,
+    "coord_source": "Inside NYC Parks property M104; NYC Parks designates all areas except signed areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -3669,7 +3804,8 @@
     "notes": "Except for areas where dogs are expressly prohibited via signage, all areas of the park are off-leash during designated hours.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "m-019",
@@ -3696,7 +3832,8 @@
     "notes": "72nd St run has upper and lower levels",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://nycgovparks.org/sub_your_park/vt_riverside_park/images/dog_owners_guide_riverside_park.pdf",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-020",
@@ -3723,7 +3860,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://nycgovparks.org/sub_your_park/vt_riverside_park/images/dog_owners_guide_riverside_park.pdf",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-021",
@@ -3750,7 +3888,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | http://nycgovparks.org/sub_your_park/vt_riverside_park/images/dog_owners_guide_riverside_park.pdf",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-022",
@@ -3777,7 +3916,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-023",
@@ -3804,7 +3944,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-024",
@@ -3831,7 +3972,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-025",
@@ -3858,7 +4000,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-026",
@@ -3885,7 +4028,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-027",
@@ -3912,7 +4056,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-028",
@@ -3939,7 +4084,8 @@
     "notes": "Pin is the centroid of 2 run polygons: Robin Kovary Run for Small Dogs, Washington Square Park Dog Run",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "r-001",
@@ -3966,7 +4112,8 @@
     "notes": "Field at the end of the trail bordered by Prospect Avenue, Sailors Snug Harbor Cemetery, and the pond.",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "r-002",
@@ -3993,7 +4140,8 @@
     "notes": "Lawn area, mid-park right side",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "r-003",
@@ -4004,9 +4152,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Brookside Avenue between Alpine Court & Kingsley Avenue (lawn area), Staten Island, NY",
-    "lat": 40.619462,
-    "lng": -74.113744,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.618401,
+    "lng": -74.114305,
+    "coord_source": "NYC Parks off-leash location \"open field above picnic area near Royal Oak Rd & Rice Ave (a second area is on Brookside Ave)\" (OSM street geometry), placed inside the park (NYC Parks property R005)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4020,7 +4168,8 @@
     "notes": "Open field above picnic area near Royal Oak Rd. & Rice Ave.; NYC Parks lists two off-leash zones in this park",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "r-004",
@@ -4031,9 +4180,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "",
-    "lat": 40.613127,
-    "lng": -74.113811,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.613393,
+    "lng": -74.113673,
+    "coord_source": "NYC Parks off-leash location \"lawn area, corner of Victory Blvd & Little Clove Rd\" (OSM street geometry), placed inside the park (NYC Parks property R070)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4047,7 +4196,8 @@
     "notes": "Lawn area, corner of Victory Boulevard & Little Clove Road",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "r-005",
@@ -4074,7 +4224,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "r-006",
@@ -4101,7 +4252,8 @@
     "notes": "Lawn area beyond ballfield",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "r-007",
@@ -4112,9 +4264,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Bottom of Seguine Avenue at Johnston Terrace; just below playground, Staten Island, NY",
-    "lat": 40.512991,
-    "lng": -74.201797,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.512749,
+    "lng": -74.197361,
+    "coord_source": "NYC Parks off-leash location \"bottom of Seguine Ave at Johnston Terrace, just below playground\" (OSM street geometry), placed inside the park (NYC Parks property R079)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4128,7 +4280,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "r-008",
@@ -4155,7 +4308,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "r-009",
@@ -4168,7 +4322,7 @@
     "address": "",
     "lat": 40.578899,
     "lng": -74.074099,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property R046; NYC Parks designates the beach sand (Labor Day to Memorial Day) as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4182,7 +4336,8 @@
     "notes": "On sand only after Labor Day and before Memorial Day (NYC Parks)",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "r-010",
@@ -4193,9 +4348,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "",
-    "lat": 40.600694,
-    "lng": -74.156961,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.602526,
+    "lng": -74.156363,
+    "coord_source": "Willowbrook Park Archery Range field (OSM w35821262), the NYC Parks off-leash location \"Archery Range Field\"",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4209,7 +4364,8 @@
     "notes": "Archery Range Field",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "r-011",
@@ -4236,7 +4392,8 @@
     "notes": "Location: Run is to left of Cornelia Avenue",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-032",
@@ -4249,7 +4406,7 @@
     "address": "King Street, Richards Street, and Verona Street at Dwight and Pioneer Streets, Brooklyn, NY",
     "lat": 40.677666,
     "lng": -74.008461,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B077; NYC Parks designates the park bounded by King, Richards, Verona, Dwight and Pioneer Sts as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4263,7 +4420,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "m-029",
@@ -4290,7 +4448,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-030",
@@ -4317,7 +4476,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "r-012",
@@ -4328,9 +4488,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Between Amboy Road and Hylan Boulevard, Staten Island, NY",
-    "lat": 40.57063,
-    "lng": -74.15023,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.532344,
+    "lng": -74.19974,
+    "coord_source": "Point inside NYC Parks property R065 (Amundsen Trail runs between Amboy Rd and Hylan Blvd; exact stretch not verified)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4344,7 +4504,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "r-013",
@@ -4371,7 +4532,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-033",
@@ -4384,7 +4546,7 @@
     "address": "St. Mark's Ave., Park Pl. bet. Brooklyn Ave. and Kingston Ave., Brooklyn, NY",
     "lat": 40.673839,
     "lng": -73.943392,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property B012; NYC Parks designates all areas except playgrounds and signed areas as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4398,7 +4560,8 @@
     "notes": "Except for playgrounds and other areas where dogs are expressly prohibited via signage, all areas of the park are off-leash during designated hours",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "b-034",
@@ -4425,7 +4588,8 @@
     "notes": "Pin is the centroid of 2 run polygons: Cooper Park Small Dog Run, Cooper Park Large Dog Run",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-031",
@@ -4436,9 +4600,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Dyckman Street, near the Hudson River, Manhattan, NY",
-    "lat": 40.872574,
-    "lng": -73.925441,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.872746,
+    "lng": -73.930342,
+    "coord_source": "Dyckman Fields (OSM w1235548021), the NYC Parks off-leash location \"Dyckman Street, near the Hudson River\"",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4452,7 +4616,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-015",
@@ -4479,7 +4644,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "r-014",
@@ -4506,7 +4672,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-016",
@@ -4533,7 +4700,8 @@
     "notes": "Large and small dog runs; Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-017",
@@ -4560,7 +4728,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv | https://vancortlandt.org/visit/things-to-see-and-do/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-035",
@@ -4587,7 +4756,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-018",
@@ -4614,7 +4784,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-019",
@@ -4641,7 +4812,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-020",
@@ -4668,7 +4840,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-021",
@@ -4695,7 +4868,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-036",
@@ -4722,7 +4896,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-037",
@@ -4749,7 +4924,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-032",
@@ -4776,7 +4952,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-033",
@@ -4803,7 +4980,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-034",
@@ -4830,7 +5008,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-035",
@@ -4857,7 +5036,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-036",
@@ -4884,7 +5064,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "r-015",
@@ -4911,7 +5092,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-022",
@@ -4922,9 +5104,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Tiffany Street and Viele Avenue, Bronx, NY",
-    "lat": 40.805,
-    "lng": -73.888363,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.805844,
+    "lng": -73.888927,
+    "coord_source": "NYC Parks off-leash location \"Tiffany St and Viele Ave\" (OSM street geometry), placed inside the park (NYC Parks property X307)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4938,7 +5120,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-023",
@@ -4951,7 +5134,7 @@
     "address": "Along Bronx River between Bruckner Blvd & Westchester Avenue, Bronx, NY",
     "lat": 40.825732,
     "lng": -73.885086,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property X305; NYC Parks designates along the Bronx River between Bruckner Blvd & Westchester Ave as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4965,7 +5148,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "x-024",
@@ -4976,9 +5160,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Schley Avenue between Brush and Balcom Avenues, Bronx, NY",
-    "lat": 40.812382,
-    "lng": -73.833292,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.81857,
+    "lng": -73.83259,
+    "coord_source": "NYC Parks off-leash location \"Schley Ave between Brush and Balcom Aves\" (OSM street geometry), placed inside the park (NYC Parks property X126)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -4992,7 +5176,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-025",
@@ -5003,9 +5188,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Gunther and Hammersley Avenues, Bronx, NY",
-    "lat": 40.873684,
-    "lng": -73.839168,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.872786,
+    "lng": -73.83983,
+    "coord_source": "NYC Parks off-leash location \"Gunther and Hammersley Aves\" (OSM street geometry), placed inside the park (NYC Parks property X196)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5019,7 +5204,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-026",
@@ -5030,9 +5216,9 @@
     "type": "Off-leash area (unfenced, set hours)",
     "operator": "NYC Parks",
     "address": "Baychester Avenue and East 233 Street, Bronx, NY",
-    "lat": 40.887061,
-    "lng": -73.838086,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.888169,
+    "lng": -73.841443,
+    "coord_source": "NYC Parks off-leash location \"Baychester Ave and E 233 St\" (OSM street geometry), placed inside the park (NYC Parks property X046)",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5046,7 +5232,8 @@
     "notes": "",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-027",
@@ -5073,7 +5260,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-038",
@@ -5100,7 +5288,8 @@
     "notes": "Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://data.cityofnewyork.us/d/hxx3-bwgv",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "x-028",
@@ -5111,9 +5300,9 @@
     "type": "Fenced dog run",
     "operator": "NYC Parks",
     "address": "Sedgwick Avenue between Webb Ave and West Fordham Road, Bronx, NY",
-    "lat": 40.863301,
-    "lng": -73.906227,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.863093,
+    "lng": -73.908476,
+    "coord_source": "NYC Parks location \"Sedgwick Ave between Webb Ave and W Fordham Rd\" (OSM street intersections), placed just inside Devoe Park (property X013)",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5127,7 +5316,8 @@
     "notes": "Listed by NYC Parks but not in the NYC Open Data dog-run polygons; pin is the park centroid",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "x-029",
@@ -5138,9 +5328,9 @@
     "type": "Fenced dog run",
     "operator": "NYC Parks",
     "address": "Jerome Ave., E. 193 St., Creston Ave., E, Bronx, NY",
-    "lat": 40.865161,
-    "lng": -73.897792,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "lat": 40.866088,
+    "lng": -73.897092,
+    "coord_source": "NYC Parks location \"Jerome Ave, E 193 St, Creston Ave\" (OSM street intersections), placed just inside St. James Park (property X044) on the E 193rd St side",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5154,7 +5344,8 @@
     "notes": "Listed by NYC Parks but not in the NYC Open Data dog-run polygons; pin is the park centroid",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "described"
   },
   {
     "id": "r-016",
@@ -5167,7 +5358,7 @@
     "address": "Richmond Ter., Tysen St., Kissel Ave., Henderson Ave., Staten Island, NY",
     "lat": 40.642694,
     "lng": -74.103242,
-    "coord_source": "Centroid of NYC Parks property polygon (whole park, not the run or off-leash zone itself; approximate, verify pin)",
+    "coord_source": "Inside NYC Parks property R116; NYC Parks designates the grounds bounded by Richmond Ter, Tysen St, Kissel Ave and Henderson Ave as off-leash during courtesy hours, so the pin marks the park",
     "fenced": "no",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5181,7 +5372,8 @@
     "notes": "Pets must be leashed 9am–10pm; only service animals inside buildings; Listed as wheelchair accessible by NYC Parks",
     "source_url": "https://www.nycgovparks.org/bigapps/DPR_DogRuns_001.json",
     "source_url_2": "https://www.nycgovparks.org/facilities/dogareas | https://data.cityofnewyork.us/d/enfh-gkve",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "park-wide"
   },
   {
     "id": "m-037",
@@ -5208,7 +5400,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-039",
@@ -5235,7 +5428,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "b-040",
@@ -5262,7 +5456,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-038",
@@ -5289,7 +5484,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-039",
@@ -5316,7 +5512,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list (no NYC Parks property number; operator not confirmed)",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-040",
@@ -5343,7 +5540,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list (no NYC Parks property number; operator not confirmed)",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-041",
@@ -5370,7 +5568,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "m-042",
@@ -5397,7 +5596,8 @@
     "notes": "In NYC Open Data dog-run polygons but not in the NYC Parks dog-run list",
     "source_url": "https://data.cityofnewyork.us/d/hxx3-bwgv",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-001",
@@ -5408,9 +5608,9 @@
     "type": "Fenced dog run",
     "operator": "City of White Plains",
     "address": "Brockway Pl, White Plains, NY 10601",
-    "lat": 41.039678,
-    "lng": -73.755126,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Delfino Park, White Plains\" (centroid of adjacent Delfino Park; the dog park is opposite its rear; approximate, verify pin)",
+    "lat": 41.037206,
+    "lng": -73.754097,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w660392978 (https://www.openstreetmap.org/way/660392978), inside Bark Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5424,7 +5624,8 @@
     "notes": "On the Main St extension off Brockway Pl, opposite the rear of Delfino Park; separate area for small or young dogs; bag dispensers",
     "source_url": "https://www.cityofwhiteplains.com/facilities/facility/details/Bark-Dog-Park-43/",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-002",
@@ -5451,7 +5652,8 @@
     "notes": "Off-street parking entrance off Battle Ave",
     "source_url": "https://www.cityofwhiteplains.com/Facilities/Facility/Details/Battle-Hill-Park-30",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-003",
@@ -5478,7 +5680,8 @@
     "notes": "About 1 acre at the end of the parking lot; small-dog and all-dogs areas; leashed wooded trail; water fountain bought by the Friends group; some listings give 850 Dobbs Ferry Rd",
     "source_url": "https://greenburghny.com/facilities/facility/details/East-Rumbrook-Dog-Park-8",
     "source_url_2": "https://www.greenburghny.com/DocumentCenter/View/5998/Dog-Park-Rules-revised-2",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-004",
@@ -5489,9 +5692,9 @@
     "type": "Fenced dog run",
     "operator": "City of New Rochelle",
     "address": "300 Broadfield Rd, New Rochelle, NY 10804",
-    "lat": 40.957492,
-    "lng": -73.783842,
-    "coord_source": "US Census geocoder match for \"300 Broadfield Rd, New Rochelle, NY 10804\" (address point; approximate, verify pin)",
+    "lat": 40.956639,
+    "lng": -73.781771,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1426125022 (https://www.openstreetmap.org/way/1426125022), inside Ward Acres Park, Paws Place Dog Park at Ward Acres; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5505,7 +5708,8 @@
     "notes": "Two fenced sections, one for small, elderly or shy dogs",
     "source_url": "https://www.newrochelleny.gov/297/Ward-Acres",
     "source_url_2": "https://www.wardacresconservancy.org/paws-place",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-005",
@@ -5516,9 +5720,9 @@
     "type": "Fenced dog run",
     "operator": "City of Yonkers",
     "address": "Ravine Ave, Yonkers, NY 10701",
-    "lat": 40.952569,
-    "lng": -73.896994,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Trevor Park, Yonkers, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 40.951938,
+    "lng": -73.896479,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1539070359 (https://www.openstreetmap.org/way/1539070359), inside Trevor Park, Trevor Park Dog Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5532,7 +5736,8 @@
     "notes": "Opened June 2026; separate small and large dog areas, play mounds and logs, dog water fountain, waste bags",
     "source_url": "https://yonkerstimes.com/new-dog-park-at-trevor-park-in-yonkers/",
     "source_url_2": "https://www.yonkersny.gov/Facilities/Facility/Details/Trevor-Park-amp-Playground-75",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-006",
@@ -5559,7 +5764,8 @@
     "notes": "At the top of the South Lawn next to Whole Foods; clean-up bags at the entrance; privately run, open to guests",
     "source_url": "https://ridgehill.com/amenities/dog-park/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-007",
@@ -5586,7 +5792,8 @@
     "notes": "Big-dog, small-dog and training areas; capacity 25 dogs (large), 15 (small), 5 (time-out area); restrooms in Abendroth Park",
     "source_url": "https://www.portchesterny.gov/Facilities/Facility/Details/Dog-Park-2",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-008",
@@ -5613,7 +5820,8 @@
     "notes": "Opened May 2023",
     "source_url": "https://www.villageofmamaroneckny.gov/448/Bark-Park-Dog-Park",
     "source_url_2": "https://www.villageofmamaroneckny.gov/DocumentCenter/View/2334/Bark-Park-at-Harbor-Island-Park-Information-Sheet-PDF",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-009",
@@ -5640,7 +5848,8 @@
     "notes": "Near Crystal St and Louis M. Klein Middle School; details from third-party listings, not confirmed on an official page",
     "source_url": "https://suburbs101.com/dog-parks-westchester-ny/",
     "source_url_2": "https://petfriendlysites.com/pet-friendly-web-directory/harrison-dog-park/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-010",
@@ -5651,9 +5860,9 @@
     "type": "Fenced dog run",
     "operator": "Village of Elmsford",
     "address": "Winthrop Ave & N Evarts Ave, Elmsford, NY 10523",
-    "lat": "",
-    "lng": "",
-    "coord_source": "",
+    "lat": 41.056388,
+    "lng": -73.813059,
+    "coord_source": "Winthrop Ave & N Evarts Ave intersection, Elmsford (OSM street geometry); run is at this corner but enclosure not mapped",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5667,7 +5876,8 @@
     "notes": "Limited parking; details from third-party listings, not confirmed on an official page",
     "source_url": "https://suburbs101.com/dog-parks-westchester-ny/",
     "source_url_2": "https://www.bringfido.com/attraction/2400",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-011",
@@ -5694,7 +5904,8 @@
     "notes": "Village announced the dog park reopened in October 2026",
     "source_url": "https://www.pleasantville-ny.gov/",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-012",
@@ -5705,9 +5916,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Ossining",
     "address": "235 Cedar Ln, Ossining, NY 10562",
-    "lat": 41.188799,
-    "lng": -73.856768,
-    "coord_source": "US Census geocoder match for \"235 Cedar Ln, Ossining, NY 10562\" (address point; approximate, verify pin)",
+    "lat": 41.193835,
+    "lng": -73.855448,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w58422667 (https://www.openstreetmap.org/way/58422667), inside Ossining Dog Park, Cedar Lane Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5721,7 +5932,8 @@
     "notes": "Separate big and small dog sections in the woods; not open every day, check with Town of Ossining Recreation & Parks (914-941-3189); details from third-party listing",
     "source_url": "https://suburbs101.com/dog-parks-westchester-ny/",
     "source_url_2": "https://townofossiningny.gov/cms/departments/recreation-and-parks",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-013",
@@ -5732,9 +5944,9 @@
     "type": "Fenced dog run",
     "operator": "City of Peekskill",
     "address": "1795 Main St, Peekskill, NY 10566",
-    "lat": 41.293803,
-    "lng": -73.906715,
-    "coord_source": "US Census geocoder match for \"1795 Main St, Peekskill, NY 10566\" (address point; approximate, verify pin)",
+    "lat": 41.294576,
+    "lng": -73.902768,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1377930848 (https://www.openstreetmap.org/way/1377930848), inside City of Peekskill Dog Park, Beecher Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5748,7 +5960,8 @@
     "notes": "Big and small dog sections per third-party listing",
     "source_url": "https://www.cityofpeekskillny.gov/Facilities/Facility/Details/Peekskill-Dog-Park-5",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-014",
@@ -5759,9 +5972,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Cortlandt",
     "address": "130 Sprout Brook Rd, Cortlandt Manor, NY 10567",
-    "lat": 41.316056,
-    "lng": -73.919954,
-    "coord_source": "US Census geocoder match for \"130 Sprout Brook Rd, Cortlandt Manor, NY 10567\" (address point; approximate, verify pin)",
+    "lat": 41.311147,
+    "lng": -73.92414,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w963002320 (https://www.openstreetmap.org/way/963002320), inside Cortlandt Dog Park, Sprout Brook Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5775,7 +5988,8 @@
     "notes": "Between the soccer and softball fields; bring your own water bowl",
     "source_url": "https://www.townofcortlandtny.gov/cn/webpage.cfm?tpid=9605",
     "source_url_2": "https://ecode360.com/7692334",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-015",
@@ -5786,9 +6000,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Yorktown",
     "address": "Grant Ave & Morris Ln, Mohegan Lake, NY 10547",
-    "lat": 41.298394,
-    "lng": -73.842668,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Sylvan Glen Park Preserve, Mohegan Lake, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 41.299956,
+    "lng": -73.852355,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w425665542 (https://www.openstreetmap.org/way/425665542), inside Sylvan Glen Park Preserve; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "yes",
     "small_dog_weight_limit": "",
@@ -5802,7 +6016,8 @@
     "notes": "Opened 2014; about 1.3 acres: 0.4 acre small-dog and 0.9 acre large-dog areas; near the Grant Ave parking entrance",
     "source_url": "https://www.yorktownny.gov/recreation-community/parks-preserves-trailways/town-parks-preserves/sylvan-glen-paw-park/",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-016",
@@ -5813,9 +6028,9 @@
     "type": "Fenced dog run",
     "operator": "Town of Somers",
     "address": "",
-    "lat": 41.30816,
-    "lng": -73.694681,
-    "coord_source": "Map pin embedded on the official Town of Somers Dog Park page (approximate, verify pin)",
+    "lat": 41.307989,
+    "lng": -73.694705,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w1192681289 (https://www.openstreetmap.org/way/1192681289), inside the listed park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5829,7 +6044,8 @@
     "notes": "",
     "source_url": "https://www.somersny.gov/location/dog-park",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-017",
@@ -5856,7 +6072,8 @@
     "notes": "",
     "source_url": "https://www.crotononhudson-ny.gov/DocumentCenter/View/2090/Dog-Park-Rules-Rev",
     "source_url_2": "",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-018",
@@ -5883,7 +6100,8 @@
     "notes": "Three fenced areas per third-party listing",
     "source_url": "https://bedfordny.gov/DocumentCenter/View/698/Dog-Park-Rules-PDF",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   },
   {
     "id": "w-019",
@@ -5894,9 +6112,9 @@
     "type": "Fenced dog run",
     "operator": "Village of Sleepy Hollow",
     "address": "Kingsland Point Park, Palmer Ave, Sleepy Hollow, NY 10591",
-    "lat": 41.088194,
-    "lng": -73.871803,
-    "coord_source": "OpenStreetMap Nominatim geocode of \"Kingsland Point Park, Sleepy Hollow, NY\" (park centroid, not the run itself; approximate, verify pin)",
+    "lat": 41.087642,
+    "lng": -73.871432,
+    "coord_source": "OpenStreetMap leisure=dog_park feature w542345173 (https://www.openstreetmap.org/way/542345173), inside Kingsland Point Park; matched by park name and location",
     "fenced": "yes",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5910,7 +6128,8 @@
     "notes": "",
     "source_url": "https://www.sleepyhollowny.gov/Facilities/Facility/Details/Kingsland-Point-Park-5",
     "source_url_2": "https://www.sleepyhollowny.gov/356/Permits-Issued-by-the-Clerks-Office",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-020",
@@ -5921,9 +6140,9 @@
     "type": "Dog run",
     "operator": "Village of Bronxville",
     "address": "28 Grove Ln, Bronxville, NY 10708",
-    "lat": 40.940812,
-    "lng": -73.817353,
-    "coord_source": "US Census geocoder match for \"28 Grove Ln, Bronxville, NY 10708\" (address point; approximate, verify pin)",
+    "lat": 40.940787,
+    "lng": -73.815901,
+    "coord_source": "OpenStreetMap feature w468202434 (https://www.openstreetmap.org/way/468202434) named \"Bronxville Dog Park\"",
     "fenced": "",
     "small_dog_area": "",
     "small_dog_weight_limit": "",
@@ -5937,7 +6156,8 @@
     "notes": "Reported closed from October 2025 for about 9–12 months during the Village flood-mitigation project; confirm it has reopened",
     "source_url": "https://myhometownbronxville.com/index.php/lifestyle/pets/9753-bronxville-dog-park-to-close-during-village-flood-mitigation-project",
     "source_url_2": "https://suburbs101.com/dog-parks-westchester-ny/",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "exact"
   },
   {
     "id": "w-021",
@@ -5964,6 +6184,7 @@
     "notes": "Designated North End Hill area only; dogs never allowed on the beach",
     "source_url": "https://ryerecord.com/city-extends-off-leash-dog-hours-rye-town-park/",
     "source_url_2": "https://www.ryetownny.gov/parks/rye_town_park/off-leash_dog_permit.php",
-    "last_checked": "2026-10-24"
+    "last_checked": "2026-10-24",
+    "pin_precision": "approximate"
   }
 ]

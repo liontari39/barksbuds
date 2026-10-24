@@ -38,8 +38,8 @@
   function miles(r) { return state.me && hasLL(r) ? km(state.me, r) * 0.621371 : null; }
 
   function destination(r) {
-    // NYC pins come from official run polygons; elsewhere a written address/park name routes better than an approximate pin.
-    if (hasLL(r) && /^Centroid of NYC Open Data/.test(r.coord_source || "")) return r.lat + "," + r.lng;
+    // Verified pins (exact run or an officially described spot) route best; otherwise a written address/park name beats an approximate pin.
+    if (hasLL(r) && (r.pin_precision === "exact" || r.pin_precision === "described" || /^Centroid of NYC Open Data/.test(r.coord_source || ""))) return r.lat + "," + r.lng;
     if (r.address) return r.address;
     return [r.park || r.name, r.town_or_neighborhood, "NY"].filter(Boolean).join(", ");
   }
@@ -111,7 +111,7 @@
       '<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://maps.apple.com/?daddr=' + dest + '">Apple Maps<span class="sr-only"> directions to ' + esc(r.name) + ' (opens in new tab)</span></a>' +
       "</div>" +
       (srcs.length ? '<p class="src">Source: ' + srcs.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener nofollow">' + esc(host(u)) + "</a>"; }).join(", ") + (r.last_checked ? " · checked " + esc(r.last_checked) : "") + "</p>" : "") +
-      (hasLL(r) ? "" : '<p class="src">This run isn\'t pinned on the map yet. We\'re confirming its exact location.</p>') +
+      (hasLL(r) ? (r.pin_precision === "approximate" ? '<p class="src">Map pin is approximate. We\'re confirming the exact spot in the park.</p>' : r.pin_precision === "park-wide" ? '<p class="src">Off-leash use covers most of the park, so the pin marks the park.</p>' : "") : '<p class="src">This run isn\'t pinned on the map yet. We\'re confirming its exact location.</p>') +
       '<p class="help"><svg class="ico" aria-hidden="true"><use href="#i-edit"/></svg><span>Know this run? <a href="/#join">Help us fill in details</a> by joining the waitlist.</span></p>' +
       "</div></details></li>";
   }

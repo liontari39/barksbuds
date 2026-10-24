@@ -172,7 +172,7 @@ def load_runs():
         with open(RUNS_PATH, encoding="utf-8") as f:
             runs = json.load(f)
         body = json.dumps({"count": len(runs), "updated": max((r.get("last_checked") or "") for r in runs),
-                           "note": "Map pins are approximate while each location is verified. Blank fields are not yet confirmed.",
+                           "note": "pin_precision says how each map pin was placed: exact (mapped run), described (official location description), park-wide (whole park is off-leash) or approximate (still being verified). Blank fields are not yet confirmed.",
                            "runs": runs}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         RUNS_CACHE.update(data=runs, body=body, gz=gzip.compress(body, 9),
                           etag='"%s"' % hashlib.sha256(body).hexdigest()[:20])
