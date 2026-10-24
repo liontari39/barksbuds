@@ -70,3 +70,18 @@ Reminders: Render's free plan sleeps when idle, so there is no always-on schedul
 form field). It sends reminders for meetups starting in 1 to 24 hours, at most once per meetup, and returns JSON.
 `POST /admin/meetups/test-email` (`key`, `id`, `kind`=confirm|host|promoted|cancel|reminder) sends one "[Test]" copy of
 an email type to that meetup's host only.
+
+## Packs
+
+Packs are regular groups of dogs and their people (`packs.py` data layer, `packweb.py` routes).
+
+- `/packs` lists packs with region filters and a North Shore highlight. `/packs/new` starts one, and `/packs/<id>-<slug>` is the pack page (OG tags use the cover photo; an old slug 301-redirects).
+- Fields: name, area and town, optional home run, description, fit, a cover photo (resized, EXIF-stripped, stored in the database) and visibility, which is *open* or *request to join*.
+- Roles: the owner and co-organizers edit the pack, approve or deny requests, remove members and pin posts. Only the owner can promote or demote, transfer ownership or delete the pack, and the owner must transfer ownership before leaving.
+- Members join with selected dogs. The pack page shows member dogs, member count, upcoming pack meetups and the home run.
+- Pack meetups: `meetups.pack_id` (prefilled from `/meetups/new?pack=<id>` with the home run), badged on `/meetups`, with an optional members-only RSVP. New pack meetups notify members.
+- Board (members only): posts with an optional photo, comments, pinning and reports. Reports appear in `/admin/reports` with hide actions. Posting is rate-limited.
+- Discovery: "Packs near you" on `/me`, and "Packs that call this run home" on `/runs` (`/api/packs`).
+- Emails: join request (to organizers), approved and new pack meetup. They are sent only to addresses in `PACK_EMAIL_ALLOWLIST` (falling back to `MEETUP_EMAIL_ALLOWLIST`). Members can opt out on `/me`, and each email has an unsubscribe link (`/emails/packs`, which supports one-click). Sample packs never send email.
+- Admin (`?key=` ADMIN_KEY): `/admin/packs` hides or deletes packs and removes all sample packs and meetups at launch. `POST /admin/packs/test-email` (`id`, `kind`=request|approved|meetup) sends a "[Test]" email to the pack owner.
+- Sign-in keeps a safe, same-site `next` path. For example, "Host a meetup here" returns the member to the host form with the run preselected.

@@ -79,11 +79,44 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-def nav_account_html(user):
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs")]
+MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
+           "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
+           "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
+           "document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&d.open){d.open=false;s.focus()}})})();</script>")
+
+
+def mobile_menu_html(user, active=""):
+    """Hamburger menu shown at 920px and below (styles: .mmenu in app.css, index.html and runs.html)."""
+    li = "".join(f'<li><a href="{h}"{" aria-current=page" if active and h == "/" + active else ""}>{t}</a></li>' for h, t in MENU_LINKS)
+    li += ('<li class="mm-acct"><a href="/me">My dogs</a></li>' if user else
+           '<li class="mm-acct"><a href="/signin">Sign in</a></li><li><a href="/#join">Join the waitlist</a></li>')
+    return (f'<details class="mmenu"><summary aria-label="Menu" aria-controls="mmenu-list"><span class="mm-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>'
+            f'<nav aria-label="Menu" id="mmenu-list"><ul>{li}</ul></nav></details>{MENU_JS}')
+
+
+def nav_account_html(user, active=""):
     if user:
-        return '<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
+        return ('<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
+                + mobile_menu_html(user, active))
     return ('<a class="nav-signin" href="/signin">Sign in</a>'
-            '<a class="btn" href="/#join">Join<span class="hide-xs"> the waitlist</span></a>')
+            '<a class="btn" href="/#join">Join<span class="hide-xs"> the waitlist</span></a>' + mobile_menu_html(user, active))
+
+
+def safe_next(nxt):
+    """A same-site path to return to after sign-in, or ''. Rejects absolute/protocol-relative URLs and auth pages."""
+    nxt = (nxt or "").strip()
+    if not nxt or len(nxt) > 400 or not nxt.startswith("/") or nxt.startswith(("//", "/\\")) or "\\" in nxt:
+        return ""
+    if any(ord(c) < 33 or ord(c) == 127 for c in nxt):
+        return ""
+    try:
+        sp = urlsplit(nxt)
+    except ValueError:
+        return ""
+    if sp.scheme or sp.netloc or sp.path.startswith(("/signin", "/auth", "/signout", "/admin")):
+        return ""
+    return nxt
 
 
 def run_index():
@@ -209,14 +242,26 @@ class AppRoutes:
     def redirect(self, loc, code=303):
         self._emit(code, b"", "text/plain", {"Location": loc, "Cache-Control": "no-store"})
 
-    def need_login(self):
-        return self.redirect("/signin")
+    def need_login(self, nxt=None):
+        """Send a signed-out visitor to sign in, coming back here afterwards (GET pages, or the page a form was on)."""
+        if nxt is None:
+            if self.command in ("GET", "HEAD"):
+                nxt = self.path
+            else:
+                ref = urlsplit(self.headers.get("Referer") or "")
+                nxt = (ref.path + ("?" + ref.query if ref.query else "")) if ref.netloc == (self.headers.get("Host") or "") else ""
+        nxt = safe_next(nxt)
+        return self.redirect("/signin" + ("?next=" + quote(nxt, safe="") if nxt else ""))
+
+    def signin_href(self, nxt):
+        nxt = safe_next(nxt)
+        return "/signin" + ("?next=" + quote(nxt, safe="") if nxt else "")
 
     # ------------------------------------------------------------ layout
     def page(self, title, body, *, code=200, desc="", canonical="", og=None, index=False, active="", scripts="", flash=""):
         u = self.user()
         base = self._base()
-        links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/dogs", "Dogs", "dogs"), ("/#features", "Features", ""),
+        links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
                  ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
@@ -254,19 +299,19 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=4">
+<link rel="stylesheet" href="/app.css?v=5">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap">
 <a class="brand" href="/" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="40" height="40" alt="">BarksBuds</a>
 <nav aria-label="Main"><ul class="nav-links">{nav}</ul></nav>
-{nav_account_html(u)}
+{nav_account_html(u, active)}
 </div></header>
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/dogs">Dogs</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -287,13 +332,14 @@ class AppRoutes:
     def app_get(self, path, q):
         self._app_reset()
         if path == "/signin":
+            nxt = safe_next(q.get("next", [""])[0])
             if self.user():
-                self.redirect("/me")
+                self.redirect(nxt or "/me")
             else:
-                self.signin_page(flash=self.flash_from(q))
+                self.signin_page(flash=self.flash_from(q), nxt=nxt)
             return True
         if path == "/auth":
-            self.auth_page(q.get("t", [""])[0]); return True
+            self.auth_page(q.get("t", [""])[0], q.get("next", [""])[0]); return True
         if path in ("/me", "/me/"):
             self.dashboard(q); return True
         if path == "/me/profile":
@@ -355,7 +401,8 @@ class AppRoutes:
         return f
 
     # ------------------------------------------------------------ sign in
-    def signin_page(self, email="", err="", code=200, flash=""):
+    def signin_page(self, email="", err="", code=200, flash="", nxt=""):
+        nxt = safe_next(nxt)
         fine = ('<p class="fine"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span>No passwords to remember. '
                 "We'll email you a link that signs you in. New to BarksBuds? The same link creates your free account. "
                 "We never show your email on the site.</span></p>")
@@ -364,9 +411,9 @@ class AppRoutes:
 <img class="logo" src="/img/icon-192.webp" width="84" height="84" alt="">
 <span class="eyebrow">welcome to the pack</span>
 <h1>Sign in to BarksBuds</h1>
-<p class="sub">Create your dog's profile, add photos and pick your favorite runs.</p>
+<p class="sub">{"Sign in to continue. We'll bring you right back." if nxt else "Create your dog's profile, add photos and pick your favorite runs."}</p>
 <form method="post" action="/signin" novalidate>
-{self.csrf_field()}
+{self.csrf_field()}{f'<input type="hidden" name="next" value="{e(nxt)}">' if nxt else ''}
 <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
 <div class="field"><label for="email">Your email</label>
 <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" value="{e(email)}" placeholder="you@example.com"{inv}>
@@ -381,18 +428,19 @@ class AppRoutes:
         if f is None:
             return
         email = f.get("email").strip().lower()[:254]
+        nxt = safe_next(f.get("next"))
         if f.get("website"):
             return self.sent_page(email)
         if not EMAIL_RE.match(email):
-            return self.signin_page(email, "That email doesn't look quite right.", code=422)
+            return self.signin_page(email, "That email doesn't look quite right.", code=422, nxt=nxt)
         if not A.LIMITER.allow("signin-ip:" + self._client_ip(), 10, 600):
-            return self.signin_page(email, "Too many sign-in requests. Please wait a few minutes and try again.", code=429)
+            return self.signin_page(email, "Too many sign-in requests. Please wait a few minutes and try again.", code=429, nxt=nxt)
         try:
             raw = A.create_login_token(email, self._client_ip())
         except A.RateLimited:
             return self.signin_page(email, "We just sent a link to that address. Check your inbox (and spam), "
-                                    "or wait a minute and try again.", code=429)
-        link = f"{self._base()}/auth?t={raw}"
+                                    "or wait a minute and try again.", code=429, nxt=nxt)
+        link = f"{self._base()}/auth?t={raw}" + (f"&next={quote(nxt, safe='')}" if nxt else "")
         queued = mailer.send_signin_async(self._base(), link, email, A.LINK_TTL // 60)
         print(f"signin: link requested for {mailer._mask(email)} (email {'queued' if queued else 'not sent'})", flush=True)
         if not queued:
@@ -407,7 +455,8 @@ Tap it to sign in. It works once and expires in {A.LINK_TTL // 60} minutes.</p>
 It comes from hello@barksbuds.app.</div>
 <p class="small"><a href="/signin">Use a different email or send another link</a></p>""", icon="i-mail")
 
-    def auth_page(self, raw):
+    def auth_page(self, raw, nxt=""):
+        nxt = safe_next(nxt)
         state = A.peek_login_token(raw)
         if state != "ok":
             why = {"used": ("This link was already used", "Each sign-in link works once. Request a fresh one below."),
@@ -418,7 +467,7 @@ It comes from hello@barksbuds.app.</div>
         body = f"""<div class="authwrap"><div class="authcard">
 <img class="logo" src="/img/icon-192.webp" width="84" height="84" alt="">
 <h1>Signing you in…</h1><p class="sub">One moment. If nothing happens, tap the button.</p>
-<form id="authf" method="post" action="/auth">{self.csrf_field()}<input type="hidden" name="t" value="{e(raw)}">
+<form id="authf" method="post" action="/auth">{self.csrf_field()}<input type="hidden" name="t" value="{e(raw)}">{f'<input type="hidden" name="next" value="{e(nxt)}">' if nxt else ''}
 <button class="btn" type="submit">Continue to BarksBuds</button></form></div></div>"""
         js = "<script>document.getElementById('authf').submit()</script>"
         return self.page("Signing in", body, scripts=js)
@@ -430,14 +479,17 @@ It comes from hello@barksbuds.app.</div>
         if not A.LIMITER.allow("auth-ip:" + self._client_ip(), 30, 600):
             return self.msg_page("Slow down a little", "<p class=\"sub\">Too many attempts. Please wait a few minutes.</p>", code=429)
         email = A.consume_login_token(f.get("t"))
+        nxt = safe_next(f.get("next"))
         if not email:
-            return self.auth_page(f.get("t"))
+            return self.auth_page(f.get("t"), nxt)
         uid, new = A.get_or_create_user(email)
         old = self._cookies().get(SESSION_COOKIE)
         if old:
             A.end_session(old)
         self._set_cookie(SESSION_COOKIE, A.create_session(uid), max_age=A.SESSION_TTL)
         print(f"signin: {'new account' if new else 'signed in'} user {uid}", flush=True)
+        if nxt:
+            return self.redirect(nxt)
         return self.redirect("/me?m=" + ("welcome" if new else "signedin"))
 
     def post_signout(self):
@@ -490,10 +542,10 @@ It comes from hello@barksbuds.app.</div>
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
-{self.email_prefs_html(u)}
+{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
-</div>{self.meetups_dashboard(u)}</div></section>"""
+</div>{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
         return self.page("My dogs", body, flash=self.flash_from(q))
 
     def area_select(self, current, name="area"):
@@ -872,7 +924,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         chips += [f'<li><a href="/dogs?region={k}"{cur(region == k and area not in A.AREA_NAMES)}>{e(v[0])}</a></li>' for k, v in A.REGIONS.items()]
         chips.append('<li class="sep" aria-hidden="true"></li>')
         chips += [f'<li><a href="/dogs?area={quote(a)}"{cur(area == a)}>{e(area_label(a))}</a></li>' for a in A.AREA_NAMES if a != "Westchester"]
-        add = "/me/dogs/new" if self.user() else "/signin"
+        add = "/me/dogs/new" if self.user() else self.signin_href("/me/dogs/new")
         grid = (f'<div class="dgrid">{"".join(cards)}</div>' if cards else
                 f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><h2>No dogs in {e(label)} yet</h2>'
                 f'<p class="muted">Be the first! Create a profile for your dog and invite your dog run friends.</p><a class="btn" href="{add}">Add your dog</a></div>')
@@ -967,7 +1019,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         og = {"title": og_title, "desc": desc, "type": "profile", "alt": f"Photo of {d['name']}",
               "image": self._base() + (f"/p/{cover}.jpg" if cover else "/img/og-image.jpg")}
         og.update(w=photos[0]["width"], h=photos[0]["height"]) if cover else og.update(w=1200, h=630)
-        cta = "/me/dogs/new" if u else "/signin"
+        cta = "/me/dogs/new" if u else self.signin_href("/me/dogs/new")
         body = f"""{hidden_note}<section class="dhero"><div class="wrap">{cov}<div>
 <div class="who">{av}<div><span class="eyebrow" style="margin:0">meet</span><h1 class="dname">{e(d["name"])}</h1></div></div>
 {f'<p class="dsub">{e(sub)}</p>' if sub else ''}
@@ -1024,11 +1076,18 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
         users = A.one("SELECT COUNT(*) FROM users")[0]
         ndogs = A.one("SELECT COUNT(*) FROM dogs")[0]
         tr = []
-        for rid, ts, reason, details, status, slug, name, hidden, dog_id, mid, mtitle, mslug, mhidden, cid, cbody, chidden in rows:
+        for (rid, ts, reason, details, status, slug, name, hidden, dog_id, mid, mtitle, mslug, mhidden, cid, cbody, chidden,
+             pid, pname, pslug, phidden, poid, pobody, pohidden, pcid, pcbody, pchidden) in rows:
             when = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             acts = []
             pairs = [("resolve", "Mark resolved") if status == "open" else ("reopen", "Reopen")]
-            if cid:
+            if pcid:
+                pairs.append(("unhide_pcomment", "Unhide comment") if pchidden else ("hide_pcomment", "Hide comment"))
+            elif poid:
+                pairs.append(("unhide_post", "Unhide post") if pohidden else ("hide_post", "Hide post"))
+            elif pid:
+                pairs.append(("unhide_pack", "Unhide pack") if phidden else ("hide_pack", "Hide pack"))
+            elif cid:
                 pairs.append(("unhide_comment", "Unhide comment") if chidden else ("hide_comment", "Hide comment"))
             elif mid:
                 pairs.append(("unhide_meetup", "Unhide meetup") if mhidden else ("hide_meetup", "Hide meetup"))
@@ -1038,8 +1097,18 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                 acts.append(f'<form method="post" action="/admin/reports" style="display:inline"><input type="hidden" name="key" value="{e(key)}">'
                             f'<input type="hidden" name="id" value="{rid}"><input type="hidden" name="dog" value="{dog_id or ""}">'
                             f'<input type="hidden" name="meetup" value="{mid or ""}"><input type="hidden" name="comment" value="{cid or ""}">'
+                            f'<input type="hidden" name="pack" value="{pid or ""}"><input type="hidden" name="post" value="{poid or ""}">'
+                            f'<input type="hidden" name="pcomment" value="{pcid or ""}">'
                             f'<input type="hidden" name="action" value="{act}"><button class="linkbtn" type="submit">{lab}</button></form>')
-            if cid or mid:
+            if pid or poid or pcid:
+                plink = f'<a href="/packs/{pid}-{e(pslug or "")}">{e(pname or "")}</a>' if pname else "(deleted pack)"
+                if pcid:
+                    what = f'Comment in pack {plink}: <q>{e((pcbody or "")[:160])}</q>' + (" <b>(hidden)</b>" if pchidden else "")
+                elif poid:
+                    what = f'Post in pack {plink}: <q>{e((pobody or "")[:160])}</q>' + (" <b>(hidden)</b>" if pohidden else "")
+                else:
+                    what = f'Pack {plink}' + (" <b>(hidden)</b>" if phidden else "")
+            elif cid or mid:
                 mlink = f'<a href="/meetups/{mid}-{e(mslug or "")}">{e(mtitle or "")}</a>' if mtitle else "(deleted meetup)"
                 if cid:
                     what = f'Comment on {mlink}: <q>{e((cbody or "")[:160])}</q>' + (" <b>(hidden)</b>" if chidden else "")
@@ -1070,6 +1139,12 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
         elif act in ("hide_comment", "unhide_comment") and f.get("comment").isdigit():
             import meetups
             meetups.set_comment_hidden(int(f.get("comment")), act == "hide_comment")
+        elif act in ("hide_pack", "unhide_pack", "hide_post", "unhide_post", "hide_pcomment", "unhide_pcomment"):
+            import packs
+            fld = {"pack": "pack", "post": "post", "pcomment": "pcomment"}[act.split("_", 1)[1]]
+            val = f.get(fld)
+            if val.isdigit():
+                {"pack": packs.set_hidden, "post": packs.set_post_hidden, "pcomment": packs.set_comment_hidden}[fld](int(val), act.startswith("hide"))
         print(f"admin: report action {act}", flush=True)
         return self.redirect("/admin/reports?key=" + quote(f.get("key")))
 

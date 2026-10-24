@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlsplit
 import accounts as A
 import mailer
 import meetups as M
+import packs as P
 import webapp as W
 from webapp import clean, area_label, where_text
 
@@ -331,12 +332,18 @@ class MeetupRoutes:
                 f'<span class="mtag">{e(tag)}</span></a></li>')
 
     # ------------------------------------------------------------ listing
-    def meetup_card(self, m, going=None):
+    def meetup_card(self, m, going=None, packnames=None):
         s = M.to_et(m["starts_at"])
         going = M.going_dogs(m["id"]) if going is None else going
         tags = []
         if m["is_sample"]:
             tags.append('<span class="badge sample">Sample</span>')
+        if m.get("pack_id"):
+            pn = (packnames if packnames is not None else P.names([m["pack_id"]])).get(m["pack_id"])
+            if pn:
+                tags.append(f'<span class="badge pack"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg>{e(pn[0])}</span>')
+            if m.get("members_only"):
+                tags.append('<span class="badge">Pack members only</span>')
         if m["fit"]:
             tags.append(f'<span class="badge">{e(M.FIT_LABEL[m["fit"]])}</span>')
         cap = ""
@@ -394,7 +401,7 @@ class MeetupRoutes:
                          for k, t in (("", "Any date"), ("week", "This week"), ("weekend", "This weekend")))
         vchips = (f'<li><a href="{e(link(view=""))}"{cur(not view)}>List</a></li>'
                   f'<li><a href="{e(link(view="map"))}"{cur(view == "map")}>Map</a></li>')
-        host_href = "/meetups/new" if self.user() else "/signin"
+        host_href = "/meetups/new" if self.user() else self.signin_href("/meetups/new")
         scripts = ""
         if ms and view == "map":
             pts = map_points(ms)
@@ -404,7 +411,8 @@ class MeetupRoutes:
                           f'<a href="{e(link(view=""))}">See the list</a>.</p>' if off else ""))
             scripts = '<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">' + MAP_JS % ("mmap", "true", "12")
         elif ms:
-            content = f'<div class="mgrid">{"".join(self.meetup_card(m) for m in ms)}</div>'
+            pn = P.names([m.get("pack_id") for m in ms])
+            content = f'<div class="mgrid">{"".join(self.meetup_card(m, packnames=pn) for m in ms)}</div>'
         else:
             content = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg><h2>No meetups {"here " if areas or ns else ""}yet</h2>'
                        f'<p class="muted">Be the first! Pick a dog run, choose a time and invite the regulars.</p><a class="btn" href="{host_href}">Host a meetup</a></div>')
@@ -431,7 +439,8 @@ class MeetupRoutes:
         for m in M.upcoming(limit=500):
             if m["run_id"]:
                 out.setdefault(m["run_id"], []).append({"id": m["id"], "title": m["title"], "url": meetup_path(m),
-                                                        "when": M.when_text(m["starts_at"], short=True), "sample": bool(m["is_sample"])})
+                                                        "when": M.when_text(m["starts_at"], short=True), "sample": bool(m["is_sample"]),
+                                                        "pack": bool(m.get("pack_id"))})
         return self._emit(200, json.dumps({"runs": out}).encode(), "application/json", {"Cache-Control": "no-cache"})
 
     # ------------------------------------------------------------ create / edit
@@ -459,11 +468,17 @@ class MeetupRoutes:
                 vals = dict(title=m["title"], date=s.strftime("%Y-%m-%d"), time=s.strftime("%H:%M"), duration=str(m["duration_min"]),
                             loc="custom" if custom else "run", run_id=m["run_id"], place_name=m["place_name"] if custom else "",
                             address=m["address"] if custom else "", area=m["area"] if custom else "", town=m["town"] if custom else "",
-                            description=m["description"], fit=m["fit"], capacity=str(m["capacity"] or ""))
+                            description=m["description"], fit=m["fit"], capacity=str(m["capacity"] or ""),
+                            pack_id=str(m.get("pack_id") or ""), members_only="1" if m.get("members_only") else "")
             else:
                 rid = (q or {}).get("run", [""])[0]
+                pk = (q or {}).get("pack", [""])[0]
+                pack = P.get(int(pk)) if pk.isdigit() and P.is_member(int(pk), u["id"]) else None
+                if pack and not rid:
+                    rid = pack["run_id"]
                 vals = dict(title="", date="", time="10:00", duration="60", loc="run", run_id=rid if rid in W.run_index() else "",
-                            place_name="", address="", area=u.get("area") or "", town="", description="", fit="", capacity="")
+                            place_name="", address="", area=u.get("area") or "", town="", description="", fit="", capacity="",
+                            pack_id=str(pack["id"]) if pack else "", members_only="")
         v = lambda k: e(vals.get(k) or "")
         err = lambda k: f'<span class="err" id="{k}-err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if k in errs else ""
@@ -477,6 +492,20 @@ class MeetupRoutes:
         top = '<div class="formerr" role="alert">Please fix the highlighted fields.</div>' if errs else ""
         title = "Edit meetup" if m else "Host a meetup"
         area_sel = self.area_select(vals.get("area"), "area").replace(" required", "")
+        my_packs = [p for p, _r, st in P.for_user(u["id"]) if st == "active" and not p["hidden"]]
+        if m and m.get("pack_id") and not any(p["id"] == m["pack_id"] for p in my_packs):
+            old_p = P.get(m["pack_id"])
+            if old_p:
+                my_packs.append(old_p)
+        pack_html = ""
+        if my_packs:
+            popts = '<option value="">No pack (open to everyone)</option>' + "".join(
+                f'<option value="{p["id"]}"{" selected" if str(p["id"]) == str(vals.get("pack_id") or "") else ""}>{e(p["name"])}</option>' for p in my_packs)
+            pack_html = (f'<fieldset class="field"><legend class="lab">Pack <span class="opt">(optional)</span></legend>'
+                         f'<label class="sr-only" for="pack_id">Pack</label><select id="pack_id" name="pack_id">{popts}</select>{err("pack_id")}'
+                         f'<label class="tick" style="margin-top:10px"><input type="checkbox" name="members_only" value="1"{" checked" if vals.get("members_only") else ""}>'
+                         f'<span>Pack members only (others can see it but can\'t RSVP)</span></label>'
+                         f'<span class="help">Pack meetups show on the pack page, and pack members get an email about new ones.</span></fieldset>')
         body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">{"edit" if m else "let's meet up"}</span><h1>{title}</h1>
 <p class="lead">Pick a dog run (or any dog-friendly place), set a time and tell people what to expect. Times are Eastern (New York).</p></div></section>
 <section class="section"><div class="wrap narrow"><form class="panel mform" method="post" action="{action}" novalidate>{self.csrf_field()}{top}
@@ -496,11 +525,11 @@ class MeetupRoutes:
 <span class="help">Custom places show the address and directions but aren't pinned on the map.</span></div></fieldset>
 <div class="field"><label for="description">Description <span class="opt">(optional)</span></label><textarea id="description" name="description" maxlength="{M.MAX_DESC}" rows="5" placeholder="What to expect, where exactly to find you, anything to bring.">{v("description")}</textarea></div>
 <fieldset class="field"><legend class="lab">Good fit for <span class="opt">(optional)</span></legend><div class="checks-grid">{fits}</div></fieldset>
-<div class="field" style="max-width:280px"><label for="capacity">Capacity <span class="opt">(optional)</span></label><input type="number" id="capacity" name="capacity" min="2" max="{M.MAX_CAPACITY}" inputmode="numeric" value="{v("capacity")}" placeholder="No limit"{inv("capacity")}>
+{pack_html}<div class="field" style="max-width:280px"><label for="capacity">Capacity <span class="opt">(optional)</span></label><input type="number" id="capacity" name="capacity" min="2" max="{M.MAX_CAPACITY}" inputmode="numeric" value="{v("capacity")}" placeholder="No limit"{inv("capacity")}>
 <span class="help">Max dogs going. Extra RSVPs join a waitlist.</span>{err("capacity")}</div>
 <div class="formfoot"><button class="btn" type="submit">{"Save changes" if m else "Publish meetup"}</button>
 <a class="small" href="{e(meetup_path(m)) if m else "/meetups"}">Cancel</a></div>
-<p class="small muted" style="margin:14px 0 0">Meetups are public. Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
+<p class="small muted" style="margin:14px 0 0">Meetups are public (pack-only meetups too, but only members can RSVP). Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
         js = ("<script>(function(){var f=document.querySelector('form.mform');if(!f)return;function sync(){var c=f.querySelector('input[name=loc]:checked');"
               "var v=c?c.value:'run';f.querySelector('.loc-run').hidden=v!=='run';f.querySelector('.loc-custom').hidden=v!=='custom'}"
               "f.querySelectorAll('input[name=loc]').forEach(function(r){r.addEventListener('change',sync)});sync()})();</script>")
@@ -509,7 +538,7 @@ class MeetupRoutes:
     def parse_meetup(self, f, old=None):
         errs = {}
         vals = {k: f.get(k) for k in ("title", "date", "time", "duration", "loc", "run_id", "place_name", "address", "area",
-                                      "town", "description", "fit", "capacity")}
+                                      "town", "description", "fit", "capacity", "pack_id", "members_only")}
         out = {"title": clean(f.get("title"), M.MAX_TITLE)}
         if len(out["title"]) < 3:
             errs["title"] = "Give your meetup a title (at least 3 characters)."
@@ -552,6 +581,15 @@ class MeetupRoutes:
                 errs["capacity"] = f"Use a number from 2 to {M.MAX_CAPACITY}, or leave it blank."
             else:
                 out["capacity"] = int(c)
+        out["pack_id"], out["members_only"] = None, 0
+        pk = (f.get("pack_id") or "").strip()
+        if pk:
+            u = self.user()
+            if pk.isdigit() and (P.is_member(int(pk), u["id"]) or (old and old.get("pack_id") == int(pk))) and P.get(int(pk)):
+                out["pack_id"] = int(pk)
+                out["members_only"] = 1 if f.get("members_only") == "1" else 0
+            else:
+                errs["pack_id"] = "You can only host meetups for packs you're a member of."
         return out, vals, errs
 
     def post_meetup(self, mid=None):
@@ -576,6 +614,9 @@ class MeetupRoutes:
         new_id, promoted = M.save(u["id"], out, mid=mid)
         m = M.get(new_id)
         notify_promoted(self._base(), m, promoted)
+        if m["pack_id"] and (not old or old.get("pack_id") != m["pack_id"]):
+            import packweb
+            packweb.notify_pack_meetup(self._base(), m)
         print(f"meetups: {'updated' if old else 'created'} meetup {new_id}", flush=True)
         return self.redirect(meetup_path(m) + ("?m=m_saved" if old else "?m=m_created"))
 
@@ -631,6 +672,8 @@ class MeetupRoutes:
             return self.redirect(path + "?e=closed#rsvp")
         if not A.LIMITER.allow(f"rsvp:{u['id']}", 30, 600):
             return self.redirect(path + "?e=slow#rsvp")
+        if not self.can_rsvp(m, u):
+            return self.redirect(path + "?e=packonly#rsvp")
         mine = {d["id"] for d in A.dogs_for_user(u["id"]) if not d["hidden"]}
         dog_ids = []
         for x in f.getlist("dogs"):
@@ -737,13 +780,22 @@ class MeetupRoutes:
         return self._emit(200, ics_text(self._base(), m), "text/calendar; charset=utf-8",
                           {"Content-Disposition": f'attachment; filename="{fn}"', "Cache-Control": "no-cache"})
 
+    def can_rsvp(self, m, u):
+        return not (m.get("members_only") and m.get("pack_id")) or u["id"] == m["host_user_id"] or P.is_member(m["pack_id"], u["id"])
+
     def rsvp_panel(self, m, u, mine):
         if m["status"] == "cancelled":
             return '<p class="muted" style="margin:0">This meetup was cancelled, so RSVPs are closed.</p>'
         if m["ends_at"] <= A.now():
             return '<p class="muted" style="margin:0">This meetup has ended.</p>'
         if not u:
-            return '<p>Sign in to RSVP and pick which of your dogs are coming.</p><a class="btn" href="/signin">Sign in to RSVP</a>'
+            return (f'<p>Sign in to RSVP and pick which of your dogs are coming.</p>'
+                    f'<a class="btn" href="{e(self.signin_href(meetup_path(m)))}">Sign in to RSVP</a>')
+        if not mine and not self.can_rsvp(m, u):
+            p = P.get(m["pack_id"])
+            from packweb import pack_path
+            return (f'<p>This meetup is for members of <b>{e(p["name"])}</b>. Join the pack to RSVP.</p>'
+                    f'<a class="btn btn-sm" href="{e(pack_path(p))}">See the pack</a>')
         dogs = [d for d in A.dogs_for_user(u["id"]) if not d["hidden"]]
         if not dogs:
             return '<p>Add your dog first, so everyone knows who\'s coming.</p><a class="btn" href="/me/dogs/new">Add your dog</a>'
@@ -795,7 +847,7 @@ class MeetupRoutes:
         ccount = M.comment_count(m["id"])
         if not u:
             return (f'<p class="muted" style="margin:0">{ccount} comment{"s" if ccount != 1 else ""}. '
-                    '<a href="/signin">Sign in</a> to read the conversation and join in.</p>')
+                    f'<a href="{e(self.signin_href(meetup_path(m)))}">Sign in</a> to read the conversation and join in.</p>')
         reasons = "".join(f"<option>{e(x)}</option>" for x in A.REPORT_REASONS)
         items = []
         for c in M.comments(m["id"]):
@@ -856,7 +908,7 @@ class MeetupRoutes:
         left_q = q.get("left", ["0"])[0]
         err = {"closed": "RSVPs are closed for this meetup.", "slow": "That's a lot of changes. Please wait a few minutes and try again.",
                "nodogs": "Pick at least one dog.", "adddog": "Add your dog first.", "rsvpfirst": "RSVP to join the conversation.",
-               "empty": "Write something first.",
+               "empty": "Write something first.", "packonly": "Only pack members can RSVP to this meetup.",
                "full": f"Only {int(left_q) if left_q.isdigit() and len(left_q) < 4 else 0} spot(s) left, so you can't add more dogs right now."
                }.get(q.get("e", [""])[0], "")
         errhtml = f'<p class="formerr" role="alert">{e(err)}</p>' if err else ""
@@ -901,11 +953,18 @@ class MeetupRoutes:
                   f'<a class="btn btn-ghost btn-sm" href="{e(apple_maps_url(m, r))}" target="_blank" rel="noopener">Apple Maps</a></div>')
         desc_txt = m["description"] or f"A dog meetup at {m['place_name']}. RSVP with your dogs on BarksBuds."
         sample_b = ' · <span class="badge sample">Sample</span>' if m["is_sample"] else ""
+        pack = P.get(m["pack_id"]) if m.get("pack_id") else None
+        pack_line = ""
+        if pack and not pack["hidden"]:
+            from packweb import pack_path
+            pack_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-users"/></svg>'
+                         f'<span>A <a href="{e(pack_path(pack))}"><b>{e(pack["name"])}</b></a> meetup'
+                         + (" · pack members only" if m.get("members_only") else "") + '</span></p>')
         host_q = ("?run=" + quote(m["run_id"])) if m["run_id"] else ""
         body = f"""<section class="dhero mhero"><div class="wrap"><div>{''.join(banners)}
 <span class="eyebrow" style="margin:0">dog meetup{sample_b}</span>
 <h1 class="dname mtitle">{e(m["title"])}</h1><ul class="facts">{''.join(facts)}</ul>
-<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-user"/></svg><span>Hosted by <b>{e(m["host_name"])}</b></span></p>
+<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-user"/></svg><span>Hosted by <b>{e(m["host_name"])}</b></span></p>{pack_line}
 <div style="margin-top:18px">{cal}</div>{host_tools}</div><div>{mapbox}</div></div></section>
 <section class="section" style="padding-top:36px"><div class="wrap">{errhtml}<div class="dgrid2"><div>
 <div class="panel"><h2>About this meetup</h2><p class="bio">{e(desc_txt)}</p></div>

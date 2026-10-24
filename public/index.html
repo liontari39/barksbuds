@@ -205,6 +205,19 @@ footer .bottom p{margin:0}
 .nav .btn-gold{background:var(--gold);color:var(--black);box-shadow:0 5px 0 var(--gold-d)}
 @media (max-width:920px){.nav-signin{margin-left:auto}.nav-signin+.btn{margin-left:0!important}}
 @media (max-width:640px){.nav .wrap{gap:14px}.hide-xs{display:none}}
+.mmenu{display:none;position:relative;flex:none}
+.mmenu summary{list-style:none;cursor:pointer;width:44px;height:44px;border:2px solid var(--black);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+.mmenu summary::-webkit-details-marker{display:none}
+.mmenu summary:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.mm-bars{display:flex;flex-direction:column;gap:4px;width:20px}.mm-bars i{display:block;height:2.5px;background:var(--black);border-radius:2px;transition:transform .15s,opacity .15s}
+.mmenu[open] .mm-bars i:nth-child(1){transform:translateY(6.5px) rotate(45deg)}.mmenu[open] .mm-bars i:nth-child(2){opacity:0}.mmenu[open] .mm-bars i:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+.mmenu nav{position:absolute;right:0;top:calc(100% + 10px);margin:0;min-width:230px;background:#fff;border:2px solid var(--black);border-radius:18px;box-shadow:6px 6px 0 var(--gold);padding:8px;z-index:1100}
+.mmenu ul{list-style:none;margin:0;padding:0}
+.mmenu li a{display:block;padding:12px 14px;border-radius:12px;color:var(--ink);text-decoration:none;font-weight:800;font-size:1.05rem}
+.mmenu li a:hover,.mmenu li a[aria-current]{background:var(--cream);color:var(--red)}
+.mmenu .mm-acct{border-top:1.5px solid var(--line);margin-top:6px;padding-top:6px}
+@media (max-width:920px){.mmenu{display:block}}
+@media (max-width:640px){.nav-signin{display:none}.nav-signin+.btn{margin-left:auto!important}}
 </style>
 </head>
 <body>
@@ -227,8 +240,8 @@ footer .bottom p{margin:0}
     <nav aria-label="Main"><ul class="nav-links">
       <li><a href="/runs">Dog run map</a></li>
       <li><a href="/meetups">Meetups</a></li>
+      <li><a href="/packs">Packs</a></li>
       <li><a href="/dogs">Dogs</a></li>
-      <li><a href="#features">Features</a></li>
       <li><a href="#story">Our story</a></li>
     </ul></nav>
     {{NAV_ACCOUNT}}
@@ -356,7 +369,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/dogs">Dogs</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join the waitlist we store your first name, email, your dog's name and, if you share it, your zip code. We use them only to tell you about BarksBuds and its launch in your area. We never sell or share them, and we'll delete them if you ask.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>

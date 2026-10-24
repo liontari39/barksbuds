@@ -29,7 +29,7 @@ NORTH_SHORE = ("manhasset", "great neck", "roslyn", "north hills", "port washing
 LOCK = threading.Lock()            # serializes RSVP changes so capacity can't be oversold (one web process)
 
 M_COLS = ("id,host_user_id,slug,title,starts_at,duration_min,run_id,place_name,address,lat,lng,area,town,description,"
-          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at")
+          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at,pack_id,members_only,seed_rev")
 
 
 def q(sql, **kw):
@@ -159,17 +159,17 @@ def save(host_id, f, mid=None, seed_key=None, is_sample=0):
     t = A.now()
     vals = dict(ti=f["title"], st=f["starts_at"], du=f["duration_min"], ru=f["run_id"], pn=f["place_name"], ad=f["address"],
                 la=f["lat"], ln=f["lng"], ar=f["area"], tw=f["town"], de=f["description"], fi=f["fit"], ca=f["capacity"],
-                sl=A.slugify(f["title"]), t=t)
+                sl=A.slugify(f["title"], 60), pk=f.get("pack_id") or None, mo=1 if f.get("pack_id") and f.get("members_only") else 0, t=t)
     if mid:
         old = get(mid)
         moved = old and old["starts_at"] != f["starts_at"]
         q("""UPDATE meetups SET title=:ti,starts_at=:st,duration_min=:du,run_id=:ru,place_name=:pn,address=:ad,lat=:la,lng=:ln,
-             area=:ar,town=:tw,description=:de,fit=:fi,capacity=:ca,slug=:sl,updated_at=:t""" +
+             area=:ar,town=:tw,description=:de,fit=:fi,capacity=:ca,slug=:sl,pack_id=:pk,members_only=:mo,updated_at=:t""" +
           (",reminder_sent_at=NULL" if moved and not (old and old["is_sample"]) else "") + " WHERE id=:i", i=mid, **vals)
         return mid, promote(mid)
     r = one("""INSERT INTO meetups(host_user_id,slug,title,starts_at,duration_min,run_id,place_name,address,lat,lng,area,town,
-               description,fit,capacity,is_sample,seed_key,reminder_sent_at,created_at,updated_at)
-               VALUES(:h,:sl,:ti,:st,:du,:ru,:pn,:ad,:la,:ln,:ar,:tw,:de,:fi,:ca,:sa,:sk,:rs,:t,:t) RETURNING id""",
+               description,fit,capacity,is_sample,seed_key,reminder_sent_at,pack_id,members_only,created_at,updated_at)
+               VALUES(:h,:sl,:ti,:st,:du,:ru,:pn,:ad,:la,:ln,:ar,:tw,:de,:fi,:ca,:sa,:sk,:rs,:pk,:mo,:t,:t) RETURNING id""",
             h=host_id, sa=1 if is_sample else 0, sk=seed_key, rs=(t if is_sample else None), **vals)
     return r[0], []
 
@@ -180,7 +180,7 @@ def as_form(m, days=0):
     st = int(s.replace(tzinfo=None).replace(tzinfo=ET).timestamp()) if days else m["starts_at"]
     return dict(title=m["title"], starts_at=st, duration_min=m["duration_min"], run_id=m["run_id"], place_name=m["place_name"],
                 address=m["address"], lat=m["lat"], lng=m["lng"], area=m["area"], town=m["town"], description=m["description"],
-                fit=m["fit"], capacity=m["capacity"])
+                fit=m["fit"], capacity=m["capacity"], pack_id=m.get("pack_id"), members_only=m.get("members_only"))
 
 
 def duplicate_next_week(m):

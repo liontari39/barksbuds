@@ -365,6 +365,8 @@ def send_signin_async(base, link, email, minutes=20):
 
 # ---------------------------------------------------------------- meetup emails
 MEETUP_ALLOW = {a.strip().lower() for a in os.environ.get("MEETUP_EMAIL_ALLOWLIST", "").split(",") if a.strip()}
+# Pack emails use PACK_EMAIL_ALLOWLIST when set, otherwise the meetup allowlist (so testing limits cover both).
+PACK_ALLOW = {a.strip().lower() for a in os.environ.get("PACK_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or MEETUP_ALLOW
 
 
 def and_list(xs):
@@ -380,6 +382,9 @@ def send_async(to, subject, body, text, unsub, tag):
         return False
     if tag.startswith("meetup") and MEETUP_ALLOW and to.strip().lower() not in MEETUP_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on MEETUP_EMAIL_ALLOWLIST)", flush=True)
+        return False
+    if tag.startswith("pack") and PACK_ALLOW and to.strip().lower() not in PACK_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on the pack email allowlist)", flush=True)
         return False
 
     def run():
@@ -484,5 +489,81 @@ def build_meetup(base, kind, m, name="", status="", dogs=None, who="", who_dogs=
 <tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
 You're getting this because {e(why)}. We never sell or share your info.<br>
 {f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off meetup emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a>
+</td></tr></table></td></tr></table></body></html>"""
+    return subject, body, text
+
+
+# ---------------------------------------------------------------- pack emails
+def build_pack(base, kind, p, name="", who="", who_dogs=None, message="", meetup=None, unsub=""):
+    """Return (subject, html, text) for a pack email.
+    kind: request (to organizers) | approved (to the member) | meetup (new pack meetup, to members).
+    p: dict with name, url, where; meetup: dict with title, when, where, url, host (for kind=meetup)."""
+    e = html.escape
+    who_dogs = who_dogs or []
+    n = p["name"]
+    hi = f"Hi {name}," if name else "Hi there,"
+    rows, links = [], []
+    if kind == "request":
+        subject = f"{who or 'A member'} asked to join {n}"
+        eyebrow, heading = "new join request", f"{who or 'A member'} wants to join"
+        intro = f"{who or 'A member'} asked to join {n}" + (f" with {and_list(who_dogs)}" if who_dogs else "") + \
+            ". As an organizer you can approve or decline the request from the pack's members page."
+        rows = [("Pack", n)] + ([("Dogs", and_list(who_dogs))] if who_dogs else []) + ([("Note", message)] if message else [])
+        button = ("Review the request", p["url"] + "/members")
+        why = "you organize this pack on BarksBuds"
+    elif kind == "approved":
+        subject = f"You're in: welcome to {n}"
+        eyebrow, heading = "welcome to the pack", "Your request was approved"
+        intro = f"An organizer approved your request, so you're now a member of {n}. Say hi on the pack board and check out the next pack meetup."
+        rows = [("Pack", n), ("Where", p["where"])]
+        button = ("Visit the pack", p["url"])
+        why = "you asked to join this pack on BarksBuds"
+    elif kind == "meetup":
+        m = meetup
+        subject = f"New {n} meetup: {m['title']} on {m['when_short']}"
+        eyebrow, heading = "new pack meetup", "Your pack is meeting up"
+        intro = f"{m.get('host') or 'A pack member'} is hosting a new meetup for {n}. RSVP with your dogs so everyone knows who's coming."
+        rows = [("Meetup", m["title"]), ("When", m["when"]), ("Where", m["where"])]
+        if m.get("members_only"):
+            rows.append(("Who", "Pack members only"))
+        button = ("RSVP on BarksBuds", m["url"] + "#rsvp")
+        links = [("Add to calendar (.ics)", m["ics"]), ("Google Calendar", m["gcal"]), ("Visit the pack", p["url"])]
+        why = "you're a member of this pack on BarksBuds"
+    else:
+        raise ValueError(kind)
+    text = f"{hi}\n\n{heading}. {intro}\n\n" + "".join(f"{k}: {v}\n" for k, v in rows) + \
+        f"\n{button[0]}: {button[1]}\n" + "".join(f"{k}: {v}\n" for k, v in links) + \
+        f"\nSee you at the dog run!\nThe BarksBuds team\n\nYou're getting this because {why}.\n" + \
+        (f"Turn off pack emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\n"
+    btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
+           "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
+    trs = "".join(f'<tr><td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:14px;color:#625a50;width:110px;vertical-align:top;">{e(k)}</td>'
+                  f'<td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:15px;color:#141414;font-weight:700;white-space:pre-line;">{e(v)}</td></tr>' for k, v in rows)
+    lk = " &middot; ".join(f'<a href="{e(u)}" style="color:#C8201E;font-weight:700;">{e(k)}</a>' for k, u in links)
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>{e(subject)}</title>
+<style>@media (max-width:620px){{.wrap{{padding:0 !important}} .card{{border-radius:0 !important}} .pad{{padding:24px 22px !important}} h1{{font-size:27px !important}}}}</style>
+</head><body style="margin:0;padding:0;background:#FFF8EA;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">{e(intro[:140])}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
+<tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
+<tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
+<p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>
+<h1 style="margin:0 0 12px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:31px;line-height:1.1;color:#141414;">{e(heading)}</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;">{e(hi)}</p>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;">{e(intro)}</p>
+<h2 style="margin:0 0 6px;font-family:'Baloo 2',Arial,sans-serif;font-size:21px;color:#141414;">{e(n)}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">{trs}</table>
+<p style="margin:0 0 18px;"><a href="{e(button[1])}" style="{btn}">{e(button[0])} &rarr;</a></p>
+{f'<p style="margin:0 0 26px;font-size:14px;line-height:1.7;">{lk}</p>' if lk else ''}
+<p style="margin:0;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">See you at the dog run!</p>
+<p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
+<tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
+You're getting this because {e(why)}. We never sell or share your info.<br>
+{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off pack emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a>
 </td></tr></table></td></tr></table></body></html>"""
     return subject, body, text

@@ -2,7 +2,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY server.py mailer.py accounts.py webapp.py seed.py meetups.py meetweb.py ./
+COPY server.py mailer.py accounts.py webapp.py seed.py meetups.py meetweb.py packs.py packweb.py ./
 COPY data-seed ./data-seed
 COPY public ./public
 ENV PYTHONUNBUFFERED=1

@@ -119,6 +119,8 @@ a{color:var(--red);text-underline-offset:3px}
 .mu-list li .ico{width:16px;height:16px;color:var(--red)}
 .mu-list a{color:var(--black);font-weight:800;text-decoration:none}.mu-list a:hover{color:var(--red);text-decoration:underline}
 .mu-list span{color:var(--muted);font-weight:600}
+.mu-packs{width:100%;display:grid;gap:4px}.mu-packs>b{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.pk-list li{background:#fff;border:1.5px solid var(--line)}
 .mu-host{display:inline-flex;gap:6px;align-items:center;font-size:.86rem;font-weight:800;color:var(--red);text-decoration:none}
 .mu-host .ico{width:16px;height:16px}.mu-host:hover{text-decoration:underline}
 .tags li{font-size:.8rem;font-weight:700;border-radius:999px;padding:4px 9px;border:1.5px solid var(--line);color:var(--muted);display:inline-flex;gap:4px;align-items:center}
@@ -194,6 +196,19 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 .nav .btn-gold{background:var(--gold);color:var(--black);box-shadow:0 5px 0 var(--gold-d)}
 @media (max-width:920px){.nav-signin{margin-left:auto}.nav-signin+.btn{margin-left:0!important}}
 @media (max-width:640px){.nav .wrap{gap:14px}.hide-xs{display:none}}
+.mmenu{display:none;position:relative;flex:none}
+.mmenu summary{list-style:none;cursor:pointer;width:44px;height:44px;border:2px solid var(--black);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+.mmenu summary::-webkit-details-marker{display:none}
+.mmenu summary:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.mm-bars{display:flex;flex-direction:column;gap:4px;width:20px}.mm-bars i{display:block;height:2.5px;background:var(--black);border-radius:2px;transition:transform .15s,opacity .15s}
+.mmenu[open] .mm-bars i:nth-child(1){transform:translateY(6.5px) rotate(45deg)}.mmenu[open] .mm-bars i:nth-child(2){opacity:0}.mmenu[open] .mm-bars i:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+.mmenu nav{position:absolute;right:0;top:calc(100% + 10px);margin:0;min-width:230px;background:#fff;border:2px solid var(--black);border-radius:18px;box-shadow:6px 6px 0 var(--gold);padding:8px;z-index:1100}
+.mmenu ul{list-style:none;margin:0;padding:0}
+.mmenu li a{display:block;padding:12px 14px;border-radius:12px;color:var(--ink);text-decoration:none;font-weight:800;font-size:1.05rem}
+.mmenu li a:hover,.mmenu li a[aria-current]{background:var(--cream);color:var(--red)}
+.mmenu .mm-acct{border-top:1.5px solid var(--line);margin-top:6px;padding-top:6px}
+@media (max-width:920px){.mmenu{display:block}}
+@media (max-width:640px){.nav-signin{display:none}.nav-signin+.btn{margin-left:auto!important}}
 </style>
 </head>
 <body>
@@ -219,8 +234,8 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
     <nav aria-label="Main"><ul class="nav-links">
       <li><a href="/runs" aria-current="page">Dog run finder</a></li>
       <li><a href="/meetups">Meetups</a></li>
+      <li><a href="/packs">Packs</a></li>
       <li><a href="/dogs">Dogs</a></li>
-      <li><a href="/#features">Features</a></li>
       <li><a href="/#story">Our story</a></li>
     </ul></nav>
     {{NAV_ACCOUNT}}
@@ -294,7 +309,7 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
   <div class="wrap">
     <div class="row">
       <a class="brand" href="/"><img src="/img/icon-96.webp" width="38" height="38" alt="" loading="lazy">BarksBuds</a>
-      <nav aria-label="Footer"><ul><li><a href="/">Home</a></li><li><a href="/runs">Dog run finder</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/#join">Join the waitlist</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/">Home</a></li><li><a href="/runs">Dog run finder</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/#join">Join the waitlist</a></li></ul></nav>
     </div>
     <p class="fine">Dog run details come from public sources and may change. Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. Made with love in Manhasset, NY.</p>
   </div>
@@ -302,6 +317,6 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 
 <script src="/vendor/leaflet/leaflet.js" defer></script>
 <script src="/vendor/markercluster/leaflet.markercluster.js" defer></script>
-<script src="/runs.js" defer></script>
+<script src="/runs.js?v=4" defer></script>
 </body>
 </html>

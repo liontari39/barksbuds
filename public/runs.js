@@ -125,9 +125,19 @@
         return '<li><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg><a href="' + esc(m.url) + '">' + esc(m.title) + "</a><span>" + esc(m.when) + (m.sample ? " · sample" : "") + "</span></li>";
       }).join("") + (ms.length > 2 ? '<li class="more-mu"><a href="/meetups">+' + (ms.length - 2) + " more</a></li>" : "") + "</ul>";
     }
+    var ps = PACKS[r.id] || [];
+    if (ps.length) {
+      out += '<div class="mu-packs"><b>Packs that call this run home</b><ul class="mu-list pk-list">' + ps.slice(0, 3).map(function (p) {
+        return '<li><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><a href="' + esc(p.url) + '">' + esc(p.name) + "</a><span>" + esc(String(p.members)) + " member" + (p.members === 1 ? "" : "s") + (p.sample ? " · sample" : "") + "</span></li>";
+      }).join("") + "</ul></div>";
+    }
     return out + '<a class="mu-host" href="/meetups/new?run=' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Host a meetup here</a>';
   }
-  fetch("/api/meetups", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : { runs: {} }; }).then(function (d) {
+  var PACKS = {};
+  function getRuns(url) { return fetch(url, { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : { runs: {} }; }).catch(function () { return { runs: {} }; }); }
+  Promise.all([getRuns("/api/meetups"), getRuns("/api/packs")]).then(function (res) {
+    var d = res[0];
+    PACKS = res[1].runs || {};
     MEET = d.runs || {};
     $$(".card[data-id]").forEach(function (li) {
       var r = runs.filter(function (x) { return x.id === li.getAttribute("data-id"); })[0], slot = li.querySelector(".mu-slot");

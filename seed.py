@@ -1,4 +1,4 @@
-"""Seed the first BarksBuds dog profiles (Lily and Maggie on Mike's account) and one sample meetup. Safe to run more than once.
+"""Seed the first BarksBuds dog profiles (Lily and Maggie on Mike's account), one sample meetup and one sample pack. Safe to run more than once.
 
 Usage:  DATABASE_URL=... python3 seed.py [--assets /path/to/barksbuds-assets]
         (without DATABASE_URL it seeds the local SQLite database in DATA_DIR)
@@ -18,6 +18,7 @@ from datetime import date
 
 import accounts as A
 import meetups as M
+import packs as P
 
 OWNER = dict(email="mike.karachalios@gmail.com", display_name="Mike", area="Nassau", town="Manhasset", bio="")
 
@@ -50,7 +51,8 @@ DOGS = [
 
 # One clearly marked sample meetup (is_sample=1: no emails, no reminders, hideable/deletable from /admin/meetups).
 SAMPLE_MEETUP = dict(
-    seed_key="founding-pack-2026", title="Founding Pack Meetup at Manhasset", date="2026-10-31", time="10:00",
+    seed_key="founding-pack-2026", title="Founding Pack Meetup at Christopher Morley Park", date="2026-10-31", time="10:00",
+    rev=1,  # rev 1: renamed from "Founding Pack Meetup at Manhasset" (the old URL 301-redirects to the new slug)
     duration_min=60, run_id="n-006", fit="", capacity=None, rsvp_dogs=["mike-lily", "mike-maggie"],
     description=("Come meet the founding pack! BarksBuds started with a few friends and their dogs around Manhasset, "
                  "and this is our first get-together. Lily and Maggie will be there.\n\n"
@@ -60,6 +62,17 @@ SAMPLE_MEETUP = dict(
                  "This is a sample meetup to show how BarksBuds meetups work."),
 )
 
+# One clearly marked sample pack (is_sample=1: no emails; hideable/deletable from /admin/packs with the other samples).
+SAMPLE_PACK = dict(
+    seed_key="north-shore-pack-2026", name="Manhasset & North Shore Pack", area="Nassau", town="Manhasset", run_id="n-006",
+    fit="all", visibility="open", cover="packs/north-shore-pack-cover.jpg", dogs=["mike-lily", "mike-maggie"],
+    description=("A friendly crew of North Shore dogs and their people. We meet at the Christopher Morley Park dog run, "
+                 "a short drive from Manhasset: it's fenced, with water on site, and there's plenty of room to run.\n\n"
+                 "All friendly dogs are welcome, big and small. Join with your dogs to see pack meetups, chat on the pack "
+                 "board and get to know the regulars. Lily and Maggie say hi!\n\n"
+                 "This is a sample pack to show how BarksBuds packs work."),
+)
+
 PROFILE_COLS = {"sex", "size", "birth_year", "birthday", "breed", "bio", "website", "temperament", "play_style"}
 
 
@@ -67,7 +80,7 @@ def asset_names():
     out = []
     for spec in DOGS:
         out += [f"dogs/{fn}" for fn in spec["photos"]] + [f"sprites/{spec['sprite']}"] + spec.get("extra_photos", [])
-    return out
+    return out + [SAMPLE_PACK["cover"]]
 
 
 def run(load, log=print):
@@ -124,7 +137,8 @@ def run(load, log=print):
         else:
             log(f"  profile at revision {d.get('seed_rev') or 0}, nothing to update")
         log(f"  page: /dogs/{d['slug']}")
-    seed_meetup(uid, log)
+    mid = seed_meetup(uid, log)
+    seed_pack(uid, mid, load, log)
     return uid
 
 
@@ -151,12 +165,52 @@ def seed_meetup(uid, log=print):
         mid, _ = M.save(uid, f, seed_key=spec["seed_key"], is_sample=1)
         log(f"sample meetup: created meetup {mid} at {r['name']} ({r['id']})")
     m = M.get(mid)
+    if spec.get("rev") and (m.get("seed_rev") or 0) < spec["rev"]:
+        A.q("UPDATE meetups SET title=:t, slug=:s, seed_rev=:r, updated_at=:u WHERE id=:i",
+            t=spec["title"], s=A.slugify(spec["title"], 60), r=spec["rev"], u=A.now(), i=mid)
+        m = M.get(mid)
+        log(f"  renamed to \"{spec['title']}\" (revision {spec['rev']})")
     if not M.rsvp_of(mid, uid):
         ids = [x[0] for x in (A.one("SELECT id FROM dogs WHERE seed_key=:k AND user_id=:u", k=k, u=uid) for k in spec["rsvp_dogs"]) if x]
         status, _prev, _p = M.set_rsvp(m, uid, "going", ids)
         log(f"  RSVP {status} with {len(ids)} dog(s), no emails sent")
     log(f"  page: /meetups/{mid}-{m['slug']}")
     return mid
+
+
+def seed_pack(uid, mid, load, log=print):
+    """Create the sample pack once (matched by seed key), organized by the owner with Lily and Maggie, and attach the
+    sample meetup to it. Sends no email."""
+    spec = SAMPLE_PACK
+    dog_ids = [x[0] for x in (A.one("SELECT id FROM dogs WHERE seed_key=:k AND user_id=:u", k=k, u=uid) for k in spec["dogs"]) if x]
+    row = A.one("SELECT id FROM packs WHERE seed_key=:k", k=spec["seed_key"])
+    if row:
+        pid = row[0]
+        log(f"sample pack: exists (pack {pid}), leaving it as is")
+    else:
+        f = {k: spec[k] for k in ("name", "area", "town", "run_id", "description", "fit", "visibility")}
+        f["dogs"] = dog_ids
+        pid = P.save(uid, f, seed_key=spec["seed_key"], is_sample=1)
+        log(f"sample pack: created pack {pid} with {len(dog_ids)} dog(s)")
+    p = P.get(pid)
+    if not p["cover_photo_id"]:
+        raw = load(spec["cover"])
+        if raw:
+            log(f"  + cover -> {P.set_cover(pid, raw)}")
+        else:
+            log(f"  ! missing {spec['cover']}")
+    mem = P.membership(pid, uid)
+    if mem and not mem["dogs"] and dog_ids:
+        P.set_dogs(pid, uid, dog_ids)
+        log("  owner's dogs added to the pack")
+    if mid:
+        m = M.get(mid)
+        if m and not m.get("pack_id"):
+            A.q("UPDATE meetups SET pack_id=:p WHERE id=:i", p=pid, i=mid)
+            log(f"  sample meetup {mid} attached to the pack")
+    p = P.get(pid)
+    log(f"  page: /packs/{pid}-{p['slug']}")
+    return pid
 
 
 def upload(url, assets):

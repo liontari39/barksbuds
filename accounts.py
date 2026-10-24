@@ -112,8 +112,9 @@ def init_schema(store):
         store.q("ALTER TABLE dogs ADD COLUMN website TEXT NOT NULL DEFAULT ''")
     if "seed_rev" not in cols:
         store.q(f"ALTER TABLE dogs ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
-    import meetups
+    import meetups, packs
     meetups.init_schema(store)
+    packs.init_schema(store)
 
 
 # ---------------------------------------------------------------- rate limiting (in-memory, per process)
@@ -238,7 +239,8 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import meetups
+    import meetups, packs
+    packs.purge_user(user_id)
     meetups.purge_user(user_id)
     for (dog_id,) in q("SELECT id FROM dogs WHERE user_id=:u", u=user_id):
         delete_dog(dog_id)
@@ -263,10 +265,13 @@ def _dog(r):
     return d
 
 
-def slugify(name):
+def slugify(name, n=40):
     s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
-    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")[:40].strip("-")
-    return s or "pup"
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    if len(s) > n:  # cut at a word boundary when possible
+        cut = s[:n + 1]
+        s = cut[:cut.rfind("-")] if "-" in cut[n // 2:] else s[:n]
+    return s.strip("-") or "pup"
 
 
 def unique_slug(name):
@@ -501,11 +506,15 @@ def add_report(dog_id, user_id, reason, details, ip):
 
 def list_reports():
     """Rows: id, ts, reason, details, status, dog slug, dog name, dog hidden, dog id,
-    meetup id, meetup title, meetup slug, meetup hidden, comment id, comment body, comment hidden."""
+    meetup id, meetup title, meetup slug, meetup hidden, comment id, comment body, comment hidden,
+    pack id, pack name, pack slug, pack hidden, post id, post body, post hidden, pack comment id, pack comment body, pack comment hidden."""
     return q("""SELECT r.id, r.created_at, r.reason, r.details, r.status, d.slug, d.name, d.hidden, d.id,
-                       m.id, m.title, m.slug, m.hidden, c.id, c.body, c.hidden
+                       m.id, m.title, m.slug, m.hidden, c.id, c.body, c.hidden,
+                       p.id, p.name, p.slug, p.hidden, po.id, po.body, po.hidden, pc.id, pc.body, pc.hidden
                 FROM reports r LEFT JOIN dogs d ON d.id=r.dog_id LEFT JOIN meetups m ON m.id=r.meetup_id
-                LEFT JOIN meetup_comments c ON c.id=r.comment_id ORDER BY r.status='open' DESC, r.id DESC LIMIT 300""")
+                LEFT JOIN meetup_comments c ON c.id=r.comment_id LEFT JOIN packs p ON p.id=r.pack_id
+                LEFT JOIN pack_posts po ON po.id=r.post_id LEFT JOIN pack_comments pc ON pc.id=r.pack_comment_id
+                ORDER BY r.status='open' DESC, r.id DESC LIMIT 300""")
 
 
 def set_report_status(report_id, status):
