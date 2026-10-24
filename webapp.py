@@ -323,7 +323,8 @@ class AppRoutes:
                   (r"/me/dogs/new", self.post_dog), (r"/me/dogs/(\d+)/edit", self.post_dog),
                   (r"/me/dogs/(\d+)/delete", self.post_delete_dog), (r"/me/dogs/(\d+)/photos", self.post_photos),
                   (r"/me/dogs/(\d+)/photos/(\d+)/(delete|avatar)", self.post_photo_action),
-                  (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports)]
+                  (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports),
+                  (r"/admin/seed", self.post_admin_seed)]
         for pat, fn in routes:
             m = re.fullmatch(pat, path)
             if m:
@@ -1032,3 +1033,15 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             A.set_dog_hidden(int(dog), act == "hide")
         print(f"admin: report action {act}", flush=True)
         return self.redirect("/admin/reports?key=" + quote(f.get("key")))
+
+    def post_admin_seed(self):
+        """Admin-only: run seed.py's idempotent seed with uploaded photos (used when the DB isn't reachable directly)."""
+        f = self.read_form(MAX_UPLOAD_REQUEST)
+        if f is None or not self._admin_key_ok(f.get("key")):
+            return self._emit(404, b"Not found", "text/plain")
+        import seed
+        files = {fn: data for name, fn, data in f.files if name == "file"}
+        log = []
+        seed.run(lambda rel: files.get(rel), log=log.append)
+        print("admin: seed run (" + str(len(files)) + " files)", flush=True)
+        return self._emit(200, ("\n".join(log) + "\n").encode(), "text/plain; charset=utf-8", {"Cache-Control": "no-store"})

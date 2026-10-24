@@ -404,6 +404,17 @@ class SiteTests(unittest.TestCase):
         self.assertIn("Manhasset", page)
         self.assertNotIn("mike.karachalios", page)
 
+    def test_admin_seed_endpoint_requires_key(self):
+        c = Client()
+        bnd = "----x"
+        body = (f'--{bnd}\r\nContent-Disposition: form-data; name="key"\r\n\r\nwrong\r\n--{bnd}--\r\n').encode()
+        r = c.req("POST", "/admin/seed", body, {"Content-Type": f"multipart/form-data; boundary={bnd}"})
+        self.assertEqual(r.status, 404)
+        body = (f'--{bnd}\r\nContent-Disposition: form-data; name="key"\r\n\r\ntest-admin-key\r\n--{bnd}--\r\n').encode()
+        r = c.req("POST", "/admin/seed", body, {"Content-Type": f"multipart/form-data; boundary={bnd}"})
+        self.assertEqual(r.status, 200)
+        self.assertIn("page: /dogs/", r.text)
+
 
 if __name__ == "__main__":
     unittest.main()
