@@ -10,6 +10,11 @@ Admin (requires ADMIN_KEY env var; disabled when unset):
 Dog run finder:
   GET  /runs       map + list page (public/runs.html, rendered with the run list for SEO)
   GET  /api/runs   dog run dataset from data-seed/dog_runs_region.json (cached, ETag, gzip)
+Member accounts + dog profiles (accounts.py = data, webapp.py = pages):
+  /signin, /auth, /signout          passwordless sign-in by emailed magic link
+  /me, /me/profile, /me/dogs/...    owner dashboard, owner profile, dog create/edit/delete, photo uploads
+  /dogs, /dogs/<slug>, /p/<id>.jpg  public browse page, dog pages, photos (stored in the database)
+  /admin/reports?key=KEY            profile reports (admin)
 Waitlist emails (see mailer.py; off until EMAIL_* env vars are set):
   GET  /api/config                    {"email_confirmations": true|false}
   GET  /unsubscribe?e=EMAIL&t=TOKEN   confirm page; POST removes the signup (also RFC 8058 one-click)
@@ -19,7 +24,9 @@ from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
 
+import accounts
 import mailer
+import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(ROOT, "public")
@@ -79,6 +86,16 @@ class SQLiteStore:
     def ping(self):
         with self._conn() as c:
             c.execute("SELECT 1")
+
+    def q(self, sql, **kw):
+        """Run one statement with :named params; returns all rows (list of tuples)."""
+        c = self._conn()
+        try:
+            rows = c.execute(sql, kw).fetchall()
+            c.commit()
+            return rows
+        finally:
+            c.close()
 
     def _mirror_csv(self):
         tmp = self.csv_path + ".tmp"
@@ -157,6 +174,10 @@ class PostgresStore:
     def ping(self):
         self._retry(lambda c: c.run("SELECT 1"))
 
+    def q(self, sql, **kw):
+        """Run one statement with :named params; returns all rows (list of tuples)."""
+        return [tuple(r) for r in (self._retry(lambda c: c.run(sql, **kw)) or [])]
+
 
 STORE = None
 INDEX_CACHE = {}
@@ -226,7 +247,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -239,10 +260,11 @@ class H(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
         p = urlsplit(self.path).path
         if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
-        elif p == "/runs.js":
+        elif p in ("/runs.js", "/app.css"):
             self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
 
@@ -307,18 +329,25 @@ class H(SimpleHTTPRequestHandler):
             except Exception:
                 return self._json(503, {"ok": False})
         if u.path in ("/", "/index.html"):
-            return self._send(200, render_index(self._host_url()), "text/html; charset=utf-8",
-                              {"Cache-Control": "no-cache"})
+            self._app_reset()
+            body = render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user()).encode())
+            return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
-            body, gz = render_runs(self._host_url())
-            return self._send_maybe_gz(body, gz, "text/html; charset=utf-8", {"Cache-Control": "no-cache"})
+            self._app_reset()
+            body, _gz = render_runs(self._host_url())
+            body = body.replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user()).encode())
+            return self._send_maybe_gz(body, gzip.compress(body, 6), "text/html; charset=utf-8",
+                                       {"Cache-Control": "no-cache", "Vary": "Accept-Encoding, Cookie"})
         if u.path == "/sitemap.xml":
             base = SITE_URL or self._host_url()
             lm = max((r.get("last_checked") or "") for r in load_runs()["data"]) or "2026-10-24"
             xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                    f'<url><loc>{base}/</loc><lastmod>{lm}</lastmod></url>'
-                   f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url></urlset>\n')
-            return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
+                   f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url>'
+                   f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
+                   + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in accounts.browse_dogs(limit=5000))
+                   + '</urlset>\n')
+            return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=600"})
         if u.path == "/api/config":
             return self._json(200, {"email_confirmations": mailer.enabled()})
         if u.path == "/unsubscribe":
@@ -333,6 +362,8 @@ class H(SimpleHTTPRequestHandler):
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
+        if self.app_get(u.path, q):
+            return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
                 return self.send_error(404)
@@ -350,6 +381,8 @@ class H(SimpleHTTPRequestHandler):
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        if self.app_post(u.path, q):
+            return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):
                 return self.send_error(404)
@@ -442,7 +475,7 @@ a{{color:#C8201E}}button{{font:700 17px system-ui,sans-serif;background:#C8201E;
         return self._send(code, page.encode(), "text/html; charset=utf-8", {"Cache-Control": "no-store"})
 
     def log_message(self, fmt, *a):
-        if a and "/admin/" in str(a[0]):
+        if a and ("/admin/" in str(a[0]) or "/auth?" in str(a[0])):
             a = (str(a[0]).split("?")[0] + " [query redacted]",) + a[1:]
         print("%s - %s" % (self.client_address[0], fmt % a), flush=True)
 
@@ -459,8 +492,17 @@ def make_store():
     return SQLiteStore()
 
 
-if __name__ == "__main__":
+def init_app():
+    global STORE
     STORE = make_store()
+    accounts.init_schema(STORE)
+    webapp.RUNS = lambda: load_runs()["data"]
+    webapp.SITE_URL, webapp.ADMIN_KEY = SITE_URL, ADMIN_KEY
+    return STORE
+
+
+if __name__ == "__main__":
+    init_app()
     print(f"BarksBuds running on 0.0.0.0:{PORT} (store: {STORE.kind}, admin: {'on' if ADMIN_KEY else 'off'}, email: {mailer.status()})", flush=True)
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), H)
     srv.daemon_threads = True

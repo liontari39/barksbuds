@@ -201,6 +201,10 @@ footer .bottom p{margin:0}
  footer .top,footer .bottom{flex-direction:column;align-items:flex-start}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.nav-signin{color:var(--ink);text-decoration:none;font-weight:800;font-size:.98rem;white-space:nowrap}.nav-signin:hover{color:var(--red)}
+.nav .btn-gold{background:var(--gold);color:var(--black);box-shadow:0 5px 0 var(--gold-d)}
+@media (max-width:920px){.nav-signin{margin-left:auto}.nav-signin+.btn{margin-left:0!important}}
+@media (max-width:640px){.nav .wrap{gap:14px}.hide-xs{display:none}}
 </style>
 </head>
 <body>
@@ -222,10 +226,11 @@ footer .bottom p{margin:0}
     <a class="brand" href="#top" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="40" height="40" alt="">BarksBuds</a>
     <nav aria-label="Main"><ul class="nav-links">
       <li><a href="/runs">Dog run map</a></li>
+      <li><a href="/dogs">Dogs</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#story">Our story</a></li>
     </ul></nav>
-    <a class="btn" href="#join">Join the waitlist</a>
+    {{NAV_ACCOUNT}}
   </div>
 </header>
 

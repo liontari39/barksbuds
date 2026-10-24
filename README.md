@@ -29,3 +29,21 @@ It never blocks or fails a signup, never sends on duplicate signups, and is **of
 Every email has a tokenized remove-me link (`/unsubscribe?e=…&t=…`, HMAC keyed from `ADMIN_KEY` or `UNSUBSCRIBE_SECRET`)
 plus RFC 8058 one-click `List-Unsubscribe` headers; removing deletes the signup.
 Render's free plan blocks outbound SMTP, so only HTTPS email APIs work there.
+
+## Member accounts and dog profiles
+
+- **Sign in** at `/signin` with an emailed magic link (no passwords). Links are single-use, expire after 20 minutes,
+  and only a SHA-256 hash of the token is stored. Sessions use a `Secure; HttpOnly; SameSite=Lax` cookie (30 days),
+  requests are rate-limited per email and per IP, and every form is CSRF-protected.
+  New accounts are linked to an existing waitlist signup with the same email.
+- **Owners** set a display name, area (NYC boroughs, Nassau, Suffolk, Westchester), town and short bio at `/me/profile`.
+- **Dogs** (up to 6 per account): name, breed, birthday or age, sex, size, personality tags, play style, self-reported
+  vaccination badge, up to 5 favorite runs from the run map, bio and up to 8 photos. Photos are re-encoded server-side
+  (EXIF/location stripped, 1600px JPEG + 640px WebP) and stored in Postgres.
+- **Public pages**: `/dogs` (browse with area filter) and `/dogs/<slug>` (with Open Graph tags). Owner emails are never shown.
+- **Reports**: anyone can report a profile; review them at `/admin/reports?key=ADMIN_KEY` (resolve, hide or unhide).
+- Code: `accounts.py` (data layer), `webapp.py` (pages and routes), `public/app.css` (styles), `seed.py` (first profiles).
+
+Tests (SQLite, and Postgres when `TEST_DATABASE_URL` is set):
+
+    python3 -m unittest discover -s tests -v

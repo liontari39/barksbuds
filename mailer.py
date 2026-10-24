@@ -178,7 +178,7 @@ def _post(url, payload, headers):
     return f"HTTP {code}" + (f", id {mid}" if mid else "")
 
 
-def _send(to, subject, body, text, unsub):
+def _send(to, subject, body, text, unsub, tag="waitlist-welcome"):
     hdrs = {}
     if unsub:
         hdrs["List-Unsubscribe"] = f"<{unsub}>"
@@ -186,16 +186,16 @@ def _send(to, subject, body, text, unsub):
             hdrs["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
     if PROVIDER == "file":
         os.makedirs(OUTBOX, exist_ok=True)
-        stem = os.path.join(OUTBOX, datetime.now().strftime("%Y%m%d-%H%M%S-") + hashlib.sha1(to.encode()).hexdigest()[:8])
+        stem = os.path.join(OUTBOX, datetime.now().strftime("%Y%m%d-%H%M%S-%f-") + tag + "-" + hashlib.sha1(to.encode()).hexdigest()[:8])
         with open(stem + ".html", "w", encoding="utf-8") as f:
             f.write(body)
         with open(stem + ".json", "w", encoding="utf-8") as f:
             json.dump({"to": to, "from": f"{FROM_NAME} <{FROM}>", "reply_to": REPLY_TO, "subject": subject,
-                       "headers": hdrs, "text": text}, f, indent=1)
+                       "headers": hdrs, "text": text, "tag": tag}, f, indent=1)
         return "HTTP 200 (written to outbox)"
     if PROVIDER == "brevo":
         p = {"sender": {"name": FROM_NAME, "email": FROM}, "to": [{"email": to}], "subject": subject,
-             "htmlContent": body, "textContent": text, "headers": hdrs, "tags": ["waitlist-welcome"]}
+             "htmlContent": body, "textContent": text, "headers": hdrs, "tags": [tag]}
         if REPLY_TO:
             p["replyTo"] = {"email": REPLY_TO}
         return _post("https://api.brevo.com/v3/smtp/email", p, {"api-key": API_KEY})
@@ -252,4 +252,99 @@ def send_welcome_async(base, first, dog, email):
         print(f"email: gave up on welcome for {_mask(email)}", flush=True)
 
     threading.Thread(target=run, name="welcome-email", daemon=True).start()
+    return True
+
+
+def build_signin(base, link, email, minutes=20):
+    """Return (subject, html, text) for a magic-link sign-in email."""
+    e = html.escape
+    subject = "Your BarksBuds sign-in link"
+    text = f"""Hi there,
+
+Tap the link below to sign in to BarksBuds:
+
+{link}
+
+This link works once and expires in {minutes} minutes.
+
+New to BarksBuds? The same link creates your account, so you can add your dog's profile and photos.
+
+Didn't ask for this? You can ignore this email. Nobody can sign in without the link.
+
+See you at the dog run!
+The BarksBuds team
+{base}/
+
+This email was sent to {email} because someone asked to sign in to BarksBuds with this address.
+"""
+    btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
+           "font-size:18px;text-decoration:none;padding:15px 30px;border-radius:999px;border-bottom:4px solid #9E1714")
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<title>{e(subject)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Caveat+Brush&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+<style>@media (max-width:620px){{.wrap{{padding:0 !important}} .card{{border-radius:0 !important}} .pad{{padding:24px 22px !important}} h1{{font-size:28px !important}}}}</style>
+</head>
+<body style="margin:0;padding:0;background:#FFF8EA;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tap to sign in. This link works once and expires in {minutes} minutes.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;">
+<tr><td class="wrap" align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
+<tr><td style="background:#141414;padding:22px 32px;" class="pad">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+  <td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="52" height="52" alt="" style="display:block;border-radius:14px;border:3px solid #FBB321;"></td>
+  <td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:26px;color:#ffffff;">BarksBuds</td>
+  </tr></table>
+</td></tr>
+<tr><td class="pad" style="padding:34px 36px 10px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
+  <p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:24px;color:#C8201E;">welcome back to the pack</p>
+  <h1 style="margin:0 0 14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:32px;line-height:1.1;color:#141414;">Here's your sign-in link</h1>
+  <p style="margin:0 0 24px;font-size:16px;line-height:1.6;">Tap the button to sign in to BarksBuds. No password needed.</p>
+  <p style="margin:0 0 26px;"><a href="{e(link)}" style="{btn}">Sign in to BarksBuds &rarr;</a></p>
+  <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#625a50;">This link works once and expires in <strong>{minutes} minutes</strong>. New here? The same link creates your account, so you can add your dog's profile and photos.</p>
+  <p style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#8a8073;">Button not working? Copy this link into your browser:</p>
+  <p style="margin:0 0 26px;font-size:13px;line-height:1.5;word-break:break-all;"><a href="{e(link)}" style="color:#C8201E;">{e(link)}</a></p>
+</td></tr>
+<tr><td class="pad" style="padding:0 36px 30px;font-family:Nunito,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFE7A8;border-radius:18px;">
+  <tr><td style="padding:16px 20px;font-size:14px;line-height:1.55;color:#2a2622;">
+    <strong>Didn't ask for this?</strong> You can safely ignore this email. Nobody can sign in without the link.
+  </td></tr></table>
+  <p style="margin:22px 0 0;font-family:'Caveat Brush',cursive;font-size:24px;color:#C8201E;">See you at the dog run!</p>
+  <p style="margin:2px 0 0;font-size:15px;color:#625a50;">The BarksBuds team</p>
+</td></tr>
+<tr><td class="pad" style="background:#141414;padding:20px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
+  This email was sent to {e(email)} because someone asked to sign in to <a href="{base}/" style="color:#FBB321;">BarksBuds</a> with this address.
+  We never sell or share your info.
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
+    return subject, body, text
+
+
+def send_signin_async(base, link, email, minutes=20):
+    """Send a sign-in email on a background thread. Returns True if a send was queued."""
+    if not enabled():
+        print(f"email: skipped sign-in link for {_mask(email)} ({status()})", flush=True)
+        return False
+
+    def run():
+        subject, body, text = build_signin(base, link, email, minutes)
+        for attempt in range(3):
+            try:
+                result = _send(email, subject, body, text, "", tag="signin")
+                print(f"email: sign-in link sent to {_mask(email)} via {PROVIDER} ({result})", flush=True)
+                return
+            except urllib.error.HTTPError as e:
+                print(f"email: {PROVIDER} HTTP {e.code} for sign-in to {_mask(email)}", flush=True)
+                if not (e.code == 429 or e.code >= 500):
+                    return
+            except Exception as e:
+                print(f"email: sign-in send error for {_mask(email)}: {type(e).__name__}", flush=True)
+            time.sleep(2 * (attempt + 1))
+        print(f"email: gave up on sign-in link for {_mask(email)}", flush=True)
+
+    threading.Thread(target=run, name="signin-email", daemon=True).start()
     return True
