@@ -10,7 +10,7 @@ Sending is OFF unless configured. Env vars:
 EMAIL_PROVIDER=file writes each message to $DATA_DIR/outbox/ instead of sending (local testing).
 Emails are sent on a background thread, never block or fail a signup, and are only sent for new signups.
 """
-import base64, hashlib, hmac, html, json, os, threading, time, urllib.error, urllib.request
+import base64, hashlib, hmac, html, json, os, re, threading, time, urllib.error, urllib.request
 from datetime import datetime
 from urllib.parse import quote
 
@@ -64,12 +64,20 @@ def unsubscribe_url(base, email):
     return f"mailto:{REPLY_TO}?subject={quote('Remove me from the BarksBuds waitlist')}" if REPLY_TO else ""
 
 
+def several(dog):
+    """True when the dog name field holds more than one dog, e.g. 'Lily & Maggie', 'Lily and Maggie', 'Lily, Maggie'."""
+    return bool(re.search(r"\s(?:&|\+|and)\s|,|/", dog, re.I))
+
+
 def build(base, first, dog, email):
-    """Return (subject, html, text, unsubscribe_url) for the welcome email."""
+    """Return (subject, html, text, unsubscribe_url) for the welcome email. Works for one dog or several."""
     e = html.escape
+    multi = several(dog)
+    verb = "are" if multi else "is"
+    profile = f"Profiles for {dog}" if multi else f"A profile for {dog}"
     runs, home, share = f"{base}/runs", f"{base}/", f"{base}/#join"
     unsub = unsubscribe_url(base, email)
-    subject = f"Welcome to the pack, {first}! {dog} is on the BarksBuds list"
+    subject = f"Welcome to the pack, {first}! {dog} {verb} on the BarksBuds list"
     share_mail = "mailto:?subject=" + quote("Join me on BarksBuds") + "&body=" + quote(
         f"I just joined the BarksBuds waitlist with {dog}. It's a new community for dog people, "
         f"with a map of every dog run around NYC, Long Island and Westchester: {home}")
@@ -83,7 +91,7 @@ Explore the dog run map now (NYC, Long Island & Westchester): {runs}
 
 What's coming
 - Meetups and playdates at your favorite run, starting on the North Shore
-- A profile for {dog}, with photos and the friends they make
+- {profile}, with photos and the friends they make
 - Tips and recommendations from dog people you trust
 
 Know someone whose dog needs more friends? Share BarksBuds: {home}
@@ -128,7 +136,7 @@ Remove me from the list: {unsub}
   <h2 style="margin:0 0 6px;font-family:'Baloo 2',Arial,sans-serif;font-size:21px;color:#141414;">What's coming</h2>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr><td style="{li}">&#128197;&nbsp; <strong>Meetups &amp; playdates</strong> at your favorite run, starting on the North Shore</td></tr>
-  <tr><td style="{li}">&#128062;&nbsp; <strong>A profile for {e(dog)}</strong>, with photos and the friends they make</td></tr>
+  <tr><td style="{li}">&#128062;&nbsp; <strong>{e(profile)}</strong>, with photos and the friends they make</td></tr>
   <tr><td style="{li}">&#128172;&nbsp; <strong>Tips &amp; recs</strong> from dog people you trust</td></tr>
   </table>
 </td></tr>
@@ -153,11 +161,21 @@ Remove me from the list: {unsub}
 
 
 def _post(url, payload, headers):
+    """POST JSON; returns 'HTTP <code>' plus the provider's message id when it gives one."""
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST",
                                  headers={"Content-Type": "application/json", "Accept": "application/json",
                                           "User-Agent": "BarksBuds/1.0", **headers})
     with urllib.request.urlopen(req, timeout=20) as r:
-        return r.status
+        code, raw = r.status, r.read(4000)
+    mid = ""
+    try:
+        d = json.loads(raw or b"{}")
+        mid = d.get("messageId") or d.get("id") or ""  # brevo / resend
+        if not mid and d.get("Messages"):  # mailjet
+            mid = str(d["Messages"][0].get("To", [{}])[0].get("MessageUUID", ""))
+    except Exception:
+        pass
+    return f"HTTP {code}" + (f", id {mid}" if mid else "")
 
 
 def _send(to, subject, body, text, unsub):
@@ -174,7 +192,7 @@ def _send(to, subject, body, text, unsub):
         with open(stem + ".json", "w", encoding="utf-8") as f:
             json.dump({"to": to, "from": f"{FROM_NAME} <{FROM}>", "reply_to": REPLY_TO, "subject": subject,
                        "headers": hdrs, "text": text}, f, indent=1)
-        return 200
+        return "HTTP 200 (written to outbox)"
     if PROVIDER == "brevo":
         p = {"sender": {"name": FROM_NAME, "email": FROM}, "to": [{"email": to}], "subject": subject,
              "htmlContent": body, "textContent": text, "headers": hdrs, "tags": ["waitlist-welcome"]}
@@ -215,8 +233,8 @@ def send_welcome_async(base, first, dog, email):
         subject, body, text, unsub = build(base, first, dog, email)
         for attempt in range(3):
             try:
-                code = _send(email, subject, body, text, unsub)
-                print(f"email: welcome sent to {_mask(email)} via {PROVIDER} (HTTP {code})", flush=True)
+                result = _send(email, subject, body, text, unsub)
+                print(f"email: welcome sent to {_mask(email)} via {PROVIDER} ({result})", flush=True)
                 return
             except urllib.error.HTTPError as e:
                 retry = e.code == 429 or e.code >= 500
