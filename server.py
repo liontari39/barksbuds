@@ -165,6 +165,9 @@ def render_index(host_url):
 
 class H(SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
+                      ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
+                      ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8"}
     sys_version = ""
 
     def __init__(self, *a, **k):
@@ -174,7 +177,7 @@ class H(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         p = urlsplit(self.path).path
-        if p.startswith("/img/"):
+        if p.startswith("/img/") or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
         super().end_headers()
 
