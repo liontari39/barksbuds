@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dog Runs &amp; Dog Parks on Long Island and in Queens · Map | BarksBuds</title>
+<meta name="description" content="Find a dog run near you. Map and list of {{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens, with fenced areas, small-dog areas, water, shade, hours and residency rules.">
+<link rel="canonical" href="{{SITE_URL}}/runs">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BarksBuds">
+<meta property="og:url" content="{{SITE_URL}}/runs">
+<meta property="og:title" content="Find a dog run near you · Long Island &amp; Queens | BarksBuds">
+<meta property="og:description" content="{{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens on one map: fenced runs, small-dog areas, water, shade, hours and rules.">
+<meta property="og:image" content="{{SITE_URL}}/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Find a dog run near you · Long Island &amp; Queens">
+<meta name="twitter:description" content="{{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens on one map.">
+<meta name="twitter:image" content="{{SITE_URL}}/img/og-image.jpg">
+<meta name="theme-color" content="#FBB321">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/icon-32.png">
+<link rel="apple-touch-icon" href="/img/icon-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" as="fetch" href="/api/runs" crossorigin="anonymous">
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+<script type="application/ld+json">{{JSON_LD}}</script>
+<style>
+:root{--black:#141414;--ink:#2a2622;--muted:#625a50;--red:#C8201E;--red-d:#9E1714;--gold:#FBB321;--gold-d:#C98A0C;--gold-l:#FFE7A8;--cream:#FFF8EA;--line:#EADBB9;--ok:#1F7A3A;--ok-l:#E3F3E6;--r:18px;--nav:64px}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:400 1rem/1.55 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+h1,h2,h3{font-family:"Baloo 2",system-ui,sans-serif;color:var(--black);line-height:1.1;margin:0 0 .4em;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0 0 .8em}
+a{color:var(--red);text-underline-offset:3px}
+.wrap{max-width:1320px;margin:0 auto;padding:0 18px}
+.script{font-family:"Caveat Brush",cursive;font-weight:400}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;left:12px;top:-60px;z-index:2000;background:var(--black);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;text-decoration:none}
+.skip:focus{top:12px}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px;border-radius:8px}
+.ico{width:1.2em;height:1.2em;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;border:0;cursor:pointer;font:700 1rem/1 "Baloo 2",system-ui,sans-serif;text-decoration:none;color:#fff;background:var(--red);border-radius:999px;padding:12px 20px 10px;box-shadow:0 4px 0 var(--red-d);transition:transform .12s,box-shadow .12s,background-color .2s;white-space:nowrap}
+.btn:hover{background:#D52623;transform:translateY(-1px)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red-d)}
+.btn-gold{background:var(--gold);color:var(--black);box-shadow:0 4px 0 var(--gold-d)}
+.btn-gold:hover{background:#FFC23F}
+.btn-ghost{background:#fff;color:var(--black);border:2px solid var(--black);box-shadow:0 3px 0 var(--black)}
+.btn-ghost:hover{background:#fff}
+.btn[disabled]{opacity:.7;cursor:progress}
+/* nav */
+.nav{position:sticky;top:0;z-index:1000;background:rgba(255,248,234,.92);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:24px;height:var(--nav)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 1.4rem/1 "Baloo 2",sans-serif;color:var(--black)}
+.brand img{width:38px;height:38px;border-radius:10px}
+.nav nav{margin-left:auto}
+.nav-links{display:flex;gap:24px;list-style:none;padding:0;margin:0}
+.nav-links a{color:var(--ink);text-decoration:none;font-weight:700;font-size:.97rem}
+.nav-links a:hover,.nav-links a[aria-current]{color:var(--red)}
+/* intro */
+.intro{padding:26px 0 14px;background:radial-gradient(700px 300px at 95% -20%,var(--gold-l),transparent 65%),var(--cream)}
+.eyebrow{display:block;font:400 1.4rem/1.1 "Caveat Brush",cursive;color:var(--red);margin:0 0 .2em}
+.intro h1{font-size:clamp(2rem,4.6vw,3rem);margin-bottom:.2em}
+.intro p.lead{color:var(--muted);font-size:1.08rem;max-width:44em;margin:0}
+.intro p.lead b{color:var(--ink)}
+/* controls */
+.controls{position:sticky;top:var(--nav);z-index:900;background:var(--cream);border-bottom:1px solid var(--line);padding:12px 0 10px}
+.searchrow{display:flex;gap:10px;align-items:stretch}
+.search{position:relative;flex:1;min-width:0}
+.search .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.search input{width:100%;font:inherit;font-size:1rem;padding:12px 14px 12px 42px;border-radius:999px;border:2px solid var(--black);background:#fff;color:var(--ink);min-height:48px}
+.search input:focus{outline:none;box-shadow:0 0 0 4px rgba(251,179,33,.45)}
+.near{min-height:48px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.seg{display:inline-flex;background:#fff;border:2px solid var(--black);border-radius:999px;padding:2px;gap:2px}
+.seg button{font:700 .9rem/1 Nunito,sans-serif;border:0;background:transparent;color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;min-height:36px}
+.seg button[aria-pressed=true]{background:var(--black);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:6px;font:700 .9rem/1 Nunito,sans-serif;border:2px solid var(--line);background:#fff;color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;min-height:40px}
+.chip:hover{border-color:var(--black)}
+.chip[aria-pressed=true]{background:var(--gold);border-color:var(--black)}
+.chip .ico{width:1.05em;height:1.05em}
+.chip.offleash[aria-pressed=true]{background:var(--gold-l)}
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;font-size:.92rem;color:var(--muted)}
+.status b{color:var(--ink)}
+.linkbtn{background:none;border:0;font:700 .92rem/1 Nunito,sans-serif;color:var(--red);cursor:pointer;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+/* layout */
+.finder{display:grid;grid-template-columns:minmax(360px,440px) 1fr;gap:20px;padding-top:16px;padding-bottom:28px}
+.mapwrap{position:sticky;top:calc(var(--nav) + var(--ctl,150px) + 16px);height:calc(100vh - var(--nav) - var(--ctl,150px) - 32px);min-height:420px;border:3px solid var(--black);border-radius:24px;overflow:hidden;box-shadow:8px 8px 0 var(--gold);background:#EEF3E4}
+#map{position:absolute;inset:0}
+.mapnote{position:absolute;left:10px;bottom:26px;z-index:500;background:rgba(255,255,255,.94);border:1.5px solid var(--black);border-radius:999px;padding:5px 11px;font-size:.78rem;font-weight:700;color:var(--ink);pointer-events:none}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:12px;align-content:start}
+.card{background:#fff;border:2px solid var(--black);border-radius:var(--r);box-shadow:4px 4px 0 var(--line);transition:box-shadow .15s,transform .15s}
+.card.active{box-shadow:5px 5px 0 var(--red)}
+.card-h{display:flex;gap:12px;padding:14px 14px 10px;align-items:flex-start}
+.badge{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--gold-l);color:var(--red)}
+.card.off .badge{background:#F1ECE2;color:var(--muted)}
+.card h2{font-size:1.18rem;margin:0 0 2px}
+.card h2 button{all:unset;cursor:pointer}
+.card h2 button:hover{color:var(--red)}
+.card h2 button:focus-visible{outline:3px solid var(--red);outline-offset:2px;border-radius:6px}
+.where{font-size:.9rem;color:var(--muted);margin:0}
+.dist{margin-left:auto;flex:none;font:700 .85rem/1 Nunito;background:var(--black);color:#fff;border-radius:999px;padding:6px 9px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px;margin:0;list-style:none}
+.tags li{font-size:.8rem;font-weight:700;border-radius:999px;padding:4px 9px;border:1.5px solid var(--line);color:var(--muted);display:inline-flex;gap:4px;align-items:center}
+.tags li.y{background:var(--ok-l);border-color:#BFE0C6;color:var(--ok)}
+.tags li.n{background:#FBEDEC;border-color:#F2CFCD;color:var(--red-d)}
+.tags li.t{background:var(--black);border-color:var(--black);color:#fff}
+.tags li.o{background:var(--gold-l);border-color:#F2D58A;color:#6B4B00}
+details.more{border-top:1px solid var(--line)}
+details.more summary{list-style:none;cursor:pointer;padding:10px 14px;font-weight:800;font-size:.92rem;color:var(--red);display:flex;align-items:center;gap:6px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary .chev{transition:transform .15s}
+details.more[open] summary .chev{transform:rotate(90deg)}
+.body{padding:0 14px 14px}
+.amen{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:0 0 12px}
+.amen div{display:flex;flex-direction:column;font-size:.92rem}
+.amen dt{font-weight:800;color:var(--black);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+.amen dd{margin:0}
+.unk{color:var(--muted);font-style:italic}
+.facts{margin:0 0 12px;display:grid;gap:8px}
+.facts dt{font-weight:800;color:var(--black);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+.facts dd{margin:0;font-size:.95rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.actions .btn{font-size:.92rem;padding:10px 14px 8px}
+.src{font-size:.82rem;color:var(--muted);margin:0 0 10px}
+.src a{word-break:break-word}
+.help{display:flex;gap:10px;align-items:center;background:var(--cream);border:1.5px dashed var(--gold-d);border-radius:14px;padding:10px 12px;font-size:.9rem}
+.help .ico{color:var(--red)}
+.help a{font-weight:800}
+.empty{background:#fff;border:2px dashed var(--line);border-radius:var(--r);padding:24px;text-align:center;color:var(--muted)}
+.notice{margin:16px 0 0;font-size:.86rem;color:var(--muted)}
+.cta-band{background:var(--black);color:#E9E1D3;border-radius:24px;padding:24px;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0 40px}
+.cta-band h2{color:#fff;font-size:1.6rem;margin:0}
+.cta-band h2 .script{color:var(--gold)}
+.cta-band p{margin:4px 0 0;color:#D9D0C2}
+/* leaflet pins */
+.pinx svg{width:100%;height:100%;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.pinx.sel svg{transform:scale(1.25);transform-origin:50% 100%}
+.me-dot{width:18px;height:18px;border-radius:50%;background:#2E7DF6;border:3px solid #fff;box-shadow:0 0 0 8px rgba(46,125,246,.2)}
+.leaflet-popup-content{font:600 .92rem/1.4 Nunito,sans-serif;margin:10px 12px}
+.leaflet-popup-content b{font-family:"Baloo 2";font-size:1.02rem;color:var(--black)}
+.leaflet-popup-content button{margin-top:6px;font:800 .85rem/1 Nunito;color:var(--red);background:none;border:0;padding:4px 0;cursor:pointer;text-decoration:underline}
+.leaflet-container{font-family:Nunito,sans-serif}
+.leaflet-tile-pane{filter:saturate(.8) sepia(.08)}
+.legend{position:absolute;right:10px;top:10px;z-index:500;background:rgba(255,255,255,.95);border:1.5px solid var(--black);border-radius:12px;padding:6px 10px;font-size:.78rem;font-weight:700;display:grid;gap:3px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+footer{background:var(--black);color:#BDB4A6;padding:32px 0;font-size:.92rem}
+footer .row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+footer a{color:#E9E1D3;text-decoration:none;font-weight:700}
+footer a:hover{color:var(--gold)}
+footer ul{display:flex;gap:18px;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+footer .brand{color:#fff}
+footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
+/* mobile */
+@media (max-width:900px){
+ :root{--nav:58px}
+ .nav-links{display:none}.nav .btn{margin-left:auto;padding:9px 14px 7px;font-size:.92rem}
+ .brand{font-size:1.25rem}.brand img{width:34px;height:34px}
+ .intro{padding:18px 0 8px}.intro p.lead{font-size:1rem}
+ .controls{position:relative;top:auto;padding:10px 0 8px}
+ .filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-left:-18px;margin-right:-18px;padding:0 18px 2px}
+ .filters::-webkit-scrollbar{display:none}
+ .filters>*{flex:none}
+ .near .lbl{display:none}
+ .near{padding:0 14px}
+ .finder{grid-template-columns:1fr;padding-top:12px}
+ .mapwrap{order:-1;position:relative;top:auto;height:46vh;max-height:420px;min-height:300px;box-shadow:5px 5px 0 var(--gold);border-radius:20px}
+ .cta-band{padding:20px}
+}
+@media (min-width:901px){.near .lbl{display:inline}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="i-fence" viewBox="0 0 24 24"><path d="M5 21V7l2-3 2 3v14M15 21V7l2-3 2 3v14M3 11h18M3 17h18"/></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="6" cy="10" r="2"/><circle cx="10" cy="5.5" r="2"/><circle cx="14" cy="5.5" r="2"/><circle cx="18" cy="10" r="2"/><path d="M12 11c-3 0-6 4.5-6 7a3 3 0 0 0 3 3c1.2 0 2-.6 3-.6s1.8.6 3 .6a3 3 0 0 0 3-3c0-2.5-3-7-6-7z"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 22v-6M7 16h10l-5-13z"/></symbol>
+  <symbol id="i-small" viewBox="0 0 24 24"><circle cx="9" cy="14" r="3"/><circle cx="17" cy="9" r="5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+</svg>
+<a class="skip" href="#results">Skip to the dog run list</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="38" height="38" alt="">BarksBuds</a>
+    <nav aria-label="Main"><ul class="nav-links">
+      <li><a href="/runs" aria-current="page">Dog run finder</a></li>
+      <li><a href="/#features">Features</a></li>
+      <li><a href="/#story">Our story</a></li>
+    </ul></nav>
+    <a class="btn" href="/#join">Join the waitlist</a>
+  </div>
+</header>
+
+<main>
+<section class="intro" aria-labelledby="t">
+  <div class="wrap">
+    <span class="eyebrow">dog run finder</span>
+    <h1 id="t">Find a dog run near you</h1>
+    <p class="lead"><b>{{RUN_COUNT}} dog runs and dog parks</b> across Nassau, Suffolk and Queens, with the details that matter: fenced, small-dog areas, water, shade, hours and who's allowed in.</p>
+  </div>
+</section>
+
+<div class="controls" role="search" aria-label="Find dog runs">
+  <div class="wrap">
+    <div class="searchrow">
+      <label class="search"><span class="sr-only">Search by run, park or town</span><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Search a run, park or town" autocomplete="off" enterkeyhint="search"></label>
+      <button class="btn near" id="near" type="button" aria-label="Sort by distance from me"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg><span class="lbl">Near me</span></button>
+    </div>
+    <div class="filters" id="filters">
+      <div class="seg" role="group" aria-label="County">
+        <button type="button" data-county="" aria-pressed="true">All</button>
+        <button type="button" data-county="Nassau" aria-pressed="false">Nassau</button>
+        <button type="button" data-county="Suffolk" aria-pressed="false">Suffolk</button>
+        <button type="button" data-county="Queens" aria-pressed="false">Queens</button>
+      </div>
+      <button class="chip" type="button" data-f="fenced" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-fence"/></svg>Fenced</button>
+      <button class="chip" type="button" data-f="small" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-small"/></svg>Small-dog area</button>
+      <button class="chip" type="button" data-f="water" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-drop"/></svg>Water</button>
+      <button class="chip" type="button" data-f="shade" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-tree"/></svg>Shade</button>
+      <button class="chip offleash" type="button" id="offleash" aria-pressed="false" title="NYC off-leash areas are unfenced and only off-leash before 9am and after 9pm">+ Queens off-leash areas (unfenced, set hours)</button>
+    </div>
+    <div class="status">
+      <span id="count" aria-live="polite">Loading dog runs…</span>
+      <span>
+        <button class="linkbtn" id="reset" type="button" hidden>Clear filters</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap finder">
+  <div>
+    <ul class="list" id="results" aria-label="Dog runs" tabindex="-1">{{RUN_LIST}}</ul>
+    <p class="notice">Details come from public sources: NYC Parks, NYC Open Data, Nassau and Suffolk County Parks, town and village websites, and LI-DOG. Map pins are approximate while we verify each location. Always check the rules posted at the run.</p>
+  </div>
+  <div class="mapwrap" aria-label="Map of dog runs">
+    <div id="map" role="region" aria-label="Interactive map of dog runs"></div>
+    <div class="legend" aria-hidden="true"><span><i style="background:#C8201E"></i>Dog run</span><span id="lg-off" hidden><i style="background:#C98A0C"></i>Off-leash area</span></div>
+    <div class="mapnote">Pins are approximate · locations being verified</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="cta-band">
+    <div><h2>Meet the pack <span class="script">at your run</span></h2><p>Join the BarksBuds waitlist for meetups, playdates and run check-ins, starting on the North Shore.</p></div>
+    <a class="btn btn-gold" href="/#join">Join the waitlist</a>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <a class="brand" href="/"><img src="/img/icon-96.webp" width="38" height="38" alt="" loading="lazy">BarksBuds</a>
+      <nav aria-label="Footer"><ul><li><a href="/">Home</a></li><li><a href="/runs">Dog run finder</a></li><li><a href="/#join">Join the waitlist</a></li></ul></nav>
+    </div>
+    <p class="fine">Dog run details come from public sources and may change. Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. Made with love in Manhasset, NY.</p>
+  </div>
+</footer>
+
+<script src="/vendor/leaflet/leaflet.js" defer></script>
+<script src="/runs.js" defer></script>
+</body>
+</html>

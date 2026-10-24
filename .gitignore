@@ -3,6 +3,7 @@
 data/
 *.db
 *.csv
+!data-seed/*.csv
 *.log
 *.pid
 *.png

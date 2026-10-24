@@ -7,8 +7,11 @@ Storage:
 Admin (requires ADMIN_KEY env var; disabled when unset):
   GET  /admin/export.csv?key=KEY             download all signups as CSV
   POST /admin/delete?key=KEY&email=ADDRESS   remove one signup (e.g. a test row or an opt-out)
+Dog run finder:
+  GET  /runs       map + list page (public/runs.html, rendered with the run list for SEO)
+  GET  /api/runs   dog run dataset from data-seed/dog_runs_li_queens.json (cached, ETag, gzip)
 """
-import csv, hmac, io, json, os, re, sqlite3, ssl, threading, time
+import csv, gzip, hashlib, html, hmac, io, json, os, re, sqlite3, ssl, threading, time
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
@@ -152,6 +155,59 @@ class PostgresStore:
 
 STORE = None
 INDEX_CACHE = {}
+RUNS_PATH = os.path.join(ROOT, "data-seed", "dog_runs_li_queens.json")
+RUNS_CACHE = {}
+GZ_CACHE = {}
+GZ_TYPES = (".js", ".css", ".json", ".webmanifest", ".txt", ".xml")
+
+
+def load_runs():
+    """Dog run dataset, read once and kept in memory with precomputed JSON, gzip and ETag."""
+    if "data" not in RUNS_CACHE:
+        with open(RUNS_PATH, encoding="utf-8") as f:
+            runs = json.load(f)
+        body = json.dumps({"count": len(runs), "updated": max((r.get("last_checked") or "") for r in runs),
+                           "note": "Map pins are approximate while each location is verified. Blank fields are not yet confirmed.",
+                           "runs": runs}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        RUNS_CACHE.update(data=runs, body=body, gz=gzip.compress(body, 9),
+                          etag='"%s"' % hashlib.sha256(body).hexdigest()[:20])
+    return RUNS_CACHE
+
+
+def render_runs(host_url):
+    """runs.html with absolute URLs plus a server-rendered run list and JSON-LD (works without JS, good for SEO)."""
+    base = SITE_URL or host_url
+    key = "runs:" + base
+    if key not in INDEX_CACHE:
+        runs = load_runs()["data"]
+        main = [r for r in runs if not (r.get("type") or "").lower().startswith("off-leash area")]
+        items = []
+        for r in main:
+            where = " · ".join(x for x in (r.get("town_or_neighborhood"), r.get("county")) if x)
+            items.append('<li class="card"><div class="card-h"><span class="badge" aria-hidden="true">'
+                         '<svg class="ico"><use href="#i-pin"/></svg></span><div><h2>%s</h2><p class="where">%s</p>'
+                         '</div></div></li>' % (html.escape(r["name"]), html.escape(where)))
+        places = []
+        for r in main:
+            pl = {"@type": "Place", "name": r["name"],
+                  "address": {"@type": "PostalAddress", "addressLocality": r.get("town_or_neighborhood") or "",
+                              "addressRegion": "NY", "addressCountry": "US"}}
+            if r.get("address"):
+                pl["address"]["streetAddress"] = r["address"]
+            if isinstance(r.get("lat"), (int, float)):
+                pl["geo"] = {"@type": "GeoCoordinates", "latitude": r["lat"], "longitude": r["lng"]}
+            places.append({"@type": "ListItem", "position": len(places) + 1, "item": pl})
+        ld = {"@context": "https://schema.org", "@type": "WebPage", "name": "Dog runs on Long Island and in Queens",
+              "url": base + "/runs", "isPartOf": {"@type": "WebSite", "name": "BarksBuds", "url": base + "/"},
+              "mainEntity": {"@type": "ItemList", "numberOfItems": len(places), "itemListElement": places}}
+        ld_s = json.dumps(ld, ensure_ascii=False).replace("<", "\\u003c")
+        with open(os.path.join(PUBLIC, "runs.html"), encoding="utf-8") as f:
+            page = f.read()
+        page = (page.replace("{{SITE_URL}}", base).replace("{{RUN_COUNT}}", str(len(main)))
+                .replace("{{RUN_LIST}}", "".join(items)).replace("{{JSON_LD}}", ld_s))
+        body = page.encode("utf-8")
+        INDEX_CACHE[key] = (body, gzip.compress(body, 9))
+    return INDEX_CACHE[key]
 
 
 def render_index(host_url):
@@ -159,7 +215,9 @@ def render_index(host_url):
     base = SITE_URL or host_url
     if base not in INDEX_CACHE:
         with open(os.path.join(PUBLIC, "index.html"), encoding="utf-8") as f:
-            INDEX_CACHE[base] = f.read().replace("{{SITE_URL}}", base).encode()
+            page = f.read().replace("{{SITE_URL}}", base)
+            n = sum(1 for r in load_runs()["data"] if not (r.get("type") or "").lower().startswith("off-leash area"))
+            INDEX_CACHE[base] = page.replace("{{RUN_COUNT}}", str(n)).encode()
     return INDEX_CACHE[base]
 
 
@@ -177,9 +235,39 @@ class H(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         p = urlsplit(self.path).path
-        if p.startswith("/img/") or p == "/favicon.ico":
+        if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
+        elif p == "/runs.js":
+            self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
+
+    def _gzip_ok(self):
+        return "gzip" in (self.headers.get("Accept-Encoding") or "")
+
+    def _send_maybe_gz(self, body, gz, ctype, extra=None):
+        extra = dict(extra or {}); extra["Vary"] = "Accept-Encoding"
+        if self._gzip_ok():
+            extra["Content-Encoding"] = "gzip"; body = gz
+        return self._send(200, body, ctype, extra)
+
+    def _static_gz(self, path):
+        """Serve text assets (Leaflet, runs.js, css) gzipped when the browser allows; False to fall back."""
+        if not path.endswith(GZ_TYPES) or not self._gzip_ok() or ".." in path:
+            return False
+        root = os.path.realpath(PUBLIC)
+        fp = os.path.realpath(os.path.join(root, unquote(path).lstrip("/")))
+        if not fp.startswith(root + os.sep) or not os.path.isfile(fp):
+            return False
+        mt = os.path.getmtime(fp)
+        hit = GZ_CACHE.get(fp)
+        if not hit or hit[0] != mt:
+            with open(fp, "rb") as f:
+                hit = (mt, gzip.compress(f.read(), 9)); GZ_CACHE[fp] = hit
+        ctype = self.guess_type(fp)
+        if ctype.startswith(("text/", "application/javascript")) and "charset" not in ctype:
+            ctype += "; charset=utf-8"
+        self._send(200, hit[1], ctype, {"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+        return True
 
     def _send(self, code, body, ctype, extra=None):
         self.send_response(code)
@@ -216,6 +304,24 @@ class H(SimpleHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             return self._send(200, render_index(self._host_url()), "text/html; charset=utf-8",
                               {"Cache-Control": "no-cache"})
+        if u.path in ("/runs", "/runs/", "/runs.html"):
+            body, gz = render_runs(self._host_url())
+            return self._send_maybe_gz(body, gz, "text/html; charset=utf-8", {"Cache-Control": "no-cache"})
+        if u.path == "/sitemap.xml":
+            base = SITE_URL or self._host_url()
+            xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                   f'<url><loc>{base}/</loc></url><url><loc>{base}/runs</loc></url></urlset>\n')
+            return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
+        if u.path == "/api/runs":
+            c = load_runs()
+            hdr = {"Cache-Control": "public, max-age=3600", "ETag": c["etag"], "Access-Control-Allow-Origin": "*"}
+            if c["etag"] in (self.headers.get("If-None-Match") or ""):
+                self.send_response(304)
+                for k, v in hdr.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                return
+            return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
                 return self.send_error(404)
@@ -226,6 +332,8 @@ class H(SimpleHTTPRequestHandler):
                                "Cache-Control": "no-store"})
         if u.path.startswith(("/data", "/admin")) or ".." in u.path:
             return self.send_error(404)
+        if self._static_gz(u.path):
+            return
         return super().do_GET()
 
     def do_POST(self):

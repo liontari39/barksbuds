@@ -137,6 +137,13 @@ section{padding:96px 0}
 .mapcard small{color:var(--muted);font-size:.9rem}
 .mapcard .go{margin-left:auto;background:var(--red);color:#fff;font:700 .9rem/1 "Baloo 2";border-radius:999px;padding:9px 14px 7px;white-space:nowrap}
 .caption{font-size:.85rem;color:var(--muted);text-align:center;margin:14px 0 0}
+.runs-cta{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center}
+.runs-cta .btn{font-size:1.1rem;padding:15px 24px 13px}
+.textlink{font-weight:800;color:var(--red)}
+.pills a{display:inline-flex;align-items:center;gap:8px;color:inherit;text-decoration:none}
+.pills a:hover{text-decoration:underline;text-underline-offset:3px}
+.pills .new{background:var(--gold);color:var(--black);border-radius:999px;font-size:.72rem;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em}
+.soon{display:inline-block;vertical-align:2px;margin-left:6px;font:800 .7rem/1 Nunito,sans-serif;text-transform:uppercase;letter-spacing:.05em;background:var(--black);color:#fff;border-radius:999px;padding:4px 8px}
 /* features */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .card{position:relative;background:#fff;border-radius:var(--r);padding:28px 24px 26px;border:2px solid var(--black);box-shadow:6px 6px 0 var(--gold);transition:transform .15s ease,box-shadow .15s ease}
@@ -214,7 +221,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <a class="brand" href="#top" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="40" height="40" alt="">BarksBuds</a>
     <nav aria-label="Main"><ul class="nav-links">
-      <li><a href="#dog-runs">Dog runs</a></li>
+      <li><a href="/runs">Dog run map</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#story">Our story</a></li>
     </ul></nav>
@@ -233,7 +240,7 @@ footer .bottom p{margin:0}
       <h1 id="hero-title">The social network for dogs <em>and the people who love them.</em></h1>
       <p class="lead">Find the <strong>best dog runs and parks near you</strong>, meet the regulars, and turn "see you at the park" into real <strong>meetups and playdates</strong>. Give your pup a profile, share their best photos, and swap tips with dog people you trust.</p>
       <ul class="pills" aria-label="Highlights">
-        <li class="hot"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Dog run finder</li>
+        <li class="hot"><a href="/runs"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Dog run finder <span class="new">Live</span></a></li>
         <li><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Meetups &amp; playdates</li>
         <li><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>Pup profiles</li>
         <li><svg class="ico" aria-hidden="true"><use href="#i-chat"/></svg>Tips &amp; recs</li>
@@ -269,15 +276,18 @@ footer .bottom p{margin:0}
 <section class="runs" id="dog-runs" aria-labelledby="runs-title">
   <div class="wrap">
     <div>
-      <span class="eyebrow">dog runs &amp; meetups</span>
-      <h2 id="runs-title">Find your local dog run. Meet the pack there.</h2>
-      <p class="lead">BarksBuds puts the dog parks and runs around you on one map, so you always know where to go, and who might be there when you arrive.</p>
+      <span class="eyebrow">new · dog run finder</span>
+      <h2 id="runs-title">Find a dog run near you. Meet the pack there.</h2>
+      <p class="lead">Our dog run map is live: <strong>{{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens</strong> on one map, with the details that matter before you go. Meetups at your favorite run are next.</p>
       <ul class="checks">
-        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg></span><div><b>A map of nearby dog runs</b><span>See the dog parks and off-leash areas close to home, or wherever you are with your pup.</span></div></li>
-        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-fence"/></svg></span><div><b>The details that matter</b><span>Fenced or not, small-dog areas, water, shade and surface, shared by the people who go there.</span></div></li>
-        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg></span><div><b>Meetups at your favorite spot</b><span>Plan a park hang or a group walk, or join one, and see who's heading over.</span></div></li>
+        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg></span><div><b>A map of nearby dog runs</b><span>Search by town, filter by county, or tap "Near me" to see the closest runs first.</span></div></li>
+        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-fence"/></svg></span><div><b>The details that matter</b><span>Fenced or not, small-dog areas, water, shade, hours and residency rules, plus one-tap directions.</span></div></li>
+        <li><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg></span><div><b>Meetups at your favorite spot <small class="soon">Coming soon</small></b><span>Plan a park hang or a group walk, or join one, and see who's heading over.</span></div></li>
       </ul>
-      <a class="btn" href="#join">Get early access</a>
+      <div class="runs-cta">
+        <a class="btn" href="/runs"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Find a dog run near you</a>
+        <a class="textlink" href="#join">or get early access to meetups</a>
+      </div>
     </div>
     <figure style="margin:0">
       <div class="map" role="img" aria-label="Illustration of the planned BarksBuds map showing dog runs and a meetup near you">
@@ -295,7 +305,7 @@ footer .bottom p{margin:0}
         <div class="pin you" style="left:36%;top:58%"><span class="dotme" aria-hidden="true"></span></div>
         <div class="mapcard"><span class="ic"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span><div><b>Saturday morning romp</b><small>Join other dog owners at the run</small></div><span class="go">I'm going</span></div>
       </div>
-      <figcaption class="caption">Illustration of a planned feature, not real listings.</figcaption>
+      <figcaption class="caption">Illustration of upcoming meetups. <a href="/runs">See the real dog run map</a>.</figcaption>
     </figure>
   </div>
 </section>
@@ -338,7 +348,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="#dog-runs">Dog runs</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join the waitlist we store your first name, email, your dog's name and, if you share it, your zip code. We use them only to tell you about BarksBuds and its launch in your area. We never sell or share them, and we'll delete them if you ask.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>
