@@ -58,7 +58,8 @@ class PixelTests(unittest.TestCase):
         for s in ('id="pxm"', "/pixelpal.js", "/pixelmaker.js", "Tap to select", "Keep brush", "Erase brush", "Crop",
                   "Classic", "Retro 8-bit", "Soft", "Use as avatar", "Download PNG", "Start over", 'aria-label="Pixel art preview',
                   "Game Sprite", 'value="eyes"', 'value="nose"', 'id="pxface"', 'id="pxblush"', 'id="pxmouth"', 'id="pxchibi"',
-                  "Reset eyes &amp; nose", '<option value="ink">'):
+                  "Reset eyes &amp; nose", '<option value="ink">', 'id="pxeyes"', "Happy (^ ^)",
+                  '<option value="32" selected>', "Small (24 px)", "Large (40 px)"):
             self.assertIn(s, r.text)
         # Game Sprite is the default (first, pressed) style
         self.assertIn('data-preset="game" aria-pressed="true"', r.text)

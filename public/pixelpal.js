@@ -8,7 +8,9 @@
 
   var PRESETS = {
     // "Game sprite": flat cel-shaded color, one ink outline, hand-drawn eyes/nose stamps (like a 16-bit game character)
-    game: { size: 48, colors: 6, outline: "ink", dither: 0, shadow: true, shade: false, cel: true, saturation: 1.15, contrast: 1.0, smooth: 3, smoothPasses: 2, cluster: 3, sharpen: 0, features: 0, accents: true, chibi: 1, blush: true, mouth: "smile" },
+    game: { size: 32, sizes: [24, 32, 40], colors: 10, outline: "ink", dither: 0, shadow: true, toon: true, clean: 2, saturation: 1.15, chibi: 1, blush: true, mouth: "tongue", eyes: "dots" },
+    // the earlier, more photo-detailed cel look (kept for anyone who liked it)
+    cel: { size: 48, colors: 6, outline: "ink", dither: 0, shadow: true, shade: false, cel: true, saturation: 1.15, contrast: 1.0, smooth: 3, smoothPasses: 2, cluster: 3, sharpen: 0, features: 0, accents: true, chibi: 1, blush: true, mouth: "smile" },
     classic: { size: 48, colors: 10, outline: "dark", dither: 0, shadow: true, shade: true, saturation: 1.18, contrast: 1.05, smooth: 2, cluster: 2, sharpen: 0.35, features: 0.75 },
     retro: { size: 32, colors: 8, outline: "dark", dither: 0.5, shadow: true, shade: true, saturation: 1.3, contrast: 1.12, smooth: 1, cluster: 1, sharpen: 0.3, features: 0.8 },
     soft: { size: 64, colors: 16, outline: "soft", dither: 0, shadow: true, shade: false, saturation: 1.08, contrast: 1.0, smooth: 2, cluster: 1, sharpen: 0.25, features: 0.6 }
@@ -81,6 +83,7 @@
   // ---------------------------------------------------------------- main
   function render(src, opts) {
     opts = Object.assign({}, PRESETS.classic, opts || {});
+    if (opts.toon) return renderToon(src, opts);
     var face = normFace(opts.face, src.width, src.height);
     if (opts.chibi > 0 && face) { var wr = bigHead(src, face, opts.chibi); src = wr.src; face = wr.face; }
     var N = Math.max(16, Math.min(128, opts.size | 0)), W = src.width, H = src.height, px = src.data, mask = src.mask;
@@ -462,9 +465,9 @@
 
   // "chibi": a smooth bulge that enlarges the head region by up to ~30% (inverse-mapped, bilinear)
   function bulgeK(r, R, s) { var u = r / R; if (u >= 1) return 1; var q = 1 - u * u; return 1 - (1 - 1 / s) * q * q; }
-  function bigHead(src, face, amount) {
+  function bigHead(src, face, amount, gain) {
     var hc = headCircle(face, src); if (!hc) return { src: src, face: face };
-    var W = src.width, H = src.height, s = 1 + 0.3 * Math.max(0, Math.min(1.5, amount)), R = hc.r * 1.8;   // reach past the head so its outline grows
+    var W = src.width, H = src.height, s = 1 + (gain || 0.3) * Math.max(0, Math.min(1.5, amount)), R = hc.r * 1.8;   // reach past the head so its outline grows
     var data = new Uint8ClampedArray(src.data), mask = new Uint8Array(src.mask);
     var x0 = Math.max(0, Math.floor(hc.x - R)), x1 = Math.min(W - 1, Math.ceil(hc.x + R)), y0 = Math.max(0, Math.floor(hc.y - R)), y1 = Math.min(H - 1, Math.ceil(hc.y + R));
     for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
@@ -487,7 +490,7 @@
   // round off the silhouette: fill 1-px notches (closing) and shave 1-px bumps, without cutting thin legs or ears
   function smoothSilhouette(a, w, h, lab) {
     function at(x, y) { return x >= 0 && y >= 0 && x < w && y < h ? a[y * w + x] : 0; }
-    for (var pass = 0; pass < 2; pass++) {
+    for (var pass = 0; pass < 1; pass++) {
       var chg = [];
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
         var i = y * w + x, n8 = 0;
@@ -723,6 +726,439 @@
     return { eyes: [nrm(e1), nrm(e2)].sort(function (a, b) { return a[0] - b[0]; }), nose: nose ? nrm(nose) : null, confidence: Math.min(1, best.score / 0.4) };
   }
 
+  // ================================================================ "toon": chunky, cute, hand-made game sprite
+  // The photo only supplies the silhouette and a few flat coat colors; everything else is regularized and drawn
+  // from hand-designed stamps (small dark eyes with one shine, a rounded nose, a light muzzle, a red heart tag).
+  var TOON = {
+    eyes: { xl: ["we", "ee"], l: ["we", "ee"], m: ["w", "e"], s: ["e"] },
+    happy: { xl: [".e.", "e.e"], l: [".e.", "e.e"], m: ["ee"], s: ["e"] },
+    noses: { xl: ["nhnnn", "nnnnn", ".nnn."], l: ["nhnn", "nnnn", ".nn."], m: ["nhn", ".n."], s: ["nn"] },
+    mouths: { xl: ["..m..", "m...m", ".mmm."], l: ["m....m", ".mmmm."], m: ["m...m", ".mmm."], s: [] },
+    tongues: { xl: ["tt", "tt"], l: ["tt", "tt"], m: ["t"], s: ["t"] },
+    spots: [["pp", "pp"], ["ppp", ".pp"], ["pp.", "ppp"]],
+    heart: ["r.r", "rrr", ".r."],
+    heartS: ["rr"]
+  };
+  var TOON_COLORS = { white: [0.99, 0, 0.003], blush: [0.8, 0.065, 0.02], tongue: [0.72, 0.15, 0.035], ear: [0.8, 0.07, 0.012], heart: [0.6, 0.2, 0.09], heartHi: [0.75, 0.15, 0.06] };
+
+  // shorter, stubbier body: squeeze everything below the head (vertically) and beside it (horizontally)
+  function stubby(src, face, amount) {
+    var hc = headCircle(face, src); if (!hc) return { src: src, face: face };
+    var a = Math.max(0, Math.min(2, amount)), ky = 1 - 0.3 * a, kx = 1 - 0.18 * a;
+    var W = src.width, H = src.height, yb = hc.y + hc.r * 0.85, xl = hc.x - hc.r, xr = hc.x + hc.r;
+    var data = new Uint8ClampedArray(W * H * 4), mask = new Uint8Array(W * H);
+    var mapX = new Float64Array(W);
+    for (var x = 0; x < W; x++) mapX[x] = x > xr ? xr + (x - xr) / kx : x < xl ? xl - (xl - x) / kx : x;
+    for (var y = 0; y < H; y++) {
+      var sy = y > yb ? yb + (y - yb) / ky : y; if (sy > H - 1.001 || sy < 0) continue;
+      var iy = sy | 0, fy = sy - iy;
+      for (x = 0; x < W; x++) {
+        var sx = mapX[x]; if (sx < 0 || sx > W - 1.001) continue;
+        var ix = sx | 0, fx = sx - ix, o = y * W + x, p = iy * W + ix;
+        var w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+        for (var ch = 0; ch < 4; ch++) data[4 * o + ch] = src.data[4 * p + ch] * w00 + src.data[4 * p + 4 + ch] * w10 + src.data[4 * (p + W) + ch] * w01 + src.data[4 * (p + W) + 4 + ch] * w11;
+        mask[o] = src.mask[p] * w00 + src.mask[p + 1] * w10 + src.mask[p + W] * w01 + src.mask[p + W + 1] * w11;
+      }
+    }
+    function fwd(q) { var X = q[0], Y = q[1]; return [X > xr ? xr + (X - xr) * kx : X < xl ? xl - (xl - X) * kx : X, Y > yb ? yb + (Y - yb) * ky : Y]; }
+    return { src: { width: W, height: H, data: data, mask: mask }, face: { eyes: face.eyes.map(fwd), nose: face.nose && fwd(face.nose) } };
+  }
+
+  // flood-fill components of equal labels (4-connected)
+  function components(lbl, w, h, skip) {
+    var id = new Int32Array(w * h).fill(-1), comps = [], stack = [];
+    for (var i = 0; i < w * h; i++) {
+      if (lbl[i] === skip || id[i] >= 0) continue;
+      var v = lbl[i], cells = [], c = comps.length; id[i] = c; stack.push(i);
+      while (stack.length) {
+        var p = stack.pop(); cells.push(p); var x = p % w, y = (p - x) / w;
+        if (x > 0 && id[p - 1] < 0 && lbl[p - 1] === v) { id[p - 1] = c; stack.push(p - 1); }
+        if (x < w - 1 && id[p + 1] < 0 && lbl[p + 1] === v) { id[p + 1] = c; stack.push(p + 1); }
+        if (y > 0 && id[p - w] < 0 && lbl[p - w] === v) { id[p - w] = c; stack.push(p - w); }
+        if (y < h - 1 && id[p + w] < 0 && lbl[p + w] === v) { id[p + w] = c; stack.push(p + w); }
+      }
+      comps.push({ v: v, cells: cells });
+    }
+    return { id: id, comps: comps };
+  }
+
+  // big, clean, flat regions: a few majority passes, then every island smaller than minSize joins its neighbour
+  function regularize(lbl, w, h, passes, minSize) {
+    var x, y, i;
+    for (var ps = 0; ps < passes; ps++) {
+      var out = lbl.slice();
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x; if (lbl[i] < 0) continue;
+        var cnt = {}, self = 0;
+        for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+          var xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          var u = lbl[yy * w + xx]; if (u < 0) continue; cnt[u] = (cnt[u] || 0) + 1;
+        }
+        self = cnt[lbl[i]];
+        for (var k in cnt) if (cnt[k] > self && cnt[k] >= 5) { out[i] = +k; self = cnt[k]; }
+      }
+      for (i = 0; i < lbl.length; i++) lbl[i] = out[i];
+    }
+    for (var round = 0; round < 3; round++) {
+      var cc = components(lbl, w, h, -1), changed = false;
+      cc.comps.forEach(function (c, ci) {
+        if (c.cells.length >= minSize) return;
+        var cnt = {}, best = -1, bc = 0;
+        c.cells.forEach(function (p) {
+          var px = p % w, py = (p - px) / w, nb = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, py > 0 ? p - w : -1, py < h - 1 ? p + w : -1];
+          nb.forEach(function (q) { if (q >= 0 && lbl[q] >= 0 && cc.id[q] !== ci) { cnt[lbl[q]] = (cnt[lbl[q]] || 0) + 1; if (cnt[lbl[q]] > bc) { bc = cnt[lbl[q]]; best = lbl[q]; } } });
+        });
+        if (best >= 0) { c.cells.forEach(function (p) { lbl[p] = best; }); changed = true; }
+      });
+      if (!changed) break;
+    }
+  }
+
+  // rounded silhouette: 3x3 majority on the alpha (rounds corners, fills notches) without erasing 2px legs
+  function roundAlpha(a, w, h) {
+    var out = a.slice();
+    function at(xx, yy) { return xx >= 0 && yy >= 0 && xx < w && yy < h && a[yy * w + xx]; }
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var n = 0;
+      for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h && a[yy * w + xx]) n++; }
+      var i = y * w + x;
+      if (!a[i] && n >= 6) out[i] = 1;
+      else if (a[i] && n <= 3) out[i] = 0;
+      else if (a[i] && n <= 4 && !at(x - 1, y) && !at(x + 1, y) && !at(x, y + 1)) out[i] = 0;   // a 1-px spike hanging down
+      else if (a[i] && n === 4) {   // a square convex corner of a part at least 3 px thick both ways gets cut
+        for (var c = 0; c < 4; c++) {
+          var sx = c & 1 ? 1 : -1, sy = c & 2 ? 1 : -1;   // the direction the body extends in
+          if (at(x - sx, y) || at(x, y - sy)) continue;
+          if (at(x + sx, y) && at(x + 2 * sx, y) && at(x, y + sy) && at(x, y + 2 * sy) && at(x + sx, y + sy) && at(x + 2 * sx, y + 2 * sy)) { out[i] = 0; break; }
+        }
+      }
+    }
+    for (var k = 0; k < a.length; k++) a[k] = out[k];
+    // cutting corners can leave a new 1-px nub hanging below a foot: trim one pixel (from a snapshot, so thin legs only lose their tip)
+    var cut = [];
+    for (y = 1; y < h; y++) for (x = 0; x < w; x++)
+      if (a[y * w + x] && !at(x - 1, y) && !at(x + 1, y) && !at(x, y + 1) && !at(x - 1, y + 1) && !at(x + 1, y + 1) && (at(x - 1, y - 1) || at(x, y - 1) || at(x + 1, y - 1))) cut.push(y * w + x);
+    cut.forEach(function (q) { a[q] = 0; });
+  }
+
+  function renderToon(src, opts) {
+    var W0 = src.width, H0 = src.height;
+    var face = normFace(opts.face, W0, H0), amount = opts.chibi || 0;
+    if (amount > 0 && face) {
+      // a small head on a full-body photo gets a stronger boost than a close-up portrait
+      var hc0 = headCircle(face, src), bb0 = mainBox(src.mask, W0, H0), q = hc0 ? hc0.r / Math.max(bb0[2] - bb0[0] + 1, bb0[3] - bb0[1] + 1) : 0.4;
+      var wr = bigHead(src, face, amount, 0.5 + Math.max(0, Math.min(0.3, (0.36 - q) * 2.2))); src = wr.src; face = wr.face;
+      wr = stubby(src, face, amount * (1 + Math.max(0, Math.min(0.5, (0.36 - q) * 3)))); src = wr.src; face = wr.face;
+    }
+    var N = Math.max(16, Math.min(64, opts.size | 0)), W = src.width, H = src.height, px = src.data, mask = src.mask, x, y, i, g;
+    var box = mainBox(mask, W, H), x0 = box[0], y0 = box[1], bw = box[2] - x0 + 1, bh = box[3] - y0 + 1;
+    var bottom = opts.shadow ? 2 : 1, innerW = N - 2, innerH = N - 1 - bottom;
+    var scale = Math.max(bw / innerW, bh / innerH);
+    var gw = Math.max(1, Math.min(innerW, Math.round(bw / scale))), gh = Math.max(1, Math.min(innerH, Math.round(bh / scale))), G = gw * gh;
+
+    // 1. per-cell coverage and mean color (linear RGB, solid mask only), plus how much of the cell is a vivid red/pink accent
+    var sr = new Float64Array(G), sg = new Float64Array(G), sb = new Float64Array(G), sw = new Float64Array(G), cov = new Float64Array(G), cnt = new Float64Array(G);
+    var vr = new Float64Array(G), vg = new Float64Array(G), vb = new Float64Array(G), vn = new Float64Array(G);
+    var st = Math.max(1, Math.floor(scale / 6));
+    for (y = 0; y < bh; y += st) {
+      var gy = Math.min(gh - 1, Math.floor(y * gh / bh));
+      for (x = 0; x < bw; x += st) {
+        var gx = Math.min(gw - 1, Math.floor(x * gw / bw)), c = gy * gw + gx, p = (y + y0) * W + x + x0, m = mask[p];
+        cnt[c]++; cov[c] += m / 255; if (m < 200) continue;
+        var R = LUT[px[4 * p]], Gc = LUT[px[4 * p + 1]], B = LUT[px[4 * p + 2]];
+        sr[c] += R; sg[c] += Gc; sb[c] += B; sw[c]++;
+        if (R > 0.08 && R > Gc * 3 && R > B * 2.2) { var vl = toLab(px[4 * p], px[4 * p + 1], px[4 * p + 2]); if (vl[1] > 0.07 && Math.hypot(vl[1], vl[2]) > 0.085) { vr[c] += R; vg[c] += Gc; vb[c] += B; vn[c]++; } }
+      }
+    }
+    function linLab(r, gg, b) { return toLab(l2s(r), l2s(gg), l2s(b)); }
+    var ga = new Uint8Array(G), lab = new Array(G), vivid = new Uint8Array(G);
+    for (g = 0; g < G; g++) {
+      cov[g] = cnt[g] ? cov[g] / cnt[g] : 0;
+      ga[g] = cov[g] >= 0.45 ? 1 : 0;
+      lab[g] = sw[g] ? linLab(sr[g] / sw[g], sg[g] / sw[g], sb[g] / sw[g]) : null;
+      if (sw[g] && vn[g] >= Math.max(1, sw[g] * 0.12)) vivid[g] = 1;
+    }
+    // 2. silhouette: drop specks, round corners, fill notches
+    cleanAlpha(ga, gw, gh, lab.map(function (l) { return l || [0.5, 0, 0]; }));
+    roundAlpha(ga, gw, gh);
+    for (g = 0; g < G; g++) if (ga[g] && !lab[g]) {   // borrowed color for cells with no solid samples
+      var gx2 = g % gw, gy2 = (g - gx2) / gw;
+      for (var rr = 1; rr < 4 && !lab[g]; rr++) for (var dy = -rr; dy <= rr && !lab[g]; dy++) for (var dx = -rr; dx <= rr; dx++) {
+        var qx = gx2 + dx, qy = gy2 + dy; if (qx >= 0 && qy >= 0 && qx < gw && qy < gh && lab[qy * gw + qx]) { lab[g] = lab[qy * gw + qx]; break; }
+      }
+      if (!lab[g]) lab[g] = [0.5, 0, 0];
+    }
+
+    // 3. coat regions: k-means on the coat (not the accent), merged by lightness; a dark coat is one region
+    var coat = [], cw = [];
+    for (g = 0; g < G; g++) if (ga[g] && !vivid[g]) { coat.push(lab[g]); cw.push(1); }
+    if (!coat.length) for (g = 0; g < G; g++) if (ga[g]) { coat.push(lab[g]); cw.push(1); }
+    var Ls = coat.map(function (c) { return c[0]; }).sort(function (a, b) { return a - b; });
+    var med = Ls.length ? Ls[Math.floor(Ls.length / 2)] : 0.5, dark = med < 0.4;
+    var maxRegions = opts.regions || (opts.colors >= 12 ? 3 : opts.colors >= 8 ? 2 : 1);
+    var cents = dark || maxRegions < 2 ? [coat.length ? meanLab(coat) : [0.5, 0, 0]] : kmeans(coat, cw, Math.min(3, maxRegions + 1), 20);
+    cents.sort(function (a, b) { return a[0] - b[0]; });
+    var lbl = new Int16Array(G).fill(-1);
+    for (g = 0; g < G; g++) if (ga[g]) lbl[g] = nearest(cents, lab[g]);
+    // merge clusters that are too alike, and cap the number of regions (merge the smallest into its nearest)
+    var sizes = cents.map(function () { return 0; }); for (g = 0; g < G; g++) if (lbl[g] >= 0) sizes[lbl[g]]++;
+    var alive = cents.map(function (_, k) { return k; });
+    function remap(from, to) { for (var q = 0; q < G; q++) if (lbl[q] === from) lbl[q] = to; sizes[to] += sizes[from]; sizes[from] = 0; alive = alive.filter(function (k) { return k !== from; }); }
+    for (var guard = 0; guard < 4 && alive.length > 1; guard++) {
+      var bestPair = null, bd = Infinity;
+      for (var a1 = 0; a1 < alive.length; a1++) for (var a2 = a1 + 1; a2 < alive.length; a2++) { var d = dist(cents[alive[a1]], cents[alive[a2]]); if (d < bd) { bd = d; bestPair = [alive[a1], alive[a2]]; } }
+      if (bd > 0.07 * 0.07 * 1.96 && alive.length <= maxRegions) break;
+      var small = sizes[bestPair[0]] < sizes[bestPair[1]] ? bestPair[0] : bestPair[1];
+      remap(small, small === bestPair[0] ? bestPair[1] : bestPair[0]);
+    }
+    var minIsl = Math.max(3, Math.round(G * 0.012 * (opts.clean == null ? 2 : opts.clean)));
+    regularize(lbl, gw, gh, opts.clean == null ? 2 : Math.min(3, opts.clean), minIsl);
+    sizes = cents.map(function () { return 0; }); for (g = 0; g < G; g++) if (lbl[g] >= 0) sizes[lbl[g]]++;
+    var baseK = 0; for (var k2 = 0; k2 < sizes.length; k2++) if (sizes[k2] > sizes[baseK]) baseK = k2;
+
+    // 4. friendly flat colors: light coats become a warm pastel, patches stay soft; black coats a cool charcoal
+    var pal = [], cache = {};
+    function idx(key, c) { if (cache[key] == null) cache[key] = pal.push(c) - 1; return cache[key]; }
+    var sat = opts.saturation || 1.15, regionCol = {}, cb = cents[baseK];
+    var baseL = dark ? 0.31 : Math.max(0.78, Math.min(0.86, cb[0] + 0.12));
+    Object.keys(sizes).forEach(function (k) {
+      if (!sizes[k]) return; var c = cents[k], L, A, B;
+      if (dark) { L = baseL; A = c[1] * 0.3 - 0.002; B = c[2] * 0.3 - 0.013; }
+      else {
+        var dL = c[0] - cb[0];
+        L = +k === baseK ? baseL : baseL + (dL < 0 ? -1 : 1) * Math.max(0.12, Math.min(0.2, Math.abs(dL) * 0.8));
+        A = c[1] * sat; B = c[2] * sat + (+k === baseK ? 0.004 : 0);
+        var chr = Math.hypot(A, B); if (chr < 0.03) { A += 0.008; B += 0.02; }   // never a dead grey: nudge warm
+      }
+      regionCol[k] = [L, A, B];
+    });
+    var ink = dark ? [0.15, -0.004, -0.02] : [0.27, regionCol[baseK][1] * 0.5 + 0.02, regionCol[baseK][2] * 0.4 + 0.025];
+    var inkI = idx("ink", ink);
+    var shades = {};
+    Object.keys(regionCol).forEach(function (k) {
+      var c = regionCol[k], big = sizes[k] >= G * 0.05 || +k === baseK;
+      shades[k] = { base: idx("r" + k, c),
+        hl: big ? idx("h" + k, dark ? [c[0] + 0.13, c[1] - 0.006, c[2] - 0.035] : [Math.min(0.96, c[0] + 0.07), c[1] * 0.9, c[2] * 0.9 + 0.004]) : null,
+        sh: big ? idx("s" + k, dark ? [c[0] - 0.075, c[1], c[2] - 0.01] : [c[0] - 0.1, c[1] * 1.05 + 0.006, c[2] * 1.05 - 0.004]) : null };
+    });
+
+    // 5. face geometry on the grid: level eyes, spread a little wider and lower; nose centred under them (front-ish)
+    var fg = null;
+    if (face) {
+      var toG = function (q) { return [(q[0] - x0) * gw / bw, (q[1] - y0) * gh / bh]; };
+      var eyes = face.eyes.map(toG), nose = face.nose && toG(face.nose), unit;
+      if (eyes.length === 2) {
+        eyes.sort(function (a, b) { return a[0] - b[0]; });
+        var mx = (eyes[0][0] + eyes[1][0]) / 2, my = (eyes[0][1] + eyes[1][1]) / 2, de = Math.max(1, Math.hypot(eyes[1][0] - eyes[0][0], eyes[1][1] - eyes[0][1]));
+        var half = Math.max(1.5, de * (de >= 10 ? 0.52 : 0.56)), ey = my + de * 0.1;
+        eyes = [[mx - half, ey], [mx + half, ey]]; unit = de;
+        if (nose && opts.front !== false) nose = [mx, Math.max(ey + Math.max(1.6, de * 0.32), Math.min(nose[1], ey + de * 0.5))];
+      } else if (eyes.length === 1 && nose) { unit = Math.hypot(eyes[0][0] - nose[0], eyes[0][1] - nose[1]) * 1.25; eyes[0][1] += unit * 0.08; }
+      else unit = N / 6;
+      eyes = eyes.map(function (e) {   // keep each eye at least 2 cells inside the silhouette
+        var ex2 = e[0], ey2 = Math.round(e[1] - 0.5), cxm = eyes.length === 2 ? (eyes[0][0] + eyes[1][0]) / 2 : (nose ? nose[0] : e[0]), dir = e[0] < cxm ? -1 : 1;
+        function solid(xx) { xx = Math.round(xx - 0.5); return xx >= 0 && xx < gw && ey2 >= 0 && ey2 < gh && ga[ey2 * gw + xx]; }
+        for (var t = 0; t < 3 && !(solid(ex2 + dir * 2) && solid(ex2 + dir)); t++) ex2 -= dir;
+        return [ex2, e[1]];
+      });
+      fg = { eyes: eyes, nose: nose, unit: unit, sz: unit >= 10 ? "xl" : unit >= 6.5 ? "l" : unit >= 3.5 ? "m" : "s" };
+    }
+
+    // 6. paint: regions, then light muzzle (around the nose), pink inner ears, curls, cel shading
+    if (fg && !dark && fg.eyes.length === 2) {   // no dark "mask" across the eyes: the face zone is base coat
+      var fe0 = fg.eyes[0], fe1 = fg.eyes[1], fcx = (fe0[0] + fe1[0]) / 2, fdd = fe1[0] - fe0[0], cleared = false;
+      for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) {
+        g = y * gw + x; if (lbl[g] < 0 || lbl[g] === baseK || regionCol[lbl[g]][0] > baseL) continue;
+        var fx = (x + 0.5 - fcx) / (fdd * 0.85), fy = (y + 0.5 - (fe0[1] + fdd * 0.15)) / (fdd * 0.5);
+        if (fx * fx + fy * fy <= 1) { lbl[g] = baseK; cleared = true; }
+      }
+      if (cleared) regularize(lbl, gw, gh, 0, minIsl);
+    }
+    var ix = new Int16Array(G).fill(-1), role = new Int8Array(G);   // role 0 coat, 1 muzzle, 2 ear
+    for (g = 0; g < G; g++) if (ga[g]) ix[g] = shades[lbl[g]].base;
+    var muzzleK = null;
+    if (fg && fg.nose && opts.faceStamps !== false) {
+      var mzc = dark ? [0.56, -0.006, -0.022] : [Math.min(0.95, baseL + 0.13), regionCol[baseK][1] * 0.45, regionCol[baseK][2] * 0.5 + 0.006];
+      var muzI = idx("muzzle", mzc), muzS = idx("muzzle-s", dark ? [0.44, -0.008, -0.03] : [mzc[0] - 0.07, mzc[1] * 1.2 + 0.004, mzc[2] * 1.1 + 0.004]);
+      muzzleK = { base: muzI, sh: muzS };
+      var u = fg.unit, rx = Math.max(2.2, u * (dark ? 0.66 : 0.52)), ry = Math.max(1.6, u * (dark ? 0.42 : 0.36)), ncx = fg.nose[0], ncy = fg.nose[1] + ry * (dark ? 0.6 : 0.35);
+      for (y = Math.floor(ncy - ry - 1); y <= Math.ceil(ncy + ry + 1); y++) for (x = Math.floor(ncx - rx - 1); x <= Math.ceil(ncx + rx + 1); x++) {
+        if (x < 0 || y < 0 || x >= gw || y >= gh) continue; g = y * gw + x; if (!ga[g]) continue;
+        var ex = (x + 0.5 - ncx) / rx, eyy = (y + 0.5 - ncy) / ry;
+        if (ex * ex + eyy * eyy <= 1) { ix[g] = muzI; role[g] = 1; }
+      }
+      // a light coat's darkest patch never sits on the face: soften dark masks around the eyes to the coat's patch tone
+    }
+    if (fg && !dark && fg.eyes.length === 2 && opts.faceStamps !== false) {
+      var e0 = fg.eyes[0], e1 = fg.eyes[1], cxh = (e0[0] + e1[0]) / 2, dd = e1[0] - e0[0], earI = idx("ear", TOON_COLORS.ear);
+      var isEar = new Uint8Array(G);
+      for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) {
+        g = y * gw + x; if (!ga[g] || y > e0[1] - dd * 0.55) continue;
+        var ddx = (x + 0.5 - cxh) / (dd * 1.0), ddy = (y + 0.5 - (e0[1] + dd * 0.15)) / (dd * 0.85);
+        if (ddx * ddx + ddy * ddy > 1) isEar[g] = 1;
+      }
+      var ecc = components(Array.prototype.map.call(isEar, function (v) { return v ? 1 : 0; }), gw, gh, 0);
+      ecc.comps.forEach(function (c) {
+        if (c.cells.length < 4) return;
+        c.cells.forEach(function (q) {
+          var qx = q % gw, qy = (q - qx) / gw, inner = true;
+          for (var oy = -1; oy <= 1 && inner; oy++) for (var ox = -1; ox <= 1; ox++) { var tx = qx + ox, ty = qy + oy; if (tx < 0 || ty < 0 || tx >= gw || ty >= gh || !ga[ty * gw + tx]) { inner = false; break; } }
+          if (inner && qy + 1 < gh && ga[q + gw]) { ix[q] = earI; role[q] = 2; }
+        });
+      });
+    }
+    function off(xx, yy) { return xx < 0 || yy < 0 || xx >= gw || yy >= gh || !ga[yy * gw + xx]; }
+    var out2 = ix.slice();
+    for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) {
+      g = y * gw + x; if (!ga[g] || role[g] === 2) continue;
+      var sh = role[g] === 1 ? muzzleK : shades[lbl[g]];
+      var lit = off(x, y - 1) || off(x - 1, y), shade = off(x, y + 1) || off(x + 1, y) || (!off(x, y + 1) && off(x + 1, y + 1) && off(x, y + 2));
+      if (role[g] === 1) { if (shade && sh.sh != null) out2[g] = sh.sh; continue; }
+      if (shade && !lit && sh.sh != null) out2[g] = sh.sh; else if (lit && !shade && sh.hl != null) out2[g] = sh.hl;
+    }
+    ix = out2;
+    if (dark && opts.curls !== false) {   // curly coat hint: a sparse, regular sprinkle of highlight pixels away from the edges
+      var hlI = shades[baseK].hl;
+      for (y = 2; y < gh - 2; y++) for (x = 2; x < gw - 2; x++) {
+        g = y * gw + x; if (!ga[g] || role[g] || ix[g] !== shades[lbl[g]].base) continue;
+        var ok = true; for (var cy2 = -2; cy2 <= 2 && ok; cy2++) for (var cx2 = -2; cx2 <= 2; cx2++) if (off(x + cx2, y + cy2)) { ok = false; break; }
+        if (!ok) continue;
+        var row = Math.floor(y / 3);
+        if (y % 4 === 1 && (x + row * 3) % 6 === 0) { ix[g] = hlI; if (x + 1 < gw && ga[g + gw + 1] && !role[g + gw + 1]) ix[g + gw + 1] = hlI; }
+      }
+    }
+
+    // merle / spotted coats: a few simple, chunky patches where the photo is darkest (never on the face)
+    if (!dark && opts.spots !== false) {
+      var darker = 0, coatN = 0;
+      for (g = 0; g < G; g++) if (ga[g] && !vivid[g]) { coatN++; if (lab[g][0] < cb[0] - 0.05) darker++; }
+      if (coatN && darker > coatN * 0.08 && darker < coatN * 0.5) {
+        var pk = null; Object.keys(regionCol).forEach(function (k) { if (regionCol[k][0] < baseL - 0.05 && (pk == null || sizes[k] > sizes[pk])) pk = k; });
+        var pc = pk != null ? regionCol[pk] : [baseL - 0.15, regionCol[baseK][1] * 0.7, regionCol[baseK][2] * 0.6];
+        var spotI = pk != null ? shades[pk].base : idx("spot", pc), cand = [];
+        var avoid = function (xx, yy) {
+          if (!fg || fg.eyes.length < 1) return false;
+          var ee = fg.eyes, fx2 = ee.length === 2 ? (ee[0][0] + ee[1][0]) / 2 : ee[0][0], fy2 = ee[0][1] + fg.unit * 0.2;
+          var rx2 = fg.unit * (ee.length === 2 ? 1.0 : 0.9), ry2 = fg.unit * 0.65, ax = (xx + 0.5 - fx2) / rx2, ay = (yy + 0.5 - fy2) / ry2;
+          return ax * ax + ay * ay <= 1;
+        };
+        for (y = 1; y < gh - 1; y++) for (x = 1; x < gw - 1; x++) {
+          g = y * gw + x; if (!ga[g] || role[g] || lbl[g] !== baseK) continue;
+          var inside = true; for (var sy2 = -2; sy2 <= 2 && inside; sy2++) for (var sx2 = -2; sx2 <= 2; sx2++) if (off(x + sx2, y + sy2)) { inside = false; break; }
+          if (!inside || avoid(x, y)) continue;
+          var dsum = 0; for (var by = -1; by <= 1; by++) for (var bx = -1; bx <= 1; bx++) dsum += cb[0] - lab[(y + by) * gw + x + bx][0];
+          if (dsum / 9 > 0.04) cand.push([dsum / 9, x, y]);
+        }
+        cand.sort(function (a, b) { return b[0] - a[0] || a[2] - b[2] || a[1] - b[1]; });
+        var picked = [], maxSpots = Math.max(2, Math.round(G / 90));
+        cand.forEach(function (cnd) {
+          if (picked.length >= maxSpots || picked.some(function (q) { return Math.max(Math.abs(q[1] - cnd[1]), Math.abs(q[2] - cnd[2])) < 5; })) return;
+          picked.push(cnd);
+          var sp = TOON.spots[picked.length % TOON.spots.length];
+          for (var r2 = 0; r2 < sp.length; r2++) for (var c2 = 0; c2 < sp[r2].length; c2++) {
+            if (sp[r2][c2] !== "p") continue; var tx = cnd[1] + c2 - 1, ty = cnd[2] + r2;
+            if (tx < 0 || ty < 0 || tx >= gw || ty >= gh) continue; var tg = ty * gw + tx;
+            if (ga[tg] && !role[tg] && lbl[tg] === baseK && ix[tg] === shades[baseK].base && !avoid(tx, ty)) ix[tg] = spotI;
+          }
+        });
+      }
+    }
+
+    // 7. accent: a small red/pink spot (a collar tag) becomes a clear little red heart
+    var vc = components(Array.prototype.map.call(vivid, function (v, q) { return v && ga[q] ? 1 : 0; }), gw, gh, 0);
+    vc.comps.forEach(function (c) {
+      if (c.cells.length > G * 0.05) return;
+      var hx = 0, hy = 0; c.cells.forEach(function (q) { hx += q % gw; hy += Math.floor(q / gw); }); hx = hx / c.cells.length + 0.5; hy = hy / c.cells.length + 0.5;
+      if (fg && fg.nose && Math.hypot(hx - fg.nose[0], hy - fg.nose[1]) < fg.unit * 0.55) return;   // that is a tongue, not a tag
+      var rI = idx("heart", TOON_COLORS.heart), rh = idx("heart-hi", TOON_COLORS.heartHi);
+      var pat = N >= 28 ? TOON.heart : TOON.heartS, bestFit = -1, bx = hx, by = hy;
+      for (var sdy = -1; sdy <= 1; sdy++) for (var sdx = -2; sdx <= 2; sdx++) {   // nudge it fully inside the dog
+        var fit = 0, hox = Math.round(hx + sdx - pat[0].length / 2), hoy = Math.round(hy + sdy - pat.length / 2);
+        for (var hr = 0; hr < pat.length; hr++) for (var hc2 = 0; hc2 < pat[0].length; hc2++) {
+          var tx2 = hox + hc2, ty2 = hoy + hr; if (pat[hr][hc2] === "." ) continue;
+          if (tx2 >= 0 && ty2 >= 0 && tx2 < gw && ty2 < gh && ga[ty2 * gw + tx2] && (tx2 + 1 >= gw || ga[ty2 * gw + tx2 + 1] || hc2 < pat[0].length - 1) && (tx2 < 1 || ga[ty2 * gw + tx2 - 1])) fit++;
+        }
+        fit -= (Math.abs(sdx) + Math.abs(sdy)) * 0.1;
+        if (fit > bestFit) { bestFit = fit; bx = hx + sdx; by = hy + sdy; }
+      }
+      hx = bx; hy = by;
+      stamp(ix, gw, gh, pat, hx, hy, function (ch, r, cc) { return r === 0 && cc === 0 ? rh : rI; }, false, ga);
+    });
+
+    // 8. face stamps
+    if (fg && opts.faceStamps !== false) {
+      var sz = fg.sz, eyeI = inkI, whI = idx("white", TOON_COLORS.white);
+      if (opts.blush && fg.eyes.length) {
+        var blI = idx("blush", dark ? [0.62, 0.07, 0.015] : TOON_COLORS.blush), mid = fg.nose ? fg.nose[0] : fg.eyes[0][0];
+        fg.eyes.forEach(function (e) {
+          var side = fg.eyes.length === 2 ? (e[0] < mid ? -1 : 1) : (e[0] < mid ? -1 : 1);
+          var big = sz === "l" || sz === "xl"; stamp(ix, gw, gh, big ? ["bb"] : ["b"], e[0] + side * (big ? 1.2 : 0.8), e[1] + (sz === "xl" ? 2.6 : big ? 2.2 : 1.6), function () { return blI; }, true, ga);
+        });
+      }
+      var epat = opts.eyes === "happy" ? TOON.happy[sz] : TOON.eyes[sz];
+      fg.eyes.forEach(function (e, n) {
+        var pat = epat;
+                stamp(ix, gw, gh, pat, e[0], e[1], function (ch) { return ch === "w" ? whI : eyeI; }, false, ga);
+      });
+      if (fg.nose) {
+        var noseI = inkI, nhI = muzzleK ? muzzleK.base : idx("noseshine", dark ? [0.56, -0.006, -0.022] : [0.86, 0.01, 0.02]);
+        var np = TOON.noses[sz];
+        stamp(ix, gw, gh, np, fg.nose[0], fg.nose[1], function (ch) { return ch === "h" ? nhI : noseI; }, false, ga);
+        var below = Math.round(fg.nose[1] - np.length / 2) + np.length;
+        // small faces: a tongue alone reads better than smile lines; bigger faces get a smile, tongue hanging from it
+        var small = sz === "s" || sz === "m", mp = (opts.mouth === "smile" || (opts.mouth === "tongue" && !small)) ? TOON.mouths[sz] : [];
+        if (mp.length) stamp(ix, gw, gh, mp, fg.nose[0], below + mp.length / 2, function () { return noseI; }, true, ga);
+        if (opts.mouth === "tongue") {
+          var tp = TOON.tongues[sz], tI = idx("tongue", TOON_COLORS.tongue);
+          stamp(ix, gw, gh, tp, fg.nose[0], below + (mp.length ? mp.length - 1 : 0) + tp.length / 2, function () { return tI; }, false, ga);
+        }
+      }
+    }
+
+    // 9. compose: ink outline, soft drop shadow, backdrop
+    var ox = Math.floor((N - gw) / 2), oy = N - bottom - gh;
+    var outImg = new Uint8ClampedArray(N * N * 4), cell = new Int16Array(N * N).fill(-1);
+    for (y = 0; y < gh; y++) for (x = 0; x < gw; x++) { g = y * gw + x; if (ix[g] >= 0) cell[(y + oy) * N + x + ox] = ix[g]; }
+    var rgbPal = pal.map(function (c) { return toRgb(c[0], c[1], c[2]); });
+    for (i = 0; i < N * N; i++) if (cell[i] >= 0) { var rc = rgbPal[cell[i]]; outImg[4 * i] = rc[0]; outImg[4 * i + 1] = rc[1]; outImg[4 * i + 2] = rc[2]; outImg[4 * i + 3] = 255; }
+    if (opts.shadow) {
+      var scx = ox + gw / 2 - 0.5, scy = oy + gh - 0.5, srx = Math.max(2, gw * 0.4), sry = 1.1;
+      for (y = Math.floor(scy - sry); y <= Math.ceil(scy + sry); y++) for (x = Math.floor(scx - srx); x <= Math.ceil(scx + srx); x++) {
+        if (x < 0 || y < 0 || x >= N || y >= N) continue;
+        var e2 = Math.pow((x - scx) / srx, 2) + Math.pow((y - scy) / sry, 2), k3 = y * N + x;
+        if (e2 <= 1 && cell[k3] < 0) { outImg[4 * k3] = SHADOW[0]; outImg[4 * k3 + 1] = SHADOW[1]; outImg[4 * k3 + 2] = SHADOW[2]; outImg[4 * k3 + 3] = 64; }
+      }
+    }
+    if (opts.outline && opts.outline !== "none") {
+      var oc = toRgb(ink[0], ink[1], ink[2]);
+      for (y = 0; y < N; y++) for (x = 0; x < N; x++) {
+        var k4 = y * N + x; if (cell[k4] >= 0) continue;
+        var near = (x > 0 && cell[k4 - 1] >= 0) || (x < N - 1 && cell[k4 + 1] >= 0) || (y > 0 && cell[k4 - N] >= 0) || (y < N - 1 && cell[k4 + N] >= 0);
+        if (near) { outImg[4 * k4] = oc[0]; outImg[4 * k4 + 1] = oc[1]; outImg[4 * k4 + 2] = oc[2]; outImg[4 * k4 + 3] = 255; }
+      }
+    }
+    var bdp = typeof opts.backdrop === "string" ? BACKDROPS[opts.backdrop] : opts.backdrop;
+    if (bdp) for (i = 0; i < N * N; i++) {
+      var al = outImg[4 * i + 3] / 255;
+      for (var chn = 0; chn < 3; chn++) outImg[4 * i + chn] = Math.round(outImg[4 * i + chn] * al + bdp[chn] * (1 - al));
+      outImg[4 * i + 3] = 255;
+    }
+    return { width: N, height: N, data: outImg, palette: rgbPal, grid: { x: ox, y: oy, w: gw, h: gh }, face: fg, dark: dark };
+  }
+
+  function meanLab(pts) { var s = [0, 0, 0]; pts.forEach(function (p) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; }); return [s[0] / pts.length, s[1] / pts.length, s[2] / pts.length]; }
+
+  // place a pattern centred on (cx, cy), clipped to the silhouette
+  function stamp(ix, gw, gh, pattern, cx, cy, colorOf, onlyOpaque, ga) {
+    var ph = pattern.length, pw = pattern[0].length, ox = Math.round(cx - pw / 2), oy = Math.round(cy - ph / 2);
+    for (var r = 0; r < ph; r++) for (var c = 0; c < pw; c++) {
+      var ch = pattern[r][c]; if (ch === ".") continue;
+      var x = ox + c, y = oy + r; if (x < 0 || y < 0 || x >= gw || y >= gh) continue;
+      var g = y * gw + x; if (!ga[g]) continue;   // stamps never grow the silhouette
+      ix[g] = colorOf(ch, r, c);
+    }
+  }
+
   function upscale(spr, s) {
     var W = spr.width * s, H = spr.height * s, out = new Uint8ClampedArray(W * H * 4);
     for (var y = 0; y < H; y++) { var sy = (y / s) | 0; for (var x = 0; x < W; x++) { var si = (sy * spr.width + ((x / s) | 0)) * 4, di = (y * W + x) * 4; out[di] = spr.data[si]; out[di + 1] = spr.data[si + 1]; out[di + 2] = spr.data[si + 2]; out[di + 3] = spr.data[si + 3]; } }
@@ -730,6 +1166,6 @@
   }
 
   var api = { render: render, upscale: upscale, PRESETS: PRESETS, BACKDROPS: BACKDROPS, toLab: toLab, toRgb: toRgb, kmeans: kmeans,
-    guessFace: guessFace, bigHead: bigHead, STAMP_COLORS: STAMP_COLORS, headCircle: headCircle, mergeIslands: mergeIslands, celShade: celShade, smoothSilhouette: smoothSilhouette, EYES: EYES, NOSES: NOSES };
+    guessFace: guessFace, bigHead: bigHead, stubby: stubby, regularize: regularize, roundAlpha: roundAlpha, TOON: TOON, TOON_COLORS: TOON_COLORS, STAMP_COLORS: STAMP_COLORS, headCircle: headCircle, mergeIslands: mergeIslands, celShade: celShade, smoothSilhouette: smoothSilhouette, EYES: EYES, NOSES: NOSES };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.PixelPal = api;
 })(typeof self !== "undefined" ? self : this);

@@ -14,13 +14,10 @@ const DETAIL = [                        // "Detail" slider: smoother/cleaner  ->
   { smooth: 2, cluster: 1, sharpen: 0.4, features: 0.75 },
   { smooth: 1, cluster: 1, sharpen: 0.5, features: 0.8 },
   { smooth: 0, cluster: 0, sharpen: 0.6, features: 0.85 }];
-const GAME_DETAIL = [                   // Game Sprite: flat cel color, so "detail" only changes how much gets smoothed away
-  { smooth: 3, smoothPasses: 3, cluster: 4 },
-  { smooth: 3, smoothPasses: 2, cluster: 3 },
-  { smooth: 2, smoothPasses: 2, cluster: 2 },
-  { smooth: 2, smoothPasses: 1, cluster: 1 },
-  { smooth: 1, smoothPasses: 1, cluster: 1 }];
-const PRESET_UI = { game: { detail: 1, face: true }, classic: { detail: 1 }, retro: { detail: 3 }, soft: { detail: 2 } };
+const GAME_DETAIL = [                   // Game Sprite: big flat shapes; "detail" only changes how small a color patch may be
+  { clean: 4 }, { clean: 3 }, { clean: 2 }, { clean: 1 }, { clean: 0 }];
+const PRESET_UI = { game: { detail: 2, face: true }, classic: { detail: 1 }, retro: { detail: 3 }, soft: { detail: 2 } };
+const SIZE_NAMES = ["Small", "Medium", "Large"];
 
 let seg = null, segState = "idle", segWaiters = [];
 let W = 0, H = 0, work = null, rgba = null, auto = null, edit = null, crop = null, undo = [];
@@ -288,7 +285,7 @@ function opts() {
   const hasFace = $("pxface").checked && (face.eyes.length || face.nose);
   return Object.assign(base, {
     face: hasFace ? { eyes: face.eyes, nose: face.nose } : null,
-    chibi: hasFace ? +$("pxchibi").value : 0, blush: $("pxblush").checked, mouth: $("pxmouth").value,
+    chibi: hasFace ? +$("pxchibi").value : 0, blush: $("pxblush").checked, mouth: $("pxmouth").value, eyes: $("pxeyes").value,
     size: +$("pxsize").value, colors: +$("pxcolors").value, outline: $("pxoutline").value,
     shadow: $("pxshadow").checked, dither: $("pxdither").checked ? (preset === "retro" ? PP.PRESETS.retro.dither : 0.45) : 0,
     backdrop: (document.querySelector('input[name="backdrop"]:checked') || {}).value || "none" });
@@ -332,16 +329,18 @@ function spriteCanvas(spr, scale) {
 
 function applyPreset(name) {
   preset = name; const p = PP.PRESETS[name];
-  $("pxsize").value = String(p.size); $("pxcolors").value = p.colors; $("pxcolorsv").textContent = p.colors;
+  const sizes = p.sizes || [32, 48, 64], sel = $("pxsize");
+  sel.replaceChildren(...sizes.map((n, k) => { const o = document.createElement("option"); o.value = String(n); o.textContent = `${SIZE_NAMES[k] || n} (${n} px)`; return o; }));
+  sel.value = String(p.size); $("pxcolors").value = p.colors; $("pxcolorsv").textContent = p.colors;
   $("pxoutline").value = p.outline; $("pxshadow").checked = !!p.shadow; $("pxdither").checked = p.dither > 0;
   $("pxdetail").value = PRESET_UI[name].detail;
   $("pxface").checked = !!PRESET_UI[name].face;
-  $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; $("pxchibi").value = String(p.chibi || 0);
+  $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; $("pxeyes").value = p.eyes || "dots"; $("pxchibi").value = String(p.chibi || 0);
   document.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.preset === name ? "true" : "false"));
   schedule();
 }
 document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
-["pxsize", "pxdetail", "pxoutline", "pxshadow", "pxdither", "pxface", "pxblush", "pxmouth", "pxchibi"].forEach((id) => $(id).addEventListener("input", schedule));
+["pxsize", "pxdetail", "pxoutline", "pxshadow", "pxdither", "pxface", "pxblush", "pxmouth", "pxeyes", "pxchibi"].forEach((id) => $(id).addEventListener("input", schedule));
 $("pxcolors").addEventListener("input", () => { $("pxcolorsv").textContent = $("pxcolors").value; schedule(); });
 document.querySelectorAll('input[name="backdrop"]').forEach((r) => r.addEventListener("change", schedule));
 document.querySelectorAll(".pxba button").forEach((b) => b.addEventListener("click", () => {

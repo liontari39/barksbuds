@@ -163,13 +163,14 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <div class="pxpresets" role="group" aria-label="Style presets">
 <button type="button" data-preset="game" aria-pressed="true">Game Sprite</button><button type="button" data-preset="classic" aria-pressed="false">Classic</button><button type="button" data-preset="retro" aria-pressed="false">Retro 8-bit</button><button type="button" data-preset="soft" aria-pressed="false">Soft</button></div>
 <div class="pxctl">
-<div><label for="pxsize">Size</label><select id="pxsize"><option value="32">Small (32 px)</option><option value="48" selected>Medium (48 px)</option><option value="64">Large (64 px)</option></select></div>
+<div><label for="pxsize">Size</label><select id="pxsize"><option value="24">Small (24 px)</option><option value="32" selected>Medium (32 px)</option><option value="40">Large (40 px)</option></select></div>
 <div><label for="pxdetail">Detail</label><input id="pxdetail" type="range" min="0" max="4" step="1" value="2"></div>
-<div><label for="pxcolors">Colors <output id="pxcolorsv">10</output></label><input id="pxcolors" type="range" min="4" max="24" step="1" value="6"></div>
+<div><label for="pxcolors">Colors <output id="pxcolorsv">10</output></label><input id="pxcolors" type="range" min="4" max="24" step="1" value="10"></div>
 <div><label for="pxoutline">Outline</label><select id="pxoutline"><option value="ink">Ink (game)</option><option value="dark">Dark</option><option value="soft">Soft</option><option value="none">None</option></select></div>
 <div class="pxchecks"><label><input type="checkbox" id="pxshadow" checked> Shadow</label><label><input type="checkbox" id="pxdither"> Retro dither</label></div>
 <div class="pxchecks"><label><input type="checkbox" id="pxface" checked> Cartoon eyes &amp; nose</label><label><input type="checkbox" id="pxblush" checked> Blush</label></div>
-<div><label for="pxmouth">Mouth</label><select id="pxmouth"><option value="none">None</option><option value="smile" selected>Smile</option><option value="tongue">Tongue out</option></select></div>
+<div><label for="pxmouth">Mouth</label><select id="pxmouth"><option value="none">None</option><option value="smile">Smile</option><option value="tongue" selected>Tongue out</option></select></div>
+<div><label for="pxeyes">Eyes</label><select id="pxeyes"><option value="dots" selected>Dots</option><option value="happy">Happy (^ ^)</option></select></div>
 <div><label for="pxchibi">Big head</label><input id="pxchibi" type="range" min="0" max="1.5" step="0.25" value="1" aria-describedby="pxchibih"><span class="small muted" id="pxchibih">Needs the eyes marked</span></div>
 <fieldset class="pxsw"><legend>Background</legend>{sw}</fieldset></div>
 <div class="pxsave"><div class="pxrowbtn"><button type="button" class="btn" id="pxsavebtn" data-primary="1">Use as avatar</button>
@@ -178,5 +179,5 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
 <p class="small" id="pxsaved" role="status" aria-live="polite"></p></div></div>
 </div></div></section>"""
-        js = '<script src="/pixelpal.js?v=2"></script><script type="module" src="/pixelmaker.js?v=2"></script>'
+        js = '<script src="/pixelpal.js?v=3"></script><script type="module" src="/pixelmaker.js?v=3"></script>'
         return self.page(f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")

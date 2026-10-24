@@ -99,16 +99,18 @@ Members can turn a photo of their dog into a crisp pixel-art sprite (`public/pix
   4. Stray-pixel cleanup, a 1-px dark or soft outline and an optional ground shadow.
   5. A transparent or brand-color backdrop.
   6. Nearest-neighbor upscale.
-- Presets: **Game Sprite** (the default; see below), Classic (48 px, 10 colors), Retro 8-bit (32 px, 8 colors, dither) and Soft (64 px, 16 colors). The live preview has an after/before toggle.
-- Game Sprite (`cel: true`): a cartoony 16-bit game look, modeled on the sprites in the Maggie the Merle "Floor Vacuum" game (used only as a style reference, never as output). The rules:
-  - Color: heavy smoothing, about 6 flat colors with small islands merged, and vivid accents kept (Lily's red tag). Light coats are lifted to a friendly pastel; black coats become a readable charcoal ramp.
-  - Shading: one highlight tone on the top-left rims and one shadow tone on the bottom-right ("cel" shading).
-  - Outline and silhouette: a single dark "ink" outline color tinted to the coat, and a smoothed silhouette.
-  - Face stickers: the **Eyes** and **Nose** tools mark points on the photo. The maker tries to guess them (`PixelPal.guessFace`, dark spots in the upper part of the dog) and shows the guess as dots to fix. The marked points get hand-drawn stamps:
-    - Eyes: a dark pupil with a white shine. Light dogs get an iris colored from the photo, plus an ink ring on big eyes.
-    - Nose: a rounded nose with a shine. Dark dogs also get a grey muzzle.
-    - Optional smile or tongue, and blush.
-  - "Big head" (`chibi`, 0–1.5): a smooth bulge warp around the head, done before pixelation, so the head and eyes grow.
+- Presets: **Game Sprite** (the default; see below), Classic (48 px, 10 colors), Retro 8-bit (32 px, 8 colors, dither) and Soft (64 px, 16 colors). The live preview has an after/before toggle. The earlier photo-detailed cel look stays available in code as the `cel` preset; it isn't shown in the maker.
+- Game Sprite (`toon: true`, its own `renderToon` path): a cute, chunky, classic game-character look, modeled on the sprites in the Maggie the Merle "Floor Vacuum" game (used only as a style reference, never as output). It builds the sprite from a few flat shapes and hand-drawn stamps instead of copying photo detail:
+  - Size: 32 px by default; Small (24 px) and Large (40 px) are also offered.
+  - Chibi build (`chibi`, 0–1.5): before pixelation, a bulge warp grows the head (more on full-body photos with a small head), and `stubby` squeezes the body and legs below and beside it.
+  - Color: about 8–12 colors in total, including the outline. The coat is split into 1–3 big flat regions (`regularize` merges small islands), each with a base, a shadow and a top-left highlight tone. Black coats become cool charcoal with a soft blue-grey highlight and a sparse curl hint. Merle coats get a few chunky spots where the photo is darkest, never on the face. Dark eye-band "masks" on light coats are cleared so the face stays friendly.
+  - Silhouette: rounded (`roundAlpha` fills notches, cuts square corners and drops 1-px nubs), with one dark ink outline tinted to the coat.
+  - Face stamps (the **Eyes** and **Nose** tools mark points; `PixelPal.guessFace` tries a guess first). The face is drawn front-facing and slightly lower and wider than the photo for a cuter look:
+    - Eyes: small dark dots (1×1 to 2×2) with one 1-px white shine, and no iris or ring. **Happy (^ ^)** eyes are an option.
+    - A cream muzzle (grey on dark coats) and a rounded dark nose with a tiny highlight. Light coats get pink inner ears.
+    - Tongue by default, or a smile, and 1–2 px of soft blush.
+  - Accent: a small vivid red spot that isn't right under the nose (a collar tag) becomes a clear 3×3 red heart (2 px at 24 px).
+  - The **Detail** slider sets how hard small islands are merged.
 - Saving: `POST /me/dogs/<id>/pixel` (CSRF, owner only, 30/hour) accepts only square 16–128 px PNGs up to 200 KB with visible pixels. The server re-encodes the sprite (dropping all metadata) and stores it in the `photos` table as `kind='pixel'`, with `dogs.pixel_photo_id` and `dogs.pixel_primary`. "Use as avatar" makes the sprite the profile picture; the other save button keeps the photo. The edit page can switch between them, download or remove the sprite.
 - Images: `/px/<id>-1x.png` (native size; displayed with `image-rendering: pixelated`), `/px/<id>.png` (≥512 px nearest-neighbor download) and `/px/<id>-og.png` (1200×630 share card, used as og:image when the sprite is the profile picture). Hidden dogs' sprites return 404.
 - Where sprites show: dog cards (as the image, or a small badge), a Photo/Pixel toggle and a "pixel pal" panel on the dog page, and meetup attendee and pack member lists when the sprite is the profile picture.
