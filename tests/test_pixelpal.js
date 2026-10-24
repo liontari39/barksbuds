@@ -106,8 +106,8 @@ test("dither and colors change the result; empty masks don't throw", () => {
 
 // ---------------------------------------------------------------- Game Sprite preset
 const FACE = { eyes: [[95 / 240, 90 / 180], [145 / 240, 90 / 180]], nose: [120 / 240, 112 / 180] };
-// the earlier photo-detailed cel look is kept as the "cel" preset; these tests cover it
-const G = (extra) => PP.render(scene(), Object.assign({}, PP.PRESETS.cel, { backdrop: "none" }, extra || {}));
+// the default "game" preset is the photo-detailed 48 px cel look; these tests cover it
+const G = (extra) => PP.render(scene(), Object.assign({}, PP.PRESETS.game, { backdrop: "none" }, extra || {}));
 const rgbOf = (lab) => PP.toRgb(lab[0], lab[1], lab[2]);
 const near = (a, b, tol = 2) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol && Math.abs(a[2] - b[2]) <= tol;
 function findColor(s, rgb, x0 = 0, y0 = 0, x1 = s.width, y1 = s.height) {
@@ -118,6 +118,30 @@ function findColor(s, rgb, x0 = 0, y0 = 0, x1 = s.width, y1 = s.height) {
 }
 // where a source point lands on the sprite (scene's dog bbox is x 40..200, y 45..155)
 const toSprite = (s, sx, sy) => [s.grid.x + (sx - 40) / 161 * s.grid.w, s.grid.y + (sy - 45) / 111 * s.grid.h];
+
+test("Game Sprite is the default preset: 48 px (32/48/64) cel look with friendly eyes", () => {
+  assert.strictEqual(Object.keys(PP.PRESETS)[0], "game");
+  const p = PP.PRESETS.game;
+  assert.strictEqual(p.size, 48); assert.deepStrictEqual(p.sizes, [32, 48, 64]);
+  assert.ok(p.cel && !p.toon); assert.strictEqual(p.eyes, "friendly"); assert.strictEqual(p.outline, "ink");
+  assert.strictEqual(G({ face: null }).width, 48);
+});
+
+test("friendly eyes: dark pupil + white shine, no colored iris ring on a light coat", () => {
+  const f = G({ face: FACE, chibi: 0 }), ringed = G({ face: FACE, chibi: 0, eyes: "" });
+  assert.notDeepStrictEqual(Array.from(f.data), Array.from(ringed.data), "friendly differs from the ringed eye");
+  for (const [sx, sy] of [[95, 90], [145, 90]]) {
+    const [gx, gy] = toSprite(f, sx, sy);
+    const sh = findColor(f, [255, 255, 255], Math.floor(gx - 4), Math.floor(gy - 4), Math.ceil(gx + 4), Math.ceil(gy + 4));
+    assert.ok(sh, "shine near the eye");
+    // the 3x3 around the shine is only white or dark (no saturated iris pixels)
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const q = px(f, sh[0] + dx, sh[1] + dy); if (q[3] !== 255) continue;
+      const white = q[0] === 255 && q[1] === 255 && q[2] === 255, sat = Math.max(q[0], q[1], q[2]) - Math.min(q[0], q[1], q[2]);
+      assert.ok(white || (q[0] + q[1] + q[2] < 200 && sat < 40), "eye pixel " + q.slice(0, 3));
+    }
+  }
+});
 
 test("cel look: flat colors, ink outline, N x N", () => {
   const s = G({ face: null });
@@ -209,13 +233,13 @@ test("cel look is deterministic and turns a black coat into readable charcoal", 
   const a = G({ face: FACE }), b = G({ face: FACE });
   assert.deepStrictEqual(Array.from(a.data), Array.from(b.data));
   const blk = scene(); for (let i = 0; i < blk.data.length; i += 4) if (blk.mask[i / 4]) { const v = 18 + (i % 13); blk.data[i] = v; blk.data[i + 1] = v; blk.data[i + 2] = v + 2; }
-  const s = PP.render(blk, Object.assign({}, PP.PRESETS.cel, { backdrop: "none" }));
+  const s = PP.render(blk, Object.assign({}, PP.PRESETS.game, { backdrop: "none" }));
   const [cx, cy] = [s.grid.x + (s.grid.w >> 1), s.grid.y + (s.grid.h >> 1)], c = px(s, cx, cy);
   assert.ok(c[0] >= 30 && c[0] <= 90, "charcoal body, not pitch black: " + c);
 });
 
-// ---------------------------------------------------------------- Game Sprite (toon) preset: chunky, cute, few colors
-const T = (extra, src) => PP.render(src || scene(), Object.assign({}, PP.PRESETS.game, { backdrop: "none" }, extra || {}));
+// ---------------------------------------------------------------- Chunky (toon) preset: 32 px, cute, few colors
+const T = (extra, src) => PP.render(src || scene(), Object.assign({}, PP.PRESETS.chunky, { backdrop: "none" }, extra || {}));
 const colorsOf = (s) => { const c = new Set(); for (let i = 0; i < s.data.length; i += 4) if (s.data[i + 3] === 255) c.add(s.data[i] + "," + s.data[i + 1] + "," + s.data[i + 2]); return c; };
 const countRgb = (s, rgb, tol = 2) => { let n = 0; for (let i = 0; i < s.data.length; i += 4) if (s.data[i + 3] === 255 && near([s.data[i], s.data[i + 1], s.data[i + 2]], rgb, tol)) n++; return n; };
 const WHITE = rgbOf(PP.TOON_COLORS.white);
@@ -229,9 +253,9 @@ function blackDog() {
   return blk;
 }
 
-test("Game Sprite is the first preset: chunky 32 px (24/32/40), one ink outline", () => {
-  assert.strictEqual(Object.keys(PP.PRESETS)[0], "game");
-  const p = PP.PRESETS.game;
+test("Chunky is the second preset: 32 px (24/32/40) toon, one ink outline", () => {
+  assert.strictEqual(Object.keys(PP.PRESETS)[1], "chunky");
+  const p = PP.PRESETS.chunky;
   assert.strictEqual(p.size, 32); assert.deepStrictEqual(p.sizes, [24, 32, 40]); assert.ok(p.toon);
   for (const size of p.sizes) {
     const s = T({ face: FACE, size });
@@ -247,14 +271,14 @@ test("Game Sprite is the first preset: chunky 32 px (24/32/40), one ink outline"
   }
 });
 
-test("Game Sprite keeps the palette small (8-12 colors incl. outline) for light and dark coats", () => {
+test("Chunky keeps the palette small (8-12 colors incl. outline) for light and dark coats", () => {
   for (const size of [24, 32, 40]) for (const src of [scene(), blackDog()]) {
     const n = colorsOf(T({ face: FACE, size, mouth: "tongue", blush: true }, src)).size;
     assert.ok(n >= 5 && n <= 13, `${size}px: ${n} colors`);
   }
 });
 
-test("Game Sprite eyes: small dark dots with one white shine each, no colored iris or ring", () => {
+test("Chunky eyes: small dark dots with one white shine each, no colored iris or ring", () => {
   assert.strictEqual(countRgb(T({ face: null }), WHITE), 0, "no shine without face points");
   const s = T({ face: FACE, chibi: 0 });
   assert.strictEqual(countRgb(s, WHITE), 2, "exactly one 1-px shine per eye");
@@ -269,7 +293,7 @@ test("Game Sprite eyes: small dark dots with one white shine each, no colored ir
   assert.strictEqual(countRgb(happy, WHITE), 0, "closed happy eyes have no shine");
 });
 
-test("Game Sprite face: light muzzle, rounded nose, blush/tongue only when asked, stickers can be off", () => {
+test("Chunky face: light muzzle, rounded nose, blush/tongue only when asked, stickers can be off", () => {
   const s = T({ face: FACE, chibi: 0, blush: true, mouth: "tongue" });
   const tongue = rgbOf(PP.TOON_COLORS.tongue), blush = rgbOf(PP.TOON_COLORS.blush);
   assert.ok(countRgb(s, tongue) >= 1, "tongue"); assert.ok(countRgb(s, blush) >= 1 && countRgb(s, blush) <= 4, "small blush");
@@ -282,7 +306,7 @@ test("Game Sprite face: light muzzle, rounded nose, blush/tongue only when asked
   assert.strictEqual(countRgb(T({ face: FACE, faceStamps: false }), WHITE), 0, "stickers off");
 });
 
-test("Game Sprite turns a small red tag into a clear little red heart", () => {
+test("Chunky turns a small red tag into a clear little red heart", () => {
   // the tag hangs on the collar, well below the nose (a pink spot right under the nose would be a tongue)
   const s = T({ face: FACE, chibi: 0 }, scene(240, 180, 146)), heart = rgbOf(PP.TOON_COLORS.heart), hi = rgbOf(PP.TOON_COLORS.heartHi);
   const n = countRgb(s, heart) + countRgb(s, hi);
@@ -293,7 +317,7 @@ test("Game Sprite turns a small red tag into a clear little red heart", () => {
   assert.ok(countRgb(small, heart) + countRgb(small, hi) >= 2, "a 2px heart at 24 px");
 });
 
-test("Game Sprite black coat: cool charcoal with a soft blue-grey highlight, deterministic", () => {
+test("Chunky black coat: cool charcoal with a soft blue-grey highlight, deterministic", () => {
   const a = T({ face: FACE }, blackDog()), b = T({ face: FACE }, blackDog());
   assert.deepStrictEqual(Array.from(a.data), Array.from(b.data));
   const cols = [...colorsOf(a)].map((c) => c.split(",").map(Number));

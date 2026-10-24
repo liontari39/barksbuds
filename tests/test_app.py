@@ -425,6 +425,21 @@ class SiteTests(unittest.TestCase):
         self.assertIn("6 years old", page)
         self.assertIn("Manhasset", page)
         self.assertNotIn("mike.karachalios", page)
+        # pixel pals: Lily keeps her 48 px cartoon sprite, Maggie gets the cream-rug sprite; both shown as the avatar
+        rd = lambda rel: open(os.path.join(assets, rel), "rb").read()
+        psha = lambda d: A.one("SELECT sha FROM photos WHERE id=:i", i=A.dog_by_id(d["id"])["pixel_photo_id"])[0]
+        self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
+        self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-sprite-48.png")))
+        self.assertEqual((A.dog_by_id(lily["id"])["pixel_primary"], A.dog_by_id(maggie["id"])["pixel_primary"]), (1, 1))
+        rerun = lambda: (setattr(sys, "argv", ["seed.py", "--assets", assets]), seed.main(), setattr(sys, "argv", old))
+        # the owner switching back to the photo sticks across re-runs
+        A.set_pixel_primary(lily["id"], False); rerun()
+        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 0)
+        self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
+        # an older seeded 32 px sprite is upgraded to the cartoon one (never the other way round)
+        A.set_pixel(lily["id"], rd("sprites/lily-game-32.png"), primary=False); rerun()
+        self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
+        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 1)
 
     def test_admin_seed_endpoint_requires_key(self):
         c = Client()

@@ -56,14 +56,23 @@ class PixelTests(unittest.TestCase):
         r = c.get(f"/me/dogs/{did}/pixel")
         self.assertEqual(r.status, 200)
         for s in ('id="pxm"', "/pixelpal.js", "/pixelmaker.js", "Tap to select", "Keep brush", "Erase brush", "Crop",
-                  "Classic", "Retro 8-bit", "Soft", "Use as avatar", "Download PNG", "Start over", 'aria-label="Pixel art preview',
+                  "Use as avatar", "Download PNG", "Start over", 'aria-label="Pixel art preview',
                   "Game Sprite", 'value="eyes"', 'value="nose"', 'id="pxface"', 'id="pxblush"', 'id="pxmouth"', 'id="pxchibi"',
-                  "Reset eyes &amp; nose", '<option value="ink">', 'id="pxeyes"', "Happy (^ ^)",
-                  '<option value="32" selected>', "Small (24 px)", "Large (40 px)"):
+                  "Reset eyes &amp; nose", '<option value="ink">', 'id="pxeyes"', '<option value="friendly" selected>',
+                  '<option value="48" selected>', "Small (32 px)", "Large (64 px)", "Chunky", "32 px, extra cute",
+                  '/img/style-game.png', '/img/style-chunky.png', '<details class="pxadjust"><summary>Adjust</summary>'):
             self.assertIn(s, r.text)
-        # Game Sprite is the default (first, pressed) style
+        # exactly two styles: Game Sprite (default, first, pressed) and Chunky; the old presets are code-only
         self.assertIn('data-preset="game" aria-pressed="true"', r.text)
-        self.assertLess(r.text.index('data-preset="game"'), r.text.index('data-preset="classic"'))
+        self.assertIn('data-preset="chunky" aria-pressed="false"', r.text)
+        self.assertEqual(r.text.count("data-preset="), 2)
+        self.assertLess(r.text.index('data-preset="game"'), r.text.index('data-preset="chunky"'))
+        for gone in ('data-preset="classic"', 'data-preset="retro"', 'data-preset="soft"', "Retro 8-bit"):
+            self.assertNotIn(gone, r.text)
+        # the fine-tune controls sit inside the Adjust expander
+        a0 = r.text.index('<details class="pxadjust">'); adj = r.text[a0:r.text.index("</details>", a0)]
+        for ctl in ('id="pxsize"', 'id="pxdetail"', 'id="pxcolors"', 'id="pxoutline"', 'id="pxeyes"', 'id="pxchibi"'):
+            self.assertIn(ctl, adj)
         self.assertEqual(other.get(f"/me/dogs/{did}/pixel").status, 404)
         anon = Client("10.11.0.9").get(f"/me/dogs/{did}/pixel")
         self.assertEqual(anon.status, 303)
@@ -230,6 +239,48 @@ class PixelTests(unittest.TestCase):
         self.assertIn("Apache License", c.get("/vendor/mediapipe/LICENSE").text)
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_pixel_pals_showcase_start_and_nudge(self):
+        anon = Client("10.11.0.21")
+        # landing section + nav/footer links
+        home = anon.get("/").text
+        for s in ('id="pixel-pals"', "Turn your dog into a classic game character", "FREE", 'href="/pixel-pals/start"',
+                  "/img/pp-lily.png", "/img/pp-maggie.png", 'href="/pixel-pals"'):
+            self.assertIn(s, home)
+        self.assertNotIn("{{PIXEL_PALS}}", home)
+        # public page: gallery of public dogs with sprites, share card, indexable, in the sitemap and menu
+        c, _, _, (did,) = member("ppg")
+        upload(c, did, sprite_png(), primary="1")
+        A.add_photo(did, jpeg_with_exif())
+        r = anon.get("/pixel-pals")
+        self.assertEqual(r.status, 200)
+        px = dog(did)["pixel_photo_id"]
+        self.assertIn(f'src="/px/{px}.png"', r.text)
+        self.assertIn('content="index,follow"', r.text)
+        self.assertRegex(r.text, r'og:image" content="[^"]+/px/\d+-og\.png"')
+        self.assertIn("Make your pixel pal", r.text)
+        self.assertIn("/pixel-pals</loc>", anon.get("/sitemap.xml").text)
+        self.assertIn('href="/pixel-pals"', c.get("/dogs").text)
+        A.set_hidden(did, True) if hasattr(A, "set_hidden") else A.q("UPDATE dogs SET hidden=1 WHERE id=:i", i=did)
+        self.assertNotIn(f'src="/px/{px}.png"', anon.get("/pixel-pals").text, "hidden dogs stay out of the gallery")
+        A.q("UPDATE dogs SET hidden=0 WHERE id=:i", i=did)
+        # CTA: signed out -> sign in and back; one dog -> its maker; no dog -> add one; several -> chooser
+        r = anon.get("/pixel-pals/start")
+        self.assertEqual(r.status, 303); self.assertEqual(r.headers["Location"], "/signin?next=%2Fpixel-pals%2Fstart")
+        self.assertEqual(c.get("/pixel-pals/start").headers["Location"], f"/me/dogs/{did}/pixel")
+        c0, _, _, _ = member("ppz", dogs=0)
+        self.assertEqual(c0.get("/pixel-pals/start").headers["Location"], "/me/dogs/new?px=1")
+        c2, _, _, (d1, d2) = member("ppm", dogs=2)
+        r = c2.get("/pixel-pals/start")
+        self.assertEqual(r.status, 200)
+        self.assertIn(f"/me/dogs/{d1}/pixel", r.text); self.assertIn(f"/me/dogs/{d2}/pixel", r.text)
+        # nudge after the first photos, only for a dog with photos and no sprite
+        self.assertNotIn("pxnudge", c2.get(f"/me/dogs/{d1}/edit?m=photos").text, "no photos yet: no nudge")
+        A.add_photo(d1, jpeg_with_exif())
+        t = c2.get(f"/me/dogs/{d1}/edit?m=photos").text
+        self.assertIn("pxnudge", t); self.assertIn(f'href="/me/dogs/{d1}/pixel">Make my pixel pal', t)
+        self.assertNotIn("pxnudge", c2.get(f"/me/dogs/{d1}/edit").text, "only right after adding photos")
+        self.assertNotIn("pxnudge", c.get(f"/me/dogs/{did}/edit?m=photos").text, "already has a sprite")
+
     def test_pixelpal_js_pipeline(self):
         p = subprocess.run(["node", os.path.join(HERE, "test_pixelpal.js")], capture_output=True, text=True, timeout=120)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)

@@ -14,9 +14,14 @@ const DETAIL = [                        // "Detail" slider: smoother/cleaner  ->
   { smooth: 2, cluster: 1, sharpen: 0.4, features: 0.75 },
   { smooth: 1, cluster: 1, sharpen: 0.5, features: 0.8 },
   { smooth: 0, cluster: 0, sharpen: 0.6, features: 0.85 }];
-const GAME_DETAIL = [                   // Game Sprite: big flat shapes; "detail" only changes how small a color patch may be
+const CEL_DETAIL = [                    // Game Sprite (48 px cel): the middle step is exactly the preset
+  { smooth: 3, cluster: 5 }, { smooth: 3, cluster: 4 }, {},
+  { smooth: 2, cluster: 2, sharpen: 0.2, features: 0.3 }, { smooth: 1, cluster: 1, sharpen: 0.4, features: 0.6 }];
+const TOON_DETAIL = [                   // Chunky: big flat shapes; "detail" only changes how small a color patch may be
   { clean: 4 }, { clean: 3 }, { clean: 2 }, { clean: 1 }, { clean: 0 }];
-const PRESET_UI = { game: { detail: 2, face: true }, classic: { detail: 1 }, retro: { detail: 3 }, soft: { detail: 2 } };
+// only Game Sprite and Chunky are offered in the UI; classic/retro/soft stay in pixelpal.js
+const PRESET_UI = { game: { detail: 2, face: true, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] },
+  chunky: { detail: 2, face: true, eyes: [["dots", "Dots"], ["happy", "Happy (^ ^)"]] } };
 const SIZE_NAMES = ["Small", "Medium", "Large"];
 
 let seg = null, segState = "idle", segWaiters = [];
@@ -281,7 +286,7 @@ src.addEventListener("keydown", (ev) => {
 // ---------------------------------------------------------------- step 3: style + preview
 function opts() {
   const det = +$("pxdetail").value;
-  const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? GAME_DETAIL[det] : DETAIL[det]);
+  const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? CEL_DETAIL[det] : preset === "chunky" ? TOON_DETAIL[det] : DETAIL[det]);
   const hasFace = $("pxface").checked && (face.eyes.length || face.nose);
   return Object.assign(base, {
     face: hasFace ? { eyes: face.eyes, nose: face.nose } : null,
@@ -335,7 +340,9 @@ function applyPreset(name) {
   $("pxoutline").value = p.outline; $("pxshadow").checked = !!p.shadow; $("pxdither").checked = p.dither > 0;
   $("pxdetail").value = PRESET_UI[name].detail;
   $("pxface").checked = !!PRESET_UI[name].face;
-  $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; $("pxeyes").value = p.eyes || "dots"; $("pxchibi").value = String(p.chibi || 0);
+  const ey = $("pxeyes");
+  ey.replaceChildren(...PRESET_UI[name].eyes.map(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; return o; }));
+  $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; ey.value = p.eyes || PRESET_UI[name].eyes[0][0]; $("pxchibi").value = String(p.chibi || 0);
   document.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.preset === name ? "true" : "false"));
   schedule();
 }

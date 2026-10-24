@@ -37,13 +37,13 @@ DOGS = [
     dict(seed_key="mike-lily", name="Lily", breed="Standard Poodle mix", age=6, size="large",
          bio="Say hi to Lily! She's a standard poodle mix with a curly black-and-grey coat. "
              "Look for the red heart tag on her collar.",
-         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg", pixel="sprites/lily-game-32.png", pixel_replaces=["sprites/lily-cartoon-48.png", "sprites/lily-pixel-64.png"],
+         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg", pixel="sprites/lily-cartoon-48.png", pixel_replaces=["sprites/lily-game-32.png", "sprites/lily-pixel-64.png"], pixel_primary=True,
          rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
                              play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-game-32.png",
-         pixel_replaces=["sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png"],
+         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-sprite-48.png", pixel_primary=True,   # from maggiethemerle.com/img/maggie-sit-1400.webp (cream rug)
+         pixel_replaces=["sprites/maggie-game-32.png", "sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png"],
          rev=2, profile=dict(sex="female", size="medium", birth_year=2023,
                              temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
                              bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
@@ -117,16 +117,19 @@ def run(load, log=print):
                 log(f"  + avatar {spec['sprite']} -> {pid}")
         # pixel pal made with the site's own maker (/me/dogs/N/pixel); added when the dog has none, and swapped for a
         # newer seeded one only while the dog still has an older seeded sprite (pixel_replaces), so a sprite the owner
-        # made themselves is never overwritten. The photo stays the profile picture unless the owner chose otherwise.
+        # made themselves is never overwritten. "pixel_primary" makes the sprite the avatar only at the moment the seed
+        # adds or swaps it, so an owner who later switches back to the photo is never flipped again.
         if spec.get("pixel"):
+            assert spec["pixel"] not in spec.get("pixel_replaces", []), "a seeded sprite must never replace itself"
             raw, cur = load(spec["pixel"]), A.dog_by_id(dog_id)
+            want_primary = bool(spec.get("pixel_primary"))
             if raw and not cur.get("pixel_photo_id"):
-                log(f"  + pixel pal {spec['pixel']} -> {A.set_pixel(dog_id, raw, primary=False)}")
+                log(f"  + pixel pal {spec['pixel']} -> {A.set_pixel(dog_id, raw, primary=want_primary)}")
             elif raw:
                 row = A.one("SELECT sha FROM photos WHERE id=:i", i=cur["pixel_photo_id"])
                 olds = {A.sha(b) for b in (load(r) for r in spec.get("pixel_replaces", [])) if b}
                 if row and row[0] in olds and row[0] != A.sha(raw):
-                    pid = A.set_pixel(dog_id, raw, primary=bool(cur.get("pixel_primary")))
+                    pid = A.set_pixel(dog_id, raw, primary=want_primary or bool(cur.get("pixel_primary")))
                     log(f"  ~ pixel pal replaced with {spec['pixel']} -> {pid}")
         d = A.dog_by_id(dog_id)
         missing = [rel for rel in spec.get("extra_photos", []) if not load(rel)]

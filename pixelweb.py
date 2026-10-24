@@ -8,6 +8,9 @@ validates and re-encodes it (accounts.process_pixel_png) and stores it in the ph
   POST /me/dogs/<id>/pixel                         upload a sprite (multipart: csrf, sprite, primary=0|1) -> JSON
   POST /me/dogs/<id>/pixel/(primary|photo|delete)  use the sprite / the photo as profile pic, or remove the sprite
   GET  /px/<id>.png, /px/<id>-1x.png, /px/<id>-og.png   upscaled sprite, native sprite, 1200x630 share card
+  GET  /pixel-pals                                  public showcase + gallery of dogs with a pixel pal
+  GET  /pixel-pals/start                            "Make your pixel pal": sign in, then the dog's maker (or add a dog)
+landing_html() is the landing page's "Pixel Pals" section (index.html {{PIXEL_PALS}}).
 """
 import html, json, re
 
@@ -26,6 +29,10 @@ class PixelRoutes:
         m = re.fullmatch(r"/px/(\d+)(|-1x|-og)\.png", path)
         if m:
             self._app_reset(); self.pixel_image(int(m.group(1)), m.group(2)); return True
+        if path in ("/pixel-pals", "/pixel-pals/"):
+            self._app_reset(); self.pixel_pals_page(); return True
+        if path == "/pixel-pals/start":
+            self._app_reset(); self.pixel_pals_start(); return True
         m = re.fullmatch(r"/me/dogs/(\d+)/pixel/?", path)
         if m:
             self._app_reset()
@@ -43,6 +50,63 @@ class PixelRoutes:
         if m:
             self._app_reset(); self.post_pixel_action(int(m.group(1)), m.group(2)); return True
         return False
+
+    # ------------------------------------------------------------ showcase
+    def pixel_pals_start(self):
+        """CTA target: signed out -> sign in and come back; no dog -> add one first; one dog -> its maker; else pick."""
+        u = self.user()
+        if not u:
+            return self.need_login("/pixel-pals/start")
+        dogs = A.dogs_for_user(u["id"])
+        if not dogs:
+            return self.redirect("/me/dogs/new?px=1")
+        if len(dogs) == 1:
+            return self.redirect(f"/me/dogs/{dogs[0]['id']}/pixel")
+        firsts = A.first_photos([d["id"] for d in dogs])
+        items = []
+        for d in dogs:
+            ph = self.card_ph(d, firsts.get(d["id"]), d["name"])
+            label = "Remake" if d.get("pixel_photo_id") else "Make a pixel pal"
+            items.append(f'<a class="pxchoose" href="/me/dogs/{d["id"]}/pixel">{ph}<b>{e(d["name"])}</b><span class="btn btn-sm btn-gold">{label}</span></a>')
+        body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">pixel pals</span><h1>Whose pixel pal?</h1>
+<p class="lead">Pick a dog to turn into a classic game character.</p></div></section>
+<section class="section"><div class="wrap narrow"><div class="pxchooser">{"".join(items)}</div></div></section>"""
+        return self.page("Make a pixel pal", body, active="pixel-pals")
+
+    def pixel_pals_page(self):
+        dogs = [d for d in A.browse_dogs(limit=5000) if d.get("pixel_photo_id")][:48]
+        firsts = A.first_photos([d["id"] for d in dogs])
+        cards = []
+        for d in dogs:
+            pid, nm = firsts.get(d["id"]), e(d["name"])
+            before = (f'<img class="ppg-photo" src="/p/{pid}.webp" alt="Photo of {nm}" loading="lazy" width="150" height="150">' if pid else
+                      '<span class="ppg-photo ppg-none" aria-hidden="true"></span>')
+            cards.append(f'<a class="ppg-card" href="/dogs/{e(d["slug"])}">{before}<span class="ppg-arrow" aria-hidden="true">&rarr;</span>'
+                         f'<img class="ppg-sprite" src="/px/{d["pixel_photo_id"]}.png" alt="{nm} as a pixel pal" loading="lazy" width="150" height="150">'
+                         f'<b>{nm}</b><small>{e(d["breed"] or "")}</small></a>')
+        grid = "".join(cards) or '<p class="muted">The first pixel pals are on their way. Yours could be first!</p>'
+        cta = '<a class="btn btn-gold ppg-cta" href="/pixel-pals/start">Make your pixel pal</a>'
+        body = f"""<section class="phead ppg-head"><div class="wrap"><span class="eyebrow">new &middot; free</span>
+<h1>Pixel Pals</h1><p class="lead">Turn your dog into a classic game character. Pick a photo, tap your pup, and get a tiny retro sprite
+you can use as their profile picture or download to share.</p>{cta}</div></section>
+<section class="section"><div class="wrap">
+<ol class="ppg-steps">
+<li><b>Pick a photo</b><span>Any photo from your dog's profile, or a new one. A full-body shot works best.</span></li>
+<li><b>Tap your pup</b><span>One tap picks out your dog from the background. Tap the eyes and nose for the cartoon face.</span></li>
+<li><b>Choose a style</b><span><em>Game Sprite</em> (48 px, detailed) or <em>Chunky</em> (32 px, extra cute). Tweak it under Adjust.</span></li>
+<li><b>Save it</b><span>Use it as the profile picture, keep the photo, or download the PNG.</span></li>
+</ol>
+<p class="ppg-free"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Free for every member. It all happens right in your browser,
+and only the finished sprite is saved.</p>
+<h2 class="ppg-h2">The pixel pal gallery</h2>
+<div class="ppg-grid">{grid}</div>
+<div class="ppg-end">{cta}</div>
+</div></section>"""
+        og_img = f"{self._base()}/px/{dogs[0]['pixel_photo_id']}-og.png" if dogs else self._base() + "/img/og-image.jpg"
+        desc = "Turn your dog into a classic game character with BarksBuds Pixel Pals. Free, and it all happens in your browser."
+        return self.page("Pixel Pals: turn your dog into a game character", body, index=True, active="pixel-pals", canonical="/pixel-pals",
+                         desc=desc, og={"title": "Pixel Pals on BarksBuds", "image": og_img, "w": 1200, "h": 630,
+                                        "alt": (dogs[0]["name"] + " as a pixel pal") if dogs else "BarksBuds"})
 
     # ------------------------------------------------------------ images
     def pixel_image(self, pid, variant):
@@ -160,24 +224,61 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <button type="button" data-v="after" aria-pressed="true">After</button><button type="button" data-v="before" aria-pressed="false">Before</button></div>
 <canvas id="pxout" width="384" height="384" role="img" aria-label="Pixel art preview of {nm}"></canvas>
 <canvas id="pxbefore" width="384" height="384" role="img" aria-label="The selected part of the photo" hidden></canvas></div>
-<div class="pxpresets" role="group" aria-label="Style presets">
-<button type="button" data-preset="game" aria-pressed="true">Game Sprite</button><button type="button" data-preset="classic" aria-pressed="false">Classic</button><button type="button" data-preset="retro" aria-pressed="false">Retro 8-bit</button><button type="button" data-preset="soft" aria-pressed="false">Soft</button></div>
+<div class="pxstyles" role="group" aria-label="Pick a style">
+<button type="button" data-preset="game" aria-pressed="true"><img src="/img/style-game.png" width="64" height="64" alt=""><span><b>Game Sprite</b><small>48 px, detailed</small></span></button>
+<button type="button" data-preset="chunky" aria-pressed="false"><img src="/img/style-chunky.png" width="64" height="64" alt=""><span><b>Chunky</b><small>32 px, extra cute</small></span></button></div>
+<details class="pxadjust"><summary>Adjust</summary>
 <div class="pxctl">
-<div><label for="pxsize">Size</label><select id="pxsize"><option value="24">Small (24 px)</option><option value="32" selected>Medium (32 px)</option><option value="40">Large (40 px)</option></select></div>
+<div><label for="pxsize">Size</label><select id="pxsize"><option value="32">Small (32 px)</option><option value="48" selected>Medium (48 px)</option><option value="64">Large (64 px)</option></select></div>
 <div><label for="pxdetail">Detail</label><input id="pxdetail" type="range" min="0" max="4" step="1" value="2"></div>
-<div><label for="pxcolors">Colors <output id="pxcolorsv">10</output></label><input id="pxcolors" type="range" min="4" max="24" step="1" value="10"></div>
+<div><label for="pxcolors">Colors <output id="pxcolorsv">6</output></label><input id="pxcolors" type="range" min="4" max="24" step="1" value="6"></div>
 <div><label for="pxoutline">Outline</label><select id="pxoutline"><option value="ink">Ink (game)</option><option value="dark">Dark</option><option value="soft">Soft</option><option value="none">None</option></select></div>
 <div class="pxchecks"><label><input type="checkbox" id="pxshadow" checked> Shadow</label><label><input type="checkbox" id="pxdither"> Retro dither</label></div>
 <div class="pxchecks"><label><input type="checkbox" id="pxface" checked> Cartoon eyes &amp; nose</label><label><input type="checkbox" id="pxblush" checked> Blush</label></div>
-<div><label for="pxmouth">Mouth</label><select id="pxmouth"><option value="none">None</option><option value="smile">Smile</option><option value="tongue" selected>Tongue out</option></select></div>
-<div><label for="pxeyes">Eyes</label><select id="pxeyes"><option value="dots" selected>Dots</option><option value="happy">Happy (^ ^)</option></select></div>
+<div><label for="pxmouth">Mouth</label><select id="pxmouth"><option value="none">None</option><option value="smile" selected>Smile</option><option value="tongue">Tongue out</option></select></div>
+<div><label for="pxeyes">Eyes</label><select id="pxeyes"><option value="friendly" selected>Shiny</option><option value="ring">Ringed</option></select></div>
 <div><label for="pxchibi">Big head</label><input id="pxchibi" type="range" min="0" max="1.5" step="0.25" value="1" aria-describedby="pxchibih"><span class="small muted" id="pxchibih">Needs the eyes marked</span></div>
-<fieldset class="pxsw"><legend>Background</legend>{sw}</fieldset></div>
+</div></details>
+<fieldset class="pxsw"><legend>Background</legend>{sw}</fieldset>
 <div class="pxsave"><div class="pxrowbtn"><button type="button" class="btn" id="pxsavebtn" data-primary="1">Use as avatar</button>
 <button type="button" class="btn btn-ghost" id="pxsave2" data-primary="0">Save, keep photo as avatar</button>
 <button type="button" class="btn btn-ghost" id="pxdl">Download PNG</button>
 <button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
 <p class="small" id="pxsaved" role="status" aria-live="polite"></p></div></div>
 </div></div></section>"""
-        js = '<script src="/pixelpal.js?v=3"></script><script type="module" src="/pixelmaker.js?v=3"></script>'
+        js = '<script src="/pixelpal.js?v=4"></script><script type="module" src="/pixelmaker.js?v=4"></script>'
         return self.page(f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")
+
+
+def landing_html():
+    """'Pixel Pals' highlight for the landing page (index.html {{PIXEL_PALS}}). Static before/after art for speed."""
+    pair = lambda nm, slug, photo, sprite: (
+        f'<a class="pp-pair" href="/dogs/{slug}"><img class="pp-photo" src="/img/{photo}" alt="Photo of {nm}" width="180" height="240" loading="lazy">'
+        f'<span class="pp-arrow" aria-hidden="true">&rarr;</span>'
+        f'<img class="pp-sprite" src="/img/{sprite}" alt="{nm} as a pixel pal" width="192" height="192" loading="lazy"><b>{nm}</b></a>')
+    return f"""<style>
+.pps{{padding:80px 0;background:var(--gold-l);background-image:linear-gradient(rgba(20,20,20,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(20,20,20,.05) 1px,transparent 1px);background-size:24px 24px}}
+.pps .wrap{{display:grid;grid-template-columns:1fr 1.15fr;gap:48px;align-items:center}}
+.pps h2{{font-size:clamp(2rem,4.2vw,2.85rem);line-height:1.08}}.pps p{{font-size:1.08rem;color:var(--ink)}}
+.pps .cta-row{{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin-top:22px}}
+.pps .textlink{{color:var(--black);font-weight:800}}
+.pp-free{{display:inline-block;background:var(--black);color:var(--gold);font:800 .85rem/1 Nunito,sans-serif;letter-spacing:.04em;border-radius:999px;padding:7px 12px;margin-left:8px;vertical-align:middle;transform:rotate(-3deg)}}
+.pp-points{{list-style:none;padding:0;margin:18px 0 0;display:flex;flex-wrap:wrap;gap:8px}}
+.pp-points li{{background:#fff;border:2px solid var(--black);border-radius:999px;padding:5px 12px;font-weight:700;font-size:.92rem}}
+.pp-pairs{{display:grid;gap:18px}}
+.pp-pair{{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;align-items:center;gap:6px 14px;background:#fff;border:3px solid var(--black);border-radius:22px;padding:14px;box-shadow:8px 8px 0 var(--black);text-decoration:none;color:var(--black);transition:transform .12s}}
+.pp-pair:hover{{transform:translateY(-2px)}}
+.pp-photo{{width:100%;max-width:180px;aspect-ratio:3/4;height:auto;object-fit:cover;border-radius:14px;justify-self:center}}
+.pp-sprite{{width:100%;max-width:192px;aspect-ratio:1;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;background:#FFF3D6;border-radius:14px;justify-self:center}}
+.pp-arrow{{font:800 2rem/1 "Baloo 2",sans-serif;color:var(--red)}}
+.pp-pair b{{grid-column:1/-1;text-align:center;font:800 1.2rem/1 "Baloo 2",sans-serif}}
+@media (min-width:861px){{.pp-pairs{{grid-template-columns:1fr 1fr}}.pp-pair{{grid-template-columns:1fr;grid-template-rows:auto auto auto auto}}.pp-arrow{{transform:rotate(90deg);justify-self:center;line-height:.6}}}}
+@media (max-width:860px){{.pps .wrap{{grid-template-columns:1fr;gap:28px}}.pps{{padding:56px 0}}}}
+</style>
+<section class="pps" id="pixel-pals" aria-labelledby="pp-title"><div class="wrap"><div>
+<span class="eyebrow">new &middot; pixel pals</span><h2 id="pp-title">Turn your dog into a classic game character <span class="pp-free">FREE</span></h2>
+<p>Pick a photo, tap your pup, and BarksBuds turns them into a tiny retro sprite, ready for their profile or your group chat. Choose the detailed Game Sprite or the extra-cute Chunky style.</p>
+<ul class="pp-points"><li>Free for members</li><li>About a minute</li><li>Works right in your browser</li></ul>
+<div class="cta-row"><a class="btn" href="/pixel-pals/start">Make your pixel pal</a><a class="textlink" href="/pixel-pals">See the gallery &rarr;</a></div></div>
+<div class="pp-pairs">{pair("Lily", "lily", "pp-lily-photo.webp", "pp-lily.png")}{pair("Maggie", "maggie", "pp-maggie-photo.webp", "pp-maggie.png")}</div>
+</div></section>"""

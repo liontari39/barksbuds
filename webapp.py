@@ -79,7 +79,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/pixel-pals", "Pixel Pals")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -262,7 +262,7 @@ class AppRoutes:
         u = self.user()
         base = self._base()
         links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
-                 ("/#story", "Our story", "")]
+                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
         meta = [f'<meta name="robots" content="{"index,follow" if index else "noindex"}">']
@@ -299,7 +299,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=6">
+<link rel="stylesheet" href="/app.css?v=10">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -311,7 +311,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -686,7 +686,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.pixel_panel(d)
+        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.pixel_panel(d, nudge=q.get("m", [""])[0] in ("created", "photos"))
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
@@ -769,9 +769,16 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         return f"""<div class="panel" id="photos-panel"><h2>Photos</h2><p class="hint">The first photo is the cover on {e(d["name"])}'s page.</p>
 {av_html}{grid}{upload}</div>"""
 
-    def pixel_panel(self, d):
-        """Edit-page panel for the dog's pixel-art sprite."""
+    def pixel_panel(self, d, nudge=False):
+        """Edit-page panel for the dog's pixel-art sprite (a bigger nudge right after a new dog gets its photos)."""
         px, did, nm = d.get("pixel_photo_id"), d["id"], e(d["name"])
+        if not px and nudge and A.photo_count(did) > 0:
+            return (f'<div class="panel pxnudge" id="pixel-panel" role="region" aria-label="Make a pixel pal">'
+                    f'<div class="pxn-art" aria-hidden="true"><img src="/img/pp-maggie-photo.webp" alt="" width="72" height="96">'
+                    f'<span>&rarr;</span><img class="pxn-sp" src="/img/pp-maggie.png" alt="" width="84" height="84"></div><div>'
+                    f'<span class="eyebrow">new &middot; free</span><h2>Now make {nm} a pixel pal!</h2>'
+                    f'<p class="hint">Turn {nm}\'s photo into a classic game character in about a minute. It all happens in your browser.</p>'
+                    f'<a class="btn btn-gold" href="/me/dogs/{did}/pixel">Make my pixel pal</a></div></div>')
         if not px:
             return (f'<div class="panel pxpanel" id="pixel-panel"><h2>Pixel pal</h2><div class="pxrow">'
                     f'<span class="pxempty" aria-hidden="true"><svg class="ico"><use href="#i-paw"/></svg></span><div>'

@@ -8,9 +8,9 @@
 
   var PRESETS = {
     // "Game sprite": flat cel-shaded color, one ink outline, hand-drawn eyes/nose stamps (like a 16-bit game character)
-    game: { size: 32, sizes: [24, 32, 40], colors: 10, outline: "ink", dither: 0, shadow: true, toon: true, clean: 2, saturation: 1.15, chibi: 1, blush: true, mouth: "tongue", eyes: "dots" },
+    game: { size: 48, sizes: [32, 48, 64], colors: 6, outline: "ink", dither: 0, shadow: true, shade: false, cel: true, saturation: 1.15, contrast: 1.0, smooth: 3, smoothPasses: 2, cluster: 3, sharpen: 0, features: 0, accents: true, chibi: 1, blush: true, mouth: "smile", eyes: "friendly" },
     // the earlier, more photo-detailed cel look (kept for anyone who liked it)
-    cel: { size: 48, colors: 6, outline: "ink", dither: 0, shadow: true, shade: false, cel: true, saturation: 1.15, contrast: 1.0, smooth: 3, smoothPasses: 2, cluster: 3, sharpen: 0, features: 0, accents: true, chibi: 1, blush: true, mouth: "smile" },
+    chunky: { size: 32, sizes: [24, 32, 40], colors: 10, outline: "ink", dither: 0, shadow: true, toon: true, clean: 2, saturation: 1.15, chibi: 1, blush: true, mouth: "tongue", eyes: "dots" },
     classic: { size: 48, colors: 10, outline: "dark", dither: 0, shadow: true, shade: true, saturation: 1.18, contrast: 1.05, smooth: 2, cluster: 2, sharpen: 0.35, features: 0.75 },
     retro: { size: 32, colors: 8, outline: "dark", dither: 0.5, shadow: true, shade: true, saturation: 1.3, contrast: 1.12, smooth: 1, cluster: 1, sharpen: 0.3, features: 0.8 },
     soft: { size: 64, colors: 16, outline: "soft", dither: 0, shadow: true, shade: false, saturation: 1.08, contrast: 1.0, smooth: 2, cluster: 1, sharpen: 0.25, features: 0.6 }
@@ -606,7 +606,7 @@
     m: ["nhnn", "nnnn", ".nn."],
     l: [".nhhn.", "nnnnnn", "nnnnnn", ".nnnn."]
   };
-  var MOUTHS = { xl: ["..m..", ".m.m.", "m...m"], s: ["m"], m: [".m.", "m.m"], l: ["..m..", ".m.m.", "m...m"] };
+  var MOUTHS = { xl: ["...m...", "m..m..m", ".mm.mm."], s: ["m"], m: [".m.", "m.m"], l: ["..m..", "m.m.m", ".m.m."] };   // a little "w" dog mouth
   var TONGUES = { xl: [".tt.", "ttTt", "tTTt", ".tt."], s: ["t"], m: ["tt", "tT"], l: [".tt.", "ttTt", ".tt."] };
   var STAMP_COLORS = { w: [1, 0, 0], h: [0.62, 0.02, 0.005], t: [0.72, 0.17, 0.03], T: [0.6, 0.15, 0.03], blush: [0.79, 0.09, 0.02] };
 
@@ -631,6 +631,10 @@
     var unit = eyes.length === 2 ? Math.hypot(eyes[0][0] - eyes[1][0], eyes[0][1] - eyes[1][1]) / 1.0
       : (eyes.length && nose) ? Math.hypot(eyes[0][0] - nose[0], eyes[0][1] - nose[1]) * 1.25 : N / 6;
     var sz = unit >= 13 ? "xl" : unit >= 7.5 ? "l" : unit >= 5 ? "m" : "s";
+    // "friendly" eyes: no colored iris or ring on light coats (big amber rings read as scary); dark eyes with a
+    // white shine, one size smaller. Dark coats keep their eyes as before.
+    var friendly = opts.eyes === "friendly" && !dark;
+    var esz = friendly ? { xl: "l", l: "m", m: "m", s: "s" }[sz] : sz;
     var cache = {};
     function idx(key, lab) { if (cache[key] != null) return cache[key]; cache[key] = pal.push(lab) - 1; return cache[key]; }
     var spread = Math.max(1.5, Math.max(box.bw, box.bh) * 0.012);
@@ -653,12 +657,12 @@
     var raw = null;
     face.eyes.forEach(function (fe) { var c = sampleIris(src, fe[0], fe[1], spread * 2.5); if (c && (!raw || Math.hypot(c[1], c[2]) > Math.hypot(raw[1], raw[2]))) raw = c; });
     var chroma = raw ? Math.hypot(raw[1], raw[2]) : 0, boost = chroma ? Math.min(2.6, 0.13 / chroma) : 1;
-    var iris = !dark && raw && chroma > 0.025 && raw[0] > 0.18 ? [Math.max(0.62, Math.min(0.74, raw[0] + 0.12)), raw[1] * boost, raw[2] * boost] : null;
+    var iris = !friendly && !dark && raw && chroma > 0.025 && raw[0] > 0.18 ? [Math.max(0.62, Math.min(0.74, raw[0] + 0.12)), raw[1] * boost, raw[2] * boost] : null;
     eyes.forEach(function (e) {
       var pupil = idx("pupil", [Math.min(0.17, ink[0]), ink[1] * 0.7, ink[2] * 0.7]), white = idx("white", STAMP_COLORS.w);
-      var irisI = iris ? idx("iris", iris) : idx("iris-dark", dark ? [0.2, 0.01, 0.012] : [Math.max(0.36, ink[0] + 0.2), 0.025, 0.045]);
-      var ringI = idx("ring", [Math.min(0.2, ink[0]), ink[1], ink[2]]);
-      put(EYES[sz], e[0], e[1], function (ch) { return ch === "e" ? pupil : ch === "w" ? white : ch === "k" ? ringI : irisI; });
+      var irisI = iris ? idx("iris", iris) : idx("iris-dark", dark ? [0.2, 0.01, 0.012] : friendly ? [0.26, 0.012, 0.02] : [Math.max(0.36, ink[0] + 0.2), 0.025, 0.045]);
+      var ringI = friendly ? pupil : idx("ring", [Math.min(0.2, ink[0]), ink[1], ink[2]]);
+      put(EYES[esz], e[0], e[1], function (ch) { return ch === "e" ? pupil : ch === "w" ? white : ch === "k" ? ringI : irisI; });
     });
     if (nose && dark) {   // dark coats: a soft grey muzzle around the nose so it reads (like a greying poodle face)
       var muz = idx("muzzle", [0.6, 0.006, 0.002]), muz2 = idx("muzzle2", [0.74, 0.004, 0.002]);

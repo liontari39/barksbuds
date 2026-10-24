@@ -60,7 +60,8 @@ a{color:var(--red);text-underline-offset:3px}
 .brand img{width:40px;height:40px;border-radius:11px}
 .nav nav{margin-left:auto}
 .nav-links{display:flex;gap:26px;list-style:none;padding:0;margin-top:0;margin-bottom:0}
-.nav-links a{color:var(--ink);text-decoration:none;font-weight:700;font-size:.98rem}
+.nav-links a{color:var(--ink);text-decoration:none;font-weight:700;font-size:.98rem;white-space:nowrap}
+@media (max-width:1100px){.nav-links{gap:18px}.nav-links a[href="#story"]{display:none}}
 .nav-links a:hover{color:var(--red)}
 .nav .btn{padding:11px 20px 9px;font-size:1rem}
 /* hero */
@@ -242,6 +243,7 @@ footer .bottom p{margin:0}
       <li><a href="/meetups">Meetups</a></li>
       <li><a href="/packs">Packs</a></li>
       <li><a href="/dogs">Dogs</a></li>
+      <li><a href="/pixel-pals">Pixel Pals</a></li>
       <li><a href="#story">Our story</a></li>
     </ul></nav>
     {{NAV_ACCOUNT}}
@@ -331,6 +333,8 @@ footer .bottom p{margin:0}
 
 {{NORTH_SHORE}}
 
+{{PIXEL_PALS}}
+
 <section id="features" aria-labelledby="features-title">
   <div class="wrap">
     <div class="sec-head"><span class="eyebrow">what you'll get</span><h2 id="features-title">Everything your dog's social life needs</h2><p>Built for real-life friendships between dogs, and the humans holding the leashes.</p></div>
@@ -369,7 +373,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join the waitlist we store your first name, email, your dog's name and, if you share it, your zip code. We use them only to tell you about BarksBuds and its launch in your area. We never sell or share them, and we'll delete them if you ask.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>
