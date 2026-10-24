@@ -178,6 +178,16 @@ def _post(url, payload, headers):
     return f"HTTP {code}" + (f", id {mid}" if mid else "")
 
 
+def _err_detail(e):
+    """Short, key-free summary of a provider error response (for logs)."""
+    try:
+        raw = e.read(600).decode("utf-8", "replace")
+        d = json.loads(raw)
+        return str(d.get("message") or d.get("code") or raw)[:200]
+    except Exception:
+        return ""
+
+
 def _send(to, subject, body, text, unsub, tag="waitlist-welcome"):
     hdrs = {}
     if unsub:
@@ -195,7 +205,9 @@ def _send(to, subject, body, text, unsub, tag="waitlist-welcome"):
         return "HTTP 200 (written to outbox)"
     if PROVIDER == "brevo":
         p = {"sender": {"name": FROM_NAME, "email": FROM}, "to": [{"email": to}], "subject": subject,
-             "htmlContent": body, "textContent": text, "headers": hdrs, "tags": [tag]}
+             "htmlContent": body, "textContent": text, "tags": [tag]}
+        if hdrs:  # Brevo rejects an empty headers object
+            p["headers"] = hdrs
         if REPLY_TO:
             p["replyTo"] = {"email": REPLY_TO}
         return _post("https://api.brevo.com/v3/smtp/email", p, {"api-key": API_KEY})
@@ -338,7 +350,7 @@ def send_signin_async(base, link, email, minutes=20):
                 print(f"email: sign-in link sent to {_mask(email)} via {PROVIDER} ({result})", flush=True)
                 return
             except urllib.error.HTTPError as e:
-                print(f"email: {PROVIDER} HTTP {e.code} for sign-in to {_mask(email)}", flush=True)
+                print(f"email: {PROVIDER} HTTP {e.code} for sign-in to {_mask(email)}: {_err_detail(e)}", flush=True)
                 if not (e.code == 429 or e.code >= 500):
                     return
             except Exception as e:
