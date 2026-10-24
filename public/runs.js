@@ -1,7 +1,9 @@
 (function () {
   "use strict";
   var OFF = /^off-leash area/i;
-  var state = { q: "", county: "", f: { fenced: false, small: false, water: false, shade: false }, off: false, me: null, sel: null };
+  var REGION = { Manhattan: "nyc", Brooklyn: "nyc", Bronx: "nyc", Queens: "nyc", "Staten Island": "nyc", Nassau: "li", Suffolk: "li", Westchester: "wc" };
+  var COUNTY_SUFFIX = { Nassau: 1, Suffolk: 1, Westchester: 1 };
+  var state = { q: "", region: "", county: "", f: { fenced: false, small: false, water: false, shade: false }, off: false, me: null, sel: null };
   var runs = [], map = null, markers = {}, meMarker = null, layer = null;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -37,7 +39,7 @@
 
   function destination(r) {
     // NYC pins come from official run polygons; elsewhere a written address/park name routes better than an approximate pin.
-    if (hasLL(r) && /^Centroid of NYC/.test(r.coord_source || "")) return r.lat + "," + r.lng;
+    if (hasLL(r) && /^Centroid of NYC Open Data/.test(r.coord_source || "")) return r.lat + "," + r.lng;
     if (r.address) return r.address;
     return [r.park || r.name, r.town_or_neighborhood, "NY"].filter(Boolean).join(", ");
   }
@@ -55,6 +57,7 @@
     var q = norm(state.q).trim(), terms = q ? q.split(/\s+/) : [];
     var out = runs.filter(function (r) {
       if (isOff(r) && !state.off) return false;
+      if (state.region && REGION[r.county] !== state.region) return false;
       if (state.county && r.county !== state.county) return false;
       for (var k in state.f) if (state.f[k] && !FILTERS[k](r)) return false;
       if (terms.length) {
@@ -89,7 +92,7 @@
 
   function card(r) {
     var d = miles(r), dest = encodeURIComponent(destination(r)), srcs = sources(r);
-    var where = [r.park && r.park !== r.name ? r.park : "", r.town_or_neighborhood, r.county + (r.county === "Queens" ? "" : " County")].filter(Boolean).map(esc).join(" · ");
+    var where = [r.park && r.park !== r.name ? r.park : "", r.town_or_neighborhood, r.county + (COUNTY_SUFFIX[r.county] ? " County" : "")].filter(Boolean).map(esc).join(" · ");
     var amen = [["Fenced", r.fenced], ["Small-dog area", r.small_dog_area + (r.small_dog_weight_limit ? " (" + r.small_dog_weight_limit + ")" : "")], ["Water", r.water], ["Shade", r.shade], ["Surface", r.surface], ["Seating", r.seating]]
       .map(function (a) { return "<div><dt>" + a[0] + "</dt><dd>" + (a[0] === "Surface" || a[0] === "Seating" ? text(a[1]) : val(String(a[1]).trim())) + "</dd></div>"; }).join("");
     var facts = [["Hours", r.hours], ["Who can use it", r.residency_permit_rules], ["Fees", r.fees], ["Type", r.type], ["Run by", r.operator], ["Address", r.address], ["Good to know", r.notes]]
@@ -128,11 +131,12 @@
       ? "<b>" + nRuns + "</b> dog run" + (nRuns === 1 ? "" : "s") + (state.off ? " + <b>" + nOff + "</b> off-leash area" + (nOff === 1 ? "" : "s") : "") + (onMap < list.length ? " · " + onMap + " on map" : "") + (state.me ? " · nearest first" : "")
       : "No matches";
     listEl.innerHTML = list.length ? list.map(card).join("") : '<li class="empty">No dog runs match those filters. <button class="linkbtn" type="button" data-reset>Clear filters</button></li>';
-    var dirty = state.q || state.county || state.off || Object.keys(state.f).some(function (k) { return state.f[k]; });
+    var dirty = state.q || state.region || state.county || state.off || Object.keys(state.f).some(function (k) { return state.f[k]; });
     resetEl.hidden = !dirty;
     $("#lg-off").hidden = !state.off;
     if (map) {
       layer.clearLayers(); markers = {};
+      var batch = [];
       list.forEach(function (r) {
         if (!hasLL(r)) return;
         var m = L.marker([r.lat, r.lng], { icon: pinIcon(r, r.id === state.sel), title: r.name, alt: r.name, riseOnHover: true, keyboard: true });
@@ -143,8 +147,9 @@
           return el;
         });
         m.on("click", function () { select(r.id, { scroll: !window.matchMedia("(max-width:900px)").matches, fromMap: true }); });
-        m.addTo(layer); markers[r.id] = m;
+        m.bbOff = isOff(r); batch.push(m); markers[r.id] = m;
       });
+      if (layer.addLayers) layer.addLayers(batch); else batch.forEach(function (m) { m.addTo(layer); });
     }
   }
 
@@ -169,8 +174,9 @@
     var r = runs.filter(function (x) { return x.id === id; })[0];
     [prev, id].forEach(function (k) { var x = runs.filter(function (y) { return y.id === k; })[0]; if (x && markers[k]) markers[k].setIcon(pinIcon(x, k === id)); });
     if (map && r && hasLL(r) && !o.fromMap) {
-      map.setView([r.lat, r.lng], Math.max(map.getZoom(), 13));
-      if (markers[id]) markers[id].openPopup();
+      var mk = markers[id];
+      map.setView([r.lat, r.lng], Math.max(map.getZoom(), 14));
+      if (mk) { if (layer.zoomToShowLayer) layer.zoomToShowLayer(mk, function () { mk.openPopup(); }); else mk.openPopup(); }
       if (window.matchMedia("(max-width:900px)").matches) $(".mapwrap").scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
@@ -180,12 +186,23 @@
   // events
   var t;
   $("#q").addEventListener("input", function (e) { clearTimeout(t); t = setTimeout(function () { state.q = e.target.value; update(true); }, 120); });
-  $$(".seg [data-county]").forEach(function (b) {
+  var areaEl = $("#area");
+  function setRegion(rg) {
+    state.region = rg;
+    $$(".seg [data-region]").forEach(function (x) { x.setAttribute("aria-pressed", String(x.getAttribute("data-region") === rg)); });
+  }
+  $$(".seg [data-region]").forEach(function (b) {
     b.addEventListener("click", function () {
-      state.county = b.getAttribute("data-county");
-      $$(".seg [data-county]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      setRegion(b.getAttribute("data-region"));
+      if (state.county && state.region && REGION[state.county] !== state.region) { state.county = ""; areaEl.value = ""; }
+      if (!state.region) { state.county = ""; areaEl.value = ""; }
       update(true);
     });
+  });
+  areaEl.addEventListener("change", function () {
+    state.county = areaEl.value;
+    setRegion(state.county ? REGION[state.county] : state.region);
+    update(true);
   });
   $$(".chip[data-f]").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -197,9 +214,9 @@
     state.off = !state.off; this.setAttribute("aria-pressed", String(state.off)); update(false);
   });
   function reset() {
-    state.q = ""; $("#q").value = ""; state.county = ""; state.off = false;
+    state.q = ""; $("#q").value = ""; state.county = ""; areaEl.value = ""; state.region = ""; state.off = false;
     Object.keys(state.f).forEach(function (k) { state.f[k] = false; });
-    $$("[aria-pressed]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-county") === "")); });
+    $$("[aria-pressed]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-region") === "")); });
     update(true);
   }
   resetEl.addEventListener("click", reset);
@@ -238,7 +255,9 @@
 
   function initMap() {
     if (!window.L) return;
-    map = L.map("map", { scrollWheelZoom: false, zoomControl: true, zoomSnap: 0.25 }).setView([40.78, -73.2], 9);
+    map = L.map("map", { scrollWheelZoom: false, zoomControl: true, zoomSnap: 0.25 }).setView([40.8, -73.55], 9);
+    // Keep the Leaflet credit but drop the default flag icon from the attribution prefix.
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     // Standard OpenStreetMap tiles: free, no API key; attribution required by the OSM tile usage policy.
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19, crossOrigin: true,
@@ -246,7 +265,13 @@
     }).addTo(map);
     map.on("focus click", function () { map.scrollWheelZoom.enable(); });
     map.on("mouseout", function () { map.scrollWheelZoom.disable(); });
-    layer = L.layerGroup().addTo(map);
+    layer = (L.markerClusterGroup ? L.markerClusterGroup({
+      showCoverageOnHover: false, maxClusterRadius: SMALL ? 40 : 50, disableClusteringAtZoom: 14, spiderfyOnMaxZoom: true, chunkedLoading: true,
+      iconCreateFunction: function (c) {
+        var ms = c.getAllChildMarkers(), n = ms.length, allOff = ms.every(function (m) { return m.bbOff; });
+        return L.divIcon({ html: "<div><span>" + n + "</span></div>", className: "marker-cluster" + (allOff ? " mc-off" : ""), iconSize: [40, 40] });
+      }
+    }) : L.layerGroup()).addTo(map);
   }
 
   fetch("/api/runs", { credentials: "same-origin" }).then(function (r) {
@@ -259,7 +284,10 @@
     });
     var u = new URLSearchParams(location.search);
     if (u.get("q")) { state.q = u.get("q"); $("#q").value = state.q; }
-    var c = u.get("county"); if (c) { var b = $('.seg [data-county="' + c.charAt(0).toUpperCase() + c.slice(1).toLowerCase() + '"]'); if (b) b.click(); }
+    var rg = (u.get("region") || "").toLowerCase(); rg = { nyc: "nyc", li: "li", "long-island": "li", wc: "wc", westchester: "wc" }[rg];
+    if (rg) setRegion(rg);
+    var c = (u.get("county") || "").toLowerCase();
+    Object.keys(REGION).forEach(function (k) { if (k.toLowerCase() === c || (c === "the bronx" && k === "Bronx")) { state.county = k; areaEl.value = k; setRegion(REGION[k]); } });
     initMap(); setCtl();
     update(true);
     document.body.setAttribute("data-ready", "1");

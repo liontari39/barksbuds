@@ -9,7 +9,7 @@ Admin (requires ADMIN_KEY env var; disabled when unset):
   POST /admin/delete?key=KEY&email=ADDRESS   remove one signup (e.g. a test row or an opt-out)
 Dog run finder:
   GET  /runs       map + list page (public/runs.html, rendered with the run list for SEO)
-  GET  /api/runs   dog run dataset from data-seed/dog_runs_li_queens.json (cached, ETag, gzip)
+  GET  /api/runs   dog run dataset from data-seed/dog_runs_region.json (cached, ETag, gzip)
 """
 import csv, gzip, hashlib, html, hmac, io, json, os, re, sqlite3, ssl, threading, time
 from datetime import datetime, timezone
@@ -155,7 +155,7 @@ class PostgresStore:
 
 STORE = None
 INDEX_CACHE = {}
-RUNS_PATH = os.path.join(ROOT, "data-seed", "dog_runs_li_queens.json")
+RUNS_PATH = os.path.join(ROOT, "data-seed", "dog_runs_region.json")
 RUNS_CACHE = {}
 GZ_CACHE = {}
 GZ_TYPES = (".js", ".css", ".json", ".webmanifest", ".txt", ".xml")
@@ -197,7 +197,7 @@ def render_runs(host_url):
             if isinstance(r.get("lat"), (int, float)):
                 pl["geo"] = {"@type": "GeoCoordinates", "latitude": r["lat"], "longitude": r["lng"]}
             places.append({"@type": "ListItem", "position": len(places) + 1, "item": pl})
-        ld = {"@context": "https://schema.org", "@type": "WebPage", "name": "Dog runs on Long Island and in Queens",
+        ld = {"@context": "https://schema.org", "@type": "WebPage", "name": "Dog runs in NYC, Long Island and Westchester",
               "url": base + "/runs", "isPartOf": {"@type": "WebSite", "name": "BarksBuds", "url": base + "/"},
               "mainEntity": {"@type": "ItemList", "numberOfItems": len(places), "itemListElement": places}}
         ld_s = json.dumps(ld, ensure_ascii=False).replace("<", "\\u003c")
@@ -309,8 +309,10 @@ class H(SimpleHTTPRequestHandler):
             return self._send_maybe_gz(body, gz, "text/html; charset=utf-8", {"Cache-Control": "no-cache"})
         if u.path == "/sitemap.xml":
             base = SITE_URL or self._host_url()
+            lm = max((r.get("last_checked") or "") for r in load_runs()["data"]) or "2026-10-24"
             xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                   f'<url><loc>{base}/</loc></url><url><loc>{base}/runs</loc></url></urlset>\n')
+                   f'<url><loc>{base}/</loc><lastmod>{lm}</lastmod></url>'
+                   f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url></urlset>\n')
             return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
         if u.path == "/api/runs":
             c = load_runs()

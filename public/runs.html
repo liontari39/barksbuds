@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dog Runs &amp; Dog Parks on Long Island and in Queens · Map | BarksBuds</title>
-<meta name="description" content="Find a dog run near you. Map and list of {{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens, with fenced areas, small-dog areas, water, shade, hours and residency rules.">
+<title>Dog Runs &amp; Dog Parks in NYC, Long Island &amp; Westchester · Map | BarksBuds</title>
+<meta name="description" content="Find a dog run near you. Map and list of {{RUN_COUNT}} dog runs and dog parks across all five NYC boroughs, Long Island (Nassau and Suffolk) and Westchester, with fenced areas, small-dog areas, water, shade, hours and residency rules.">
 <link rel="canonical" href="{{SITE_URL}}/runs">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="BarksBuds">
 <meta property="og:url" content="{{SITE_URL}}/runs">
-<meta property="og:title" content="Find a dog run near you · Long Island &amp; Queens | BarksBuds">
-<meta property="og:description" content="{{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens on one map: fenced runs, small-dog areas, water, shade, hours and rules.">
+<meta property="og:title" content="Find a dog run near you · NYC, Long Island &amp; Westchester | BarksBuds">
+<meta property="og:description" content="{{RUN_COUNT}} dog runs and dog parks across NYC, Long Island and Westchester on one map: fenced runs, small-dog areas, water, shade, hours and rules.">
 <meta property="og:image" content="{{SITE_URL}}/img/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Find a dog run near you · Long Island &amp; Queens">
-<meta name="twitter:description" content="{{RUN_COUNT}} dog runs and dog parks across Nassau, Suffolk and Queens on one map.">
+<meta name="twitter:title" content="Find a dog run near you · NYC, Long Island &amp; Westchester">
+<meta name="twitter:description" content="{{RUN_COUNT}} dog runs and dog parks across NYC, Long Island and Westchester on one map.">
 <meta name="twitter:image" content="{{SITE_URL}}/img/og-image.jpg">
 <meta name="theme-color" content="#FBB321">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -28,6 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/vendor/markercluster/MarkerCluster.css">
 <script type="application/ld+json">{{JSON_LD}}</script>
 <style>
 :root{--black:#141414;--ink:#2a2622;--muted:#625a50;--red:#C8201E;--red-d:#9E1714;--gold:#FBB321;--gold-d:#C98A0C;--gold-l:#FFE7A8;--cream:#FFF8EA;--line:#EADBB9;--ok:#1F7A3A;--ok-l:#E3F3E6;--r:18px;--nav:64px}
@@ -81,6 +82,11 @@ a{color:var(--red);text-underline-offset:3px}
 .seg{display:inline-flex;background:#fff;border:2px solid var(--black);border-radius:999px;padding:2px;gap:2px}
 .seg button{font:700 .9rem/1 Nunito,sans-serif;border:0;background:transparent;color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;min-height:36px}
 .seg button[aria-pressed=true]{background:var(--black);color:#fff}
+.area select{font:700 .9rem/1 Nunito,sans-serif;color:var(--ink);background:#fff;border:2px solid var(--black);border-radius:999px;padding:8px 30px 8px 12px;min-height:40px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23141414' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;max-width:100%}
+.area select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.marker-cluster{background:rgba(200,32,30,.25);border-radius:50%}
+.marker-cluster div{width:34px;height:34px;margin:3px;border-radius:50%;background:var(--red);border:2px solid var(--black);color:#FFF8EA;font:800 .9rem/30px Nunito,sans-serif;text-align:center}
+.marker-cluster.mc-off div{background:var(--gold);color:var(--black)}
 .chip{display:inline-flex;align-items:center;gap:6px;font:700 .9rem/1 Nunito,sans-serif;border:2px solid var(--line);background:#fff;color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;min-height:40px}
 .chip:hover{border-color:var(--black)}
 .chip[aria-pressed=true]{background:var(--gold);border-color:var(--black)}
@@ -211,7 +217,7 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
   <div class="wrap">
     <span class="eyebrow">dog run finder</span>
     <h1 id="t">Find a dog run near you</h1>
-    <p class="lead"><b>{{RUN_COUNT}} dog runs and dog parks</b> across Nassau, Suffolk and Queens, with the details that matter: fenced, small-dog areas, water, shade, hours and who's allowed in.</p>
+    <p class="lead"><b>{{RUN_COUNT}} dog runs and dog parks</b> across NYC, Long Island and Westchester, with the details that matter: fenced, small-dog areas, water, shade, hours and who's allowed in.</p>
   </div>
 </section>
 
@@ -222,17 +228,23 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
       <button class="btn near" id="near" type="button" aria-label="Sort by distance from me"><svg class="ico" aria-hidden="true"><use href="#i-nav"/></svg><span class="lbl">Near me</span></button>
     </div>
     <div class="filters" id="filters">
-      <div class="seg" role="group" aria-label="County">
-        <button type="button" data-county="" aria-pressed="true">All</button>
-        <button type="button" data-county="Nassau" aria-pressed="false">Nassau</button>
-        <button type="button" data-county="Suffolk" aria-pressed="false">Suffolk</button>
-        <button type="button" data-county="Queens" aria-pressed="false">Queens</button>
+      <div class="seg" role="group" aria-label="Region">
+        <button type="button" data-region="" aria-pressed="true">All</button>
+        <button type="button" data-region="nyc" aria-pressed="false">NYC</button>
+        <button type="button" data-region="li" aria-pressed="false">Long Island</button>
+        <button type="button" data-region="wc" aria-pressed="false">Westchester</button>
       </div>
+      <label class="area"><span class="sr-only">Borough or county</span><select id="area">
+        <option value="">All boroughs &amp; counties</option>
+        <optgroup label="New York City"><option value="Manhattan">Manhattan</option><option value="Brooklyn">Brooklyn</option><option value="Bronx">Bronx</option><option value="Queens">Queens</option><option value="Staten Island">Staten Island</option></optgroup>
+        <optgroup label="Long Island"><option value="Nassau">Nassau County</option><option value="Suffolk">Suffolk County</option></optgroup>
+        <optgroup label="Westchester"><option value="Westchester">Westchester County</option></optgroup>
+      </select></label>
       <button class="chip" type="button" data-f="fenced" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-fence"/></svg>Fenced</button>
       <button class="chip" type="button" data-f="small" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-small"/></svg>Small-dog area</button>
       <button class="chip" type="button" data-f="water" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-drop"/></svg>Water</button>
       <button class="chip" type="button" data-f="shade" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-tree"/></svg>Shade</button>
-      <button class="chip offleash" type="button" id="offleash" aria-pressed="false" title="NYC off-leash areas are unfenced and only off-leash before 9am and after 9pm">+ Queens off-leash areas (unfenced, set hours)</button>
+      <button class="chip offleash" type="button" id="offleash" aria-pressed="false" title="NYC Parks off-leash areas (all five boroughs) are unfenced and only off-leash before 9am and after 9pm; Rye Town Park needs a permit">+ Off-leash areas (unfenced, set hours)</button>
     </div>
     <div class="status">
       <span id="count" aria-live="polite">Loading dog runs…</span>
@@ -246,7 +258,7 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 <div class="wrap finder">
   <div>
     <ul class="list" id="results" aria-label="Dog runs" tabindex="-1">{{RUN_LIST}}</ul>
-    <p class="notice">Details come from public sources: NYC Parks, NYC Open Data, Nassau and Suffolk County Parks, town and village websites, and LI-DOG. Map pins are approximate while we verify each location. Always check the rules posted at the run.</p>
+    <p class="notice">Details come from public sources: NYC Parks, NYC Open Data, Nassau and Suffolk County Parks, Westchester city, town and village websites, and LI-DOG. Map pins are approximate while we verify each location. Always check the rules posted at the run.</p>
   </div>
   <div class="mapwrap" aria-label="Map of dog runs">
     <div id="map" role="region" aria-label="Interactive map of dog runs"></div>
@@ -274,6 +286,7 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 </footer>
 
 <script src="/vendor/leaflet/leaflet.js" defer></script>
+<script src="/vendor/markercluster/leaflet.markercluster.js" defer></script>
 <script src="/runs.js" defer></script>
 </body>
 </html>
