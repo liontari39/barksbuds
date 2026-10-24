@@ -47,3 +47,26 @@ Render's free plan blocks outbound SMTP, so only HTTPS email APIs work there.
 Tests (SQLite, and Postgres when `TEST_DATABASE_URL` is set):
 
     python3 -m unittest discover -s tests -v
+
+## Meetups
+
+Members can host meetups at a dog run from the runs data (pinned, with directions) or at a custom address, and RSVP
+Going/Maybe with their dogs. Capacity counts dogs marked Going; extra RSVPs join a waitlist and are promoted first-in,
+first-out when a spot opens. Pages: `/meetups` (filters: `area`, `region`, `ns=1` for the North Shore, `when=week|weekend`,
+`view=map`), `/meetups/<id>-<slug>` (Open Graph tags, `.ics`, Google Calendar, directions, attendee comments),
+`/meetups/new`, and `/admin/meetups?key=...` for hiding/deleting meetups (including bulk hide/delete of sample meetups).
+Code: `meetups.py` (data), `meetweb.py` (pages/routes), email templates in `mailer.py`.
+
+Emails (Brevo, async): RSVP confirmation, host notice, waitlist promotion, cancellation and a day-before reminder.
+Each has an unsubscribe link (`/emails/meetups`, also RFC 8058 one-click) and members can toggle meetup emails on `/me`.
+Sample meetups (`is_sample=1`, e.g. the seeded one) never send emails or reminders.
+
+* `MEETUP_EMAIL_ALLOWLIST` (optional, comma-separated): when set, meetup emails go only to these addresses (testing).
+* `MEETUP_AUTO_REMINDERS=0` disables the in-process reminder check.
+
+Reminders: Render's free plan sleeps when idle, so there is no always-on scheduler. While the app is awake, any request
+(including Render's health checks) triggers a reminder check at most every 10 minutes. For reliable timing, also call
+`POST /admin/meetups/reminders` hourly from any scheduler, with the admin key in an `X-Admin-Key` header (or a `key`
+form field). It sends reminders for meetups starting in 1 to 24 hours, at most once per meetup, and returns JSON.
+`POST /admin/meetups/test-email` (`key`, `id`, `kind`=confirm|host|promoted|cancel|reminder) sends one "[Test]" copy of
+an email type to that meetup's host only.

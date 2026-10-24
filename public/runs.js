@@ -4,7 +4,7 @@
   var REGION = { Manhattan: "nyc", Brooklyn: "nyc", Bronx: "nyc", Queens: "nyc", "Staten Island": "nyc", Nassau: "li", Suffolk: "li", Westchester: "wc" };
   var COUNTY_SUFFIX = { Nassau: 1, Suffolk: 1, Westchester: 1 };
   var state = { q: "", region: "", county: "", f: { fenced: false, small: false, water: false, shade: false }, off: false, me: null, sel: null };
-  var runs = [], map = null, markers = {}, meMarker = null, layer = null;
+  var runs = [], map = null, markers = {}, meMarker = null, layer = null, MEET = {};
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var SMALL = window.matchMedia("(max-width:900px)").matches;
@@ -103,6 +103,7 @@
       '<div><h2><button type="button" class="nm" aria-controls="more-' + esc(r.id) + '">' + esc(r.name) + '</button></h2><p class="where">' + where + "</p></div>" +
       (d != null ? '<span class="dist">' + (d < 10 ? d.toFixed(1) : Math.round(d)) + " mi</span>" : "") + "</div>" +
       '<ul class="tags" aria-label="Highlights">' + tags(r) + "</ul>" +
+      '<div class="mu-slot">' + meetups(r) + "</div>" +
       '<details class="more" id="more-' + esc(r.id) + '"><summary><svg class="ico chev" aria-hidden="true"><use href="#i-chev"/></svg>Details, hours &amp; directions</summary><div class="body">' +
       '<dl class="amen">' + amen + "</dl>" +
       '<dl class="facts">' + facts + "</dl>" +
@@ -115,6 +116,24 @@
       '<p class="help"><svg class="ico" aria-hidden="true"><use href="#i-edit"/></svg><span>Know this run? <a href="/#join">Help us fill in details</a> by joining the waitlist.</span></p>' +
       "</div></details></li>";
   }
+
+  // Upcoming meetups at this run (from /api/meetups) plus a "Host a meetup here" link.
+  function meetups(r) {
+    var ms = MEET[r.id] || [], out = "";
+    if (ms.length) {
+      out += '<ul class="mu-list" aria-label="Upcoming meetups">' + ms.slice(0, 2).map(function (m) {
+        return '<li><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg><a href="' + esc(m.url) + '">' + esc(m.title) + "</a><span>" + esc(m.when) + (m.sample ? " · sample" : "") + "</span></li>";
+      }).join("") + (ms.length > 2 ? '<li class="more-mu"><a href="/meetups">+' + (ms.length - 2) + " more</a></li>" : "") + "</ul>";
+    }
+    return out + '<a class="mu-host" href="/meetups/new?run=' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Host a meetup here</a>';
+  }
+  fetch("/api/meetups", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : { runs: {} }; }).then(function (d) {
+    MEET = d.runs || {};
+    $$(".card[data-id]").forEach(function (li) {
+      var r = runs.filter(function (x) { return x.id === li.getAttribute("data-id"); })[0], slot = li.querySelector(".mu-slot");
+      if (r && slot) slot.innerHTML = meetups(r);
+    });
+  }).catch(function () {});
 
   function pinIcon(r, sel) {
     var c = isOff(r) ? "#C98A0C" : "#C8201E", w = SMALL ? 24 : 30, h = SMALL ? 32 : 40;

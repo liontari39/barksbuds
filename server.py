@@ -26,6 +26,7 @@ from urllib.parse import urlsplit, parse_qs, unquote
 
 import accounts
 import mailer
+import meetweb
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -247,7 +248,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, meetweb.MeetupRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -323,6 +324,7 @@ class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        meetweb.tick(SITE_URL or self._host_url())
         if u.path == "/healthz":
             try:
                 STORE.ping(); return self._json(200, {"ok": True, "store": STORE.kind})
@@ -330,7 +332,8 @@ class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
                 return self._json(503, {"ok": False})
         if u.path in ("/", "/index.html"):
             self._app_reset()
-            body = render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user()).encode())
+            body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user()).encode())
+                    .replace(b"{{NORTH_SHORE}}", meetweb.landing_html().encode()))
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
             self._app_reset()
@@ -344,7 +347,9 @@ class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
             xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
                    f'<url><loc>{base}/</loc><lastmod>{lm}</lastmod></url>'
                    f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url>'
-                   f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
+                   f'<url><loc>{base}/meetups</loc><changefreq>daily</changefreq></url>'
+                   + "".join(f'<url><loc>{base}{meetweb.meetup_path(m)}</loc></url>' for m in meetweb.M.upcoming(limit=500) if not m["is_sample"])
+                   + f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in accounts.browse_dogs(limit=5000))
                    + '</urlset>\n')
             return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=600"})
@@ -362,7 +367,7 @@ class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.app_get(u.path, q):
+        if self.app_get(u.path, q) or self.meetup_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -381,7 +386,7 @@ class H(webapp.AppRoutes, SimpleHTTPRequestHandler):
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.app_post(u.path, q):
+        if self.app_post(u.path, q) or self.meetup_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):

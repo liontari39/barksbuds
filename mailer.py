@@ -199,9 +199,10 @@ def _send(to, subject, body, text, unsub, tag="waitlist-welcome"):
         stem = os.path.join(OUTBOX, datetime.now().strftime("%Y%m%d-%H%M%S-%f-") + tag + "-" + hashlib.sha1(to.encode()).hexdigest()[:8])
         with open(stem + ".html", "w", encoding="utf-8") as f:
             f.write(body)
-        with open(stem + ".json", "w", encoding="utf-8") as f:
+        with open(stem + ".tmp", "w", encoding="utf-8") as f:  # write then rename, so readers never see a partial file
             json.dump({"to": to, "from": f"{FROM_NAME} <{FROM}>", "reply_to": REPLY_TO, "subject": subject,
                        "headers": hdrs, "text": text, "tag": tag}, f, indent=1)
+        os.replace(stem + ".tmp", stem + ".json")
         return "HTTP 200 (written to outbox)"
     if PROVIDER == "brevo":
         p = {"sender": {"name": FROM_NAME, "email": FROM}, "to": [{"email": to}], "subject": subject,
@@ -360,3 +361,128 @@ def send_signin_async(base, link, email, minutes=20):
 
     threading.Thread(target=run, name="signin-email", daemon=True).start()
     return True
+
+
+# ---------------------------------------------------------------- meetup emails
+MEETUP_ALLOW = {a.strip().lower() for a in os.environ.get("MEETUP_EMAIL_ALLOWLIST", "").split(",") if a.strip()}
+
+
+def and_list(xs):
+    xs = list(xs)
+    return " and ".join(xs) if len(xs) < 3 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def send_async(to, subject, body, text, unsub, tag):
+    """Generic fire-and-forget send with retries. Returns True if queued. MEETUP_EMAIL_ALLOWLIST (optional, comma separated)
+    limits meetup-* emails to those addresses, for testing."""
+    if not enabled():
+        print(f"email: skipped {tag} for {_mask(to)} ({status()})", flush=True)
+        return False
+    if tag.startswith("meetup") and MEETUP_ALLOW and to.strip().lower() not in MEETUP_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on MEETUP_EMAIL_ALLOWLIST)", flush=True)
+        return False
+
+    def run():
+        for attempt in range(3):
+            try:
+                result = _send(to, subject, body, text, unsub, tag=tag)
+                print(f"email: {tag} sent to {_mask(to)} via {PROVIDER} ({result})", flush=True)
+                return
+            except urllib.error.HTTPError as e:
+                print(f"email: {PROVIDER} HTTP {e.code} for {tag} to {_mask(to)}: {_err_detail(e)}", flush=True)
+                if not (e.code == 429 or e.code >= 500):
+                    return
+            except Exception as e:
+                print(f"email: {tag} send error for {_mask(to)}: {type(e).__name__}", flush=True)
+            time.sleep(2 * (attempt + 1))
+        print(f"email: gave up on {tag} for {_mask(to)}", flush=True)
+
+    threading.Thread(target=run, name=tag, daemon=True).start()
+    return True
+
+
+def build_meetup(base, kind, m, name="", status="", dogs=None, who="", who_dogs=None, counts="", unsub=""):
+    """Return (subject, html, text) for a meetup email.
+    kind: confirm | promoted | host | cancel | reminder. m: meetup dict with title, when, where, url, ics, gcal, directions."""
+    e = html.escape
+    dogs, who_dogs = dogs or [], who_dogs or []
+    t = m["title"]
+    hi = f"Hi {name}," if name else "Hi there,"
+    dl = and_list(dogs)
+    wdl = and_list(who_dogs)
+    status_word = {"going": "Going", "maybe": "Maybe", "waitlist": "On the waitlist"}.get(status, status)
+    if kind == "confirm":
+        if status == "waitlist":
+            subject, eyebrow, heading = f"You're on the waitlist for {t}", "almost there", "You're on the waitlist"
+            intro = "This meetup is full right now. If a spot opens up we'll move you to Going automatically and email you."
+        elif status == "maybe":
+            subject, eyebrow, heading = f"You're a maybe for {t}", "maybe see you there", "You're marked as Maybe"
+            intro = "We'll send a reminder the day before. Switch to Going any time if you can make it."
+        else:
+            subject, eyebrow, heading = f"You're going to {t}", "see you there", "You're going!"
+            intro = "Your spot is saved. We'll send a reminder the day before."
+    elif kind == "promoted":
+        subject, eyebrow, heading = f"A spot opened up: you're going to {t}", "good news", "You're off the waitlist"
+        intro = "A spot opened up, so you've been moved from the waitlist to Going."
+    elif kind == "host":
+        subject = f"{who or 'A member'} RSVP'd {status_word} to {t}"
+        eyebrow, heading = "new rsvp", f"{who or 'A member'} RSVP'd {status_word}"
+        intro = (f"Bringing {wdl}." if wdl else "") + (f" {counts}" if counts else "")
+    elif kind == "cancel":
+        subject, eyebrow, heading = f"Cancelled: {t} on {m['when_short']}", "change of plans", "This meetup was cancelled"
+        intro = "The host cancelled this meetup, so your RSVP no longer applies. Sorry about that! Find another meetup near you below."
+    elif kind == "reminder":
+        subject, eyebrow, heading = f"Tomorrow: {t} at {m['time_short']}", "see you tomorrow", "Your meetup is tomorrow"
+        intro = "A quick reminder about your meetup. Bring water and a leash for the walk in."
+    else:
+        raise ValueError(kind)
+    rows = [("When", m["when"]), ("Where", m["where"])]
+    if dl and kind in ("confirm", "promoted", "reminder"):
+        rows.append(("Your dogs", dl))
+    if kind in ("confirm", "promoted", "reminder") and status:
+        rows.append(("Your RSVP", "Going" if kind == "promoted" else status_word))
+    if kind == "host" and counts:
+        rows.append(("RSVPs so far", counts))
+    button = ("See other meetups", base + "/meetups") if kind == "cancel" else ("View the meetup", m["url"])
+    links = [] if kind == "cancel" else [("Add to calendar (.ics)", m["ics"]), ("Google Calendar", m["gcal"])]
+    if kind in ("confirm", "promoted", "reminder") and m.get("directions"):
+        links.append(("Directions", m["directions"]))
+    if kind in ("confirm", "promoted", "reminder"):
+        links.append(("Change or cancel your RSVP", m["url"] + "#rsvp"))
+    why = {"host": "you're hosting this meetup on BarksBuds"}.get(kind, "you RSVP'd to this meetup on BarksBuds")
+    text = f"{hi}\n\n{heading}. {intro}\n\n{t}\n" + "".join(f"{k}: {v}\n" for k, v in rows) + \
+        f"\n{button[0]}: {button[1]}\n" + "".join(f"{k}: {v}\n" for k, v in links) + \
+        f"\nSee you at the dog run!\nThe BarksBuds team\n\nYou're getting this because {why}.\n" + \
+        (f"Turn off meetup emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\n"
+    btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
+           "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
+    trs = "".join(f'<tr><td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:14px;color:#625a50;width:110px;vertical-align:top;">{e(k)}</td>'
+                  f'<td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:15px;color:#141414;font-weight:700;">{e(v)}</td></tr>' for k, v in rows)
+    lk = " &middot; ".join(f'<a href="{e(u)}" style="color:#C8201E;font-weight:700;">{e(k)}</a>' for k, u in links)
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>{e(subject)}</title>
+<style>@media (max-width:620px){{.wrap{{padding:0 !important}} .card{{border-radius:0 !important}} .pad{{padding:24px 22px !important}} h1{{font-size:27px !important}}}}</style>
+</head><body style="margin:0;padding:0;background:#FFF8EA;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">{e(t)} · {e(m["when"])}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
+<tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
+<tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
+<p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>
+<h1 style="margin:0 0 12px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:31px;line-height:1.1;color:#141414;">{e(heading)}</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;">{e(hi)}</p>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;">{e(intro)}</p>
+<h2 style="margin:0 0 6px;font-family:'Baloo 2',Arial,sans-serif;font-size:21px;color:#141414;">{e(t)}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">{trs}</table>
+<p style="margin:0 0 18px;"><a href="{e(button[1])}" style="{btn}">{e(button[0])} &rarr;</a></p>
+<p style="margin:0 0 26px;font-size:14px;line-height:1.7;">{lk}</p>
+<p style="margin:0;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">See you at the dog run!</p>
+<p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
+<tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
+You're getting this because {e(why)}. We never sell or share your info.<br>
+{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off meetup emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a>
+</td></tr></table></td></tr></table></body></html>"""
+    return subject, body, text

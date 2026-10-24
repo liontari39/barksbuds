@@ -37,6 +37,12 @@ ICONS = """<svg width="0" height="0" style="position:absolute" aria-hidden="true
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.01M10.3 3.9L2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
 <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></symbol>
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h3"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14h4"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+<symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-dog" viewBox="0 0 24 24"><path d="M10 5.2C9.2 3.8 7.4 3 6 3.5 4.5 4 3.5 6 4 8l1 3M14 5.2c.8-1.4 2.6-2.2 4-1.7 1.5.5 2.5 2.5 2 4.5l-1 3"/><path d="M8 14.5c0 3 1.8 5.5 4 5.5s4-2.5 4-5.5S14.2 6 12 6s-4 5.5-4 8.5z"/><path d="M11 16h2"/></symbol>
 </svg>"""
 
 FLASH = {"welcome": "You're signed in. Welcome to BarksBuds!", "signedin": "You're signed in.",
@@ -210,7 +216,7 @@ class AppRoutes:
     def page(self, title, body, *, code=200, desc="", canonical="", og=None, index=False, active="", scripts="", flash=""):
         u = self.user()
         base = self._base()
-        links = [("/runs", "Dog run map", "runs"), ("/dogs", "Dogs", "dogs"), ("/#features", "Features", ""),
+        links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/dogs", "Dogs", "dogs"), ("/#features", "Features", ""),
                  ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
@@ -248,7 +254,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=2">
+<link rel="stylesheet" href="/app.css?v=3">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -260,7 +266,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/dogs">Dogs</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/dogs">Dogs</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -484,9 +490,10 @@ It comes from hello@barksbuds.app.</div>
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
+{self.email_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
-</div></div></section>"""
+</div>{self.meetups_dashboard(u)}</div></section>"""
         return self.page("My dogs", body, flash=self.flash_from(q))
 
     def area_select(self, current, name="area"):
@@ -1017,22 +1024,34 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
         users = A.one("SELECT COUNT(*) FROM users")[0]
         ndogs = A.one("SELECT COUNT(*) FROM dogs")[0]
         tr = []
-        for rid, ts, reason, details, status, slug, name, hidden, dog_id in rows:
+        for rid, ts, reason, details, status, slug, name, hidden, dog_id, mid, mtitle, mslug, mhidden, cid, cbody, chidden in rows:
             when = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             acts = []
             pairs = [("resolve", "Mark resolved") if status == "open" else ("reopen", "Reopen")]
-            if dog_id:
+            if cid:
+                pairs.append(("unhide_comment", "Unhide comment") if chidden else ("hide_comment", "Hide comment"))
+            elif mid:
+                pairs.append(("unhide_meetup", "Unhide meetup") if mhidden else ("hide_meetup", "Hide meetup"))
+            elif dog_id:
                 pairs.append(("unhide", "Unhide profile") if hidden else ("hide", "Hide profile"))
             for act, lab in pairs:
                 acts.append(f'<form method="post" action="/admin/reports" style="display:inline"><input type="hidden" name="key" value="{e(key)}">'
                             f'<input type="hidden" name="id" value="{rid}"><input type="hidden" name="dog" value="{dog_id or ""}">'
+                            f'<input type="hidden" name="meetup" value="{mid or ""}"><input type="hidden" name="comment" value="{cid or ""}">'
                             f'<input type="hidden" name="action" value="{act}"><button class="linkbtn" type="submit">{lab}</button></form>')
-            dog = f'<a href="/dogs/{e(slug)}">{e(name)}</a>' if slug else "(deleted)"
-            tr.append(f"<tr><td>{rid}</td><td>{when}</td><td>{dog}{' <b>(hidden)</b>' if hidden else ''}</td><td>{e(reason)}</td>"
+            if cid or mid:
+                mlink = f'<a href="/meetups/{mid}-{e(mslug or "")}">{e(mtitle or "")}</a>' if mtitle else "(deleted meetup)"
+                if cid:
+                    what = f'Comment on {mlink}: <q>{e((cbody or "")[:160])}</q>' + (" <b>(hidden)</b>" if chidden else "")
+                else:
+                    what = f'Meetup {mlink}' + (" <b>(hidden)</b>" if mhidden else "")
+            else:
+                what = (f'<a href="/dogs/{e(slug)}">{e(name)}</a>' if slug else "(deleted)") + (" <b>(hidden)</b>" if hidden else "")
+            tr.append(f"<tr><td>{rid}</td><td>{when}</td><td>{what}</td><td>{e(reason)}</td>"
                       f"<td style='white-space:pre-line'>{e(details)}</td><td>{e(status)}</td><td>{' · '.join(acts)}</td></tr>")
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">admin</span><h1>Reports</h1>
 <p class="lead">{users} member{'s' if users != 1 else ''} · {ndogs} dog profile{'s' if ndogs != 1 else ''} · {st['photos']} photos using {st['bytes'] / 1048576:.1f} MB of database storage.</p></div></section>
-<section class="section"><div class="wrap"><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>Dog</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<section class="section"><div class="wrap"><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>{''.join(tr) or '<tr><td colspan="7">No reports yet.</td></tr>'}</tbody></table></div></div></section>"""
         return self.page("Admin: reports", body)
 
@@ -1045,6 +1064,12 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             A.set_report_status(int(rid), "resolved" if act == "resolve" else "open")
         elif act in ("hide", "unhide") and dog.isdigit():
             A.set_dog_hidden(int(dog), act == "hide")
+        elif act in ("hide_meetup", "unhide_meetup") and f.get("meetup").isdigit():
+            import meetups
+            meetups.set_hidden(int(f.get("meetup")), act == "hide_meetup")
+        elif act in ("hide_comment", "unhide_comment") and f.get("comment").isdigit():
+            import meetups
+            meetups.set_comment_hidden(int(f.get("comment")), act == "hide_comment")
         print(f"admin: report action {act}", flush=True)
         return self.redirect("/admin/reports?key=" + quote(f.get("key")))
 

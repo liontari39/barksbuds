@@ -112,6 +112,8 @@ def init_schema(store):
         store.q("ALTER TABLE dogs ADD COLUMN website TEXT NOT NULL DEFAULT ''")
     if "seed_rev" not in cols:
         store.q(f"ALTER TABLE dogs ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
+    import meetups
+    meetups.init_schema(store)
 
 
 # ---------------------------------------------------------------- rate limiting (in-memory, per process)
@@ -236,6 +238,8 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
+    import meetups
+    meetups.purge_user(user_id)
     for (dog_id,) in q("SELECT id FROM dogs WHERE user_id=:u", u=user_id):
         delete_dog(dog_id)
     q("DELETE FROM sessions WHERE user_id=:u", u=user_id)
@@ -496,8 +500,12 @@ def add_report(dog_id, user_id, reason, details, ip):
 
 
 def list_reports():
-    return q("""SELECT r.id, r.created_at, r.reason, r.details, r.status, d.slug, d.name, d.hidden, d.id
-                FROM reports r LEFT JOIN dogs d ON d.id=r.dog_id ORDER BY r.status='open' DESC, r.id DESC LIMIT 300""")
+    """Rows: id, ts, reason, details, status, dog slug, dog name, dog hidden, dog id,
+    meetup id, meetup title, meetup slug, meetup hidden, comment id, comment body, comment hidden."""
+    return q("""SELECT r.id, r.created_at, r.reason, r.details, r.status, d.slug, d.name, d.hidden, d.id,
+                       m.id, m.title, m.slug, m.hidden, c.id, c.body, c.hidden
+                FROM reports r LEFT JOIN dogs d ON d.id=r.dog_id LEFT JOIN meetups m ON m.id=r.meetup_id
+                LEFT JOIN meetup_comments c ON c.id=r.comment_id ORDER BY r.status='open' DESC, r.id DESC LIMIT 300""")
 
 
 def set_report_status(report_id, status):
