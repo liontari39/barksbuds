@@ -79,7 +79,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/pixel-pals", "Pixel Pals")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -262,7 +262,7 @@ class AppRoutes:
         u = self.user()
         base = self._base()
         links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
-                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/#story", "Our story", "")]
+                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
         meta = [f'<meta name="robots" content="{"index,follow" if index else "noindex"}">']
@@ -311,8 +311,8 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
-<div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; {date.today().year} BarksBuds</p></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
 </body></html>"""

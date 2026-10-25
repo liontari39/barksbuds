@@ -32,6 +32,7 @@ import packweb
 import pixelweb
 import runsugg
 import runsweb
+import tipsweb
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -265,7 +266,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -358,7 +359,8 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
             self._app_reset()
             body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "home").encode())
                     .replace(b"{{NORTH_SHORE}}", meetweb.landing_html().encode())
-                    .replace(b"{{PIXEL_PALS}}", pixelweb.landing_html().encode()))
+                    .replace(b"{{PIXEL_PALS}}", pixelweb.landing_html().encode())
+                    .replace(b"{{TIPS}}", tipsweb.landing_html().encode()))
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
             self._app_reset()
@@ -369,6 +371,10 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                                                   b'<a class="btn btn-ghost btn-sm sg-cta" href="/signin?next=%2Fruns%2Fsuggest">+ Suggest a run</a>')))
             return self._send_maybe_gz(body, gzip.compress(body, 6), "text/html; charset=utf-8",
                                        {"Cache-Control": "no-cache", "Vary": "Accept-Encoding, Cookie"})
+        if u.path == "/robots.txt":
+            base = SITE_URL or self._host_url()
+            txt = f"User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /auth\nDisallow: /me$\nDisallow: /me/\nDisallow: /unsubscribe\n\nSitemap: {base}/sitemap.xml\n"
+            return self._send(200, txt.encode(), "text/plain; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
         if u.path == "/sitemap.xml":
             base = SITE_URL or self._host_url()
             lm = max((r.get("last_checked") or "") for r in load_runs()["data"]) or "2026-10-24"
@@ -380,6 +386,9 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                    + f'<url><loc>{base}/packs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}{packweb.pack_path(p)}</loc></url>' for p in packweb.P.browse() if not p["is_sample"])
                    + f'<url><loc>{base}/pixel-pals</loc><changefreq>weekly</changefreq></url>'
+                   + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
+                   + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
+                   + f'<url><loc>{base}/privacy</loc></url><url><loc>{base}/terms</loc></url>'
                    + f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in accounts.browse_dogs(limit=5000))
                    + '</urlset>\n')
@@ -398,7 +407,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.tips_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -417,7 +426,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
+        if self.tips_post(u.path, q) or self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):
@@ -533,6 +542,7 @@ def init_app():
     STORE = make_store()
     accounts.init_schema(STORE)
     runsugg.init_schema(STORE)
+    tipsweb.init_schema(STORE)
     if runs_changed not in runsugg.CHANGED:
         runsugg.CHANGED.append(runs_changed)
     runs_changed()

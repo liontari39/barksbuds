@@ -102,7 +102,8 @@ The BarksBuds team
 Our logo is inspired by Jack, a Cairn terrier who lived to 17.
 
 You're getting this because {email} joined the waitlist at {home}
-Remove me from the list: {unsub}
+Remove me from the list (this deletes your details): {unsub}
+Questions? Just reply, or write to hello@barksbuds.app. Privacy: {base}/privacy
 """
     btn = ("display:inline-block;background:#FBB321;color:#141414;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
            "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #C98A0C")
@@ -152,7 +153,8 @@ Remove me from the list: {unsub}
 <tr><td class="pad" style="background:#141414;padding:20px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
   Our logo is inspired by Jack, a Cairn terrier who lived to 17.<br>
   You're getting this because {e(email)} joined the BarksBuds waitlist. We never sell or share your info.<br>
-  {f'<a href="{e(unsub)}" style="color:#FBB321;">Remove me from the list</a>' if unsub else ''}
+  {f'<a href="{e(unsub)}" style="color:#FBB321;">Remove me from the list</a> &middot; ' if unsub else ''}<a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
+  Questions? Just reply, or write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
 </td></tr>
 </table>
 </td></tr></table>
@@ -289,6 +291,7 @@ The BarksBuds team
 {base}/
 
 This email was sent to {email} because someone asked to sign in to BarksBuds with this address.
+Questions? Write to hello@barksbuds.app. Privacy: {base}/privacy
 """
     btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
            "font-size:18px;text-decoration:none;padding:15px 30px;border-radius:999px;border-bottom:4px solid #9E1714")
@@ -329,7 +332,7 @@ This email was sent to {email} because someone asked to sign in to BarksBuds wit
 </td></tr>
 <tr><td class="pad" style="background:#141414;padding:20px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
   This email was sent to {e(email)} because someone asked to sign in to <a href="{base}/" style="color:#FBB321;">BarksBuds</a> with this address.
-  We never sell or share your info.
+  We never sell or share your info.<br>Questions? Write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a>
 </td></tr>
 </table>
 </td></tr></table>
@@ -463,7 +466,7 @@ def build_meetup(base, kind, m, name="", status="", dogs=None, who="", who_dogs=
     text = f"{hi}\n\n{heading}. {intro}\n\n{t}\n" + "".join(f"{k}: {v}\n" for k, v in rows) + \
         f"\n{button[0]}: {button[1]}\n" + "".join(f"{k}: {v}\n" for k, v in links) + \
         f"\nSee you at the dog run!\nThe BarksBuds team\n\nYou're getting this because {why}.\n" + \
-        (f"Turn off meetup emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\n"
+        (f"Turn off meetup emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\nQuestions? Just reply, or write to hello@barksbuds.app. Privacy: {base}/privacy\n"
     btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
            "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
     trs = "".join(f'<tr><td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:14px;color:#625a50;width:110px;vertical-align:top;">{e(k)}</td>'
@@ -493,7 +496,8 @@ def build_meetup(base, kind, m, name="", status="", dogs=None, who="", who_dogs=
 <p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
 <tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
 You're getting this because {e(why)}. We never sell or share your info.<br>
-{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off meetup emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a>
+{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off meetup emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
+Questions? Just reply, or write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
 </td></tr></table></td></tr></table></body></html>"""
     return subject, body, text
 
@@ -539,7 +543,7 @@ def build_pack(base, kind, p, name="", who="", who_dogs=None, message="", meetup
     text = f"{hi}\n\n{heading}. {intro}\n\n" + "".join(f"{k}: {v}\n" for k, v in rows) + \
         f"\n{button[0]}: {button[1]}\n" + "".join(f"{k}: {v}\n" for k, v in links) + \
         f"\nSee you at the dog run!\nThe BarksBuds team\n\nYou're getting this because {why}.\n" + \
-        (f"Turn off pack emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\n"
+        (f"Turn off pack emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\nQuestions? Just reply, or write to hello@barksbuds.app. Privacy: {base}/privacy\n"
     btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
            "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
     trs = "".join(f'<tr><td style="padding:8px 0;border-top:1px solid #EADBB9;font-size:14px;color:#625a50;width:110px;vertical-align:top;">{e(k)}</td>'
@@ -569,6 +573,7 @@ def build_pack(base, kind, p, name="", who="", who_dogs=None, message="", meetup
 <p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
 <tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
 You're getting this because {e(why)}. We never sell or share your info.<br>
-{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off pack emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a>
+{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off pack emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
+Questions? Just reply, or write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
 </td></tr></table></td></tr></table></body></html>"""
     return subject, body, text

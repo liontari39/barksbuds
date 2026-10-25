@@ -668,7 +668,7 @@ class PackRoutes:
                   "alt": f"{p['name']} cover photo", "desc": og_desc}
         else:
             og = {"title": f"{p['name']} · BarksBuds pack", "image": base + "/img/og-image.jpg", "w": 1200, "h": 630, "desc": og_desc}
-        return self.page(p["name"], body, canonical=path, desc=og_desc, og=og, index=not p["hidden"], active="packs",
+        return self.page(p["name"], body, canonical=path, desc=og_desc, og=og, index=not (p["hidden"] or p["is_sample"]), active="packs",
                          flash=self.flash_from(q))
 
     # ------------------------------------------------------------ members (organizers)
