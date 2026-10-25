@@ -510,7 +510,7 @@ It comes from hello@barksbuds.app.</div>
         firsts = A.first_photos([d["id"] for d in dogs])
         cards = []
         for d in dogs:
-            pid = firsts.get(d["id"])
+            pid = d.get("avatar_photo_id") or firsts.get(d["id"])  # the chosen main picture, else the first photo
             ph = (self.card_ph(d, pid) if pid or d.get("pixel_photo_id") else
                   '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg></div>')
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
@@ -958,7 +958,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             (label, areas), canon = A.REGIONS[region], "/dogs?region=" + region
         dogs = A.browse_dogs(areas)
         firsts = A.first_photos([d["id"] for d in dogs])
-        cards = [self.dog_card(d, firsts.get(d["id"])) for d in dogs]
+        cards = [self.dog_card(d, d.get("avatar_photo_id") or firsts.get(d["id"])) for d in dogs]  # main picture first
         cur = lambda on: ' aria-current="page"' if on else ""
         chips = [f'<li><a href="/dogs"{cur(not areas)}>All areas</a></li>']
         chips += [f'<li><a href="/dogs?region={k}"{cur(region == k and area not in A.AREA_NAMES)}>{e(v[0])}</a></li>' for k, v in A.REGIONS.items()]

@@ -439,6 +439,7 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(A.avatar_info(A.dog_by_id(lily["id"]))["kind"], "photo")
         lp = Client().get("/dogs/" + lily["slug"]).text
         self.assertIn(f'/px/{A.dog_by_id(lily["id"])["pixel_photo_id"]}-1x.png', lp)  # pixel pal still on the profile
+        self.assertIn(f'/p/{A.dog_by_id(lily["id"])["avatar_photo_id"]}.webp', Client().get("/dogs").text)  # card uses the main picture
         rerun = lambda: (setattr(sys, "argv", ["seed.py", "--assets", assets]), seed.main(), setattr(sys, "argv", old))
         # the live database as revision 3 left it (real photo lily-1 as the main picture, the AI portrait still stored as
         # an avatar image): the new revision makes the stored portrait the main picture once, keeps the profile edits,
