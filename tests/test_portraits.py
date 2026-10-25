@@ -1,4 +1,4 @@
-"""Pixel portraits: owners request one hand-made portrait per dog; the team completes or rejects it via the admin API.
+"""Pixel portraits: owners request one hand-made portrait per dog (1 to 3 reference photos); the team completes or rejects it via the admin API.
 
 Run with the rest:  python3 -m unittest discover -s tests -v   (TEST_DATABASE_URL=... for Postgres)
 """
@@ -62,7 +62,9 @@ class PortraitTests(unittest.TestCase):
         edit = c.get(f"/me/dogs/{did}/edit").text
         self.assertIn('id="portrait-panel"', edit)
         self.assertIn("Our team hand-makes a pixel-art portrait of your pup, usually within a day", edit)
-        self.assertIn("full-body photo, facing the camera, in good light", edit)
+        self.assertIn("Add up to 3 photos. Best results: one full-body shot (standing, facing the camera) plus a clear close-up "
+                      "of the face, in good light. More angles help us get markings and ears just right.", edit)
+        self.assertIn('type="checkbox" name="photo_id"', edit); self.assertIn('name="photo" type="file" multiple', edit)
         self.assertIn("Get a pixel portrait", c.get(f"/dogs/{A.dog_by_id(did)['slug']}").text)
         self.assertNotIn("Get a pixel portrait", Client().get(f"/dogs/{A.dog_by_id(did)['slug']}").text)
         s = snap()
@@ -73,6 +75,7 @@ class PortraitTests(unittest.TestCase):
                          ("pending", ph, "Brown and white, red collar", ph))
         notice = TM.wait_mail("portrait-request", "hello@barksbuds.app", s)
         self.assertTrue(notice[0]["subject"].startswith("New pixel portrait request: "))
+        self.assertIn("1 reference photo.", notice[0]["text"])
         self.assertNotIn("test-admin-key", json.dumps(notice))
         self.assertIn("Requested on", c.get(f"/me/dogs/{did}/edit").text)
         self.assertIn("in progress", c.get(f"/me/dogs/{did}/edit").text)
@@ -88,6 +91,10 @@ class PortraitTests(unittest.TestCase):
         self.assertEqual(mine["dog"]["id"], did); self.assertEqual(mine["coat_notes"], "Brown and white, red collar")
         self.assertEqual(mine["owner"]["email"], email)
         self.assertTrue(mine["photo_url"].endswith(f"/admin/portraits/{req['id']}/photo.jpg"))
+        self.assertEqual((mine["photo_count"], mine["photo_ids"]), (1, [ph]))
+        self.assertTrue(mine["photo_urls"][0].endswith(f"/admin/portraits/{req['id']}/photo/1.jpg"))
+        self.assertEqual(admin_get(f"/admin/portraits/{req['id']}/photo/1.jpg").body, admin_get(f"/admin/portraits/{req['id']}/photo.jpg").body)
+        self.assertEqual(admin_get(f"/admin/portraits/{req['id']}/photo/2.jpg").status, 404)
         ph_r = admin_get(f"/admin/portraits/{req['id']}/photo.jpg")
         self.assertEqual((ph_r.status, ph_r.headers["Content-Type"]), (200, "image/jpeg"))
         self.assertEqual(admin_get(f"/admin/portraits/{req['id']}/photo.jpg", {}).status, 404)
@@ -160,6 +167,70 @@ class PortraitTests(unittest.TestCase):
         self.assertFalse(out["made_main"]); self.assertTrue(out["emailed"])
         self.assertEqual(A.dog_by_id(did)["avatar_photo_id"], ph2)
         self.assertEqual(len(TM.wait_mail("portrait-ready", email, s)), 1)
+
+    def test_multiple_photos(self):
+        c, email, uid, did, ph = with_photo("prm")
+        multipart(c, f"/me/dogs/{did}/photos", {}, [("photos", "b.jpg", jpeg_with_exif())])
+        ph2 = A.gallery(did)[1]["id"]
+        nphotos = A.photo_count(did)
+        # more than 3 in total is refused before anything is stored
+        r = request(c, did, photo_id=[str(ph), str(ph2)], _files=[("photo", "u1.jpg", jpeg_with_exif()), ("photo", "u2.jpg", jpeg_with_exif())])
+        self.assertIn("pre=many", r.headers["Location"])
+        self.assertIn("up to 3 photos in total", c.get(r.headers["Location"]).text)
+        self.assertIsNone(P.latest(did))
+        self.assertEqual(A.one("SELECT COUNT(*) FROM photos WHERE dog_id=:d AND kind='request'", d=did)[0], 0)
+        # a bad upload among good ones stores nothing
+        r = request(c, did, photo_id=str(ph), _files=[("photo", "u1.jpg", jpeg_with_exif()), ("photo", "x.jpg", b"not an image")])
+        self.assertIn("pre=type", r.headers["Location"])
+        self.assertIsNone(P.latest(did))
+        self.assertEqual(A.one("SELECT COUNT(*) FROM photos WHERE dog_id=:d AND kind='request'", d=did)[0], 0)
+        # 2 gallery photos (one repeated) + 1 upload = 3, in order
+        s = snap()
+        r = request(c, did, photo_id=[str(ph2), str(ph), str(ph2)], _files=[("photo", "u1.jpg", jpeg_with_exif())])
+        self.assertEqual(r.status, 303); self.assertIn("m=portrait", r.headers["Location"])
+        req = P.latest(did)
+        ids = P.photo_ids(req["id"])
+        self.assertEqual(len(ids), 3); self.assertEqual(ids[:2], [ph2, ph]); self.assertEqual(req["photo_id"], ph2)
+        self.assertEqual(A.one("SELECT kind FROM photos WHERE id=:i", i=ids[2])[0], "request")
+        self.assertEqual(Client().get(f"/p/{ids[2]}.webp").status, 404)          # uploads stay private
+        self.assertEqual(Client().get(f"/p/{ids[2]}.jpg").status, 404)
+        self.assertEqual(A.photo_count(did), nphotos)                            # not added to the gallery
+        self.assertIn("3 reference photos", TM.wait_mail("portrait-request", "hello@barksbuds.app", s)[0]["text"])
+        j = json.loads(admin_get(f"/admin/portraits/{req['id']}").body)
+        self.assertEqual((j["photo_count"], j["photo_ids"]), (3, ids))
+        self.assertEqual([u.rsplit("/", 2)[1:] for u in j["photo_urls"]], [["photo", f"{n}.jpg"] for n in (1, 2, 3)])
+        self.assertIn(req["id"], [x["id"] for x in json.loads(admin_get("/admin/portraits/pending").body) if x["photo_count"] == 3])
+        bodies = [admin_get(f"/admin/portraits/{req['id']}/photo/{n}.jpg") for n in (1, 2, 3)]
+        self.assertEqual([b.status for b in bodies], [200] * 3)
+        self.assertEqual([b.headers["Content-Disposition"] for b in bodies],
+                         [f'inline; filename="portrait-request-{req["id"]}-{n}.jpg"' for n in (1, 2, 3)])
+        self.assertEqual(bodies[2].body, bytes(A.one("SELECT full_jpeg FROM photos WHERE id=:i", i=ids[2])[0]))
+        self.assertEqual(admin_get(f"/admin/portraits/{req['id']}/photo/4.jpg").status, 404)
+        self.assertEqual(admin_get(f"/admin/portraits/{req['id']}/photo/0.jpg").status, 404)
+        self.assertEqual(Client().get(f"/admin/portraits/{req['id']}/photo/2.jpg").status, 404)   # no key
+        self.assertEqual(admin_get("/admin/portraits").text.count(f"/admin/portraits/{req['id']}/photo/"), 6)   # 3 links + 3 imgs
+        self.assertIn("pre=taken", request(c, did, photo_id=str(ph)).headers["Location"])      # still one per dog
+        # reset forgets the photo list too; delete_dog cleans up
+        admin_post(f"/admin/portraits/{req['id']}/reset")
+        self.assertEqual(A.one("SELECT COUNT(*) FROM portrait_request_photos WHERE request_id=:i", i=req["id"])[0], 0)
+        request(c, did, photo_id=str(ph))
+        rid = P.latest(did)["id"]
+        A.delete_dog(did)
+        self.assertEqual(A.one("SELECT COUNT(*) FROM portrait_request_photos WHERE request_id=:i", i=rid)[0], 0)
+
+    def test_migrates_single_photo_requests(self):
+        c, _, uid, did, ph = with_photo("prg")
+        # a request as the single-photo version stored it: only portrait_requests.photo_id
+        rid = A.one("""INSERT INTO portrait_requests(dog_id,user_id,photo_id,status,owner_note,avatar_at_request,created_at)
+                       VALUES(:d,:u,:p,'pending','',NULL,:t) RETURNING id""", d=did, u=uid, p=ph, t=A.now())[0]
+        self.assertEqual(P.photo_ids(rid), [ph])   # falls back to photo_id even before the migration
+        P.init_schema(A.STORE) if A.STORE else P._backfill(A.q)   # the startup migration
+        P._backfill(A.q)                           # idempotent
+        self.assertEqual([tuple(r) for r in A.q("SELECT n, photo_id FROM portrait_request_photos WHERE request_id=:i", i=rid)], [(1, ph)])
+        j = json.loads(admin_get(f"/admin/portraits/{rid}").body)
+        self.assertEqual((j["photo_count"], j["photo_ids"]), (1, [ph]))
+        self.assertEqual(admin_get(f"/admin/portraits/{rid}/photo/1.jpg").status, 200)
+        A.delete_dog(did)
 
     def test_bad_requests(self):
         c, _, _, did, ph = with_photo("prb")

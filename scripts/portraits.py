@@ -3,7 +3,8 @@
 
 Usage:
   python3 scripts/portraits.py list                      pending requests
-  python3 scripts/portraits.py fetch <id>                photo + metadata -> ~/../barksbuds-assets/portrait-requests/<id>/
+  python3 scripts/portraits.py fetch <id>                photos + metadata -> /workspace/barksbuds-assets/portrait-requests/<id>/
+                                                         (photo-1.jpg .. photo-3.jpg, photo.jpg = photo 1, request.json)
   python3 scripts/portraits.py complete <id> <image>     upload the finished portrait (becomes the main picture)
   python3 scripts/portraits.py reject <id> <note...>     reject with a note shown to the owner (frees the slot)
   python3 scripts/portraits.py reset <id>                forget a request so the owner can ask again
@@ -64,6 +65,8 @@ def show(r):
     d = r["dog"]
     bits = " · ".join(x for x in (d.get("breed"), d.get("age"), d.get("sex"), d.get("size")) if x)
     print(f"#{r['id']}  {r['status']:<8} {r['created_at']}  {d.get('name')} ({bits})  owner: {r['owner'].get('name') or ''}")
+    if r.get("photo_count"):
+        print(f"      {r['photo_count']} reference photo{'' if r['photo_count'] == 1 else 's'}")
     if r.get("coat_notes"):
         print(f"      note: {r['coat_notes']}")
     if r.get("note"):
@@ -92,15 +95,25 @@ def main(argv=None):
         return 0
     if args.cmd == "fetch":
         meta = call(args, "GET", f"/admin/portraits/{args.id}")
-        photo = call(args, "GET", f"/admin/portraits/{args.id}/photo.jpg", raw=True)
+        n = meta.get("photo_count") or 1   # (an older server only had photo.jpg)
+        photos = [call(args, "GET", f"/admin/portraits/{args.id}/photo/{i}.jpg" if meta.get("photo_count") else
+                       f"/admin/portraits/{args.id}/photo.jpg", raw=True) for i in range(1, n + 1)]
         d = os.path.join(args.out, str(args.id))
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "photo.jpg"), "wb") as fh:
-            fh.write(photo)
+        for old in os.listdir(d):   # a re-fetch never leaves stale photos from before
+            if old.startswith("photo-") and old.endswith(".jpg"):
+                os.remove(os.path.join(d, old))
+        saved = []
+        for i, data in enumerate(photos, 1):
+            with open(os.path.join(d, f"photo-{i}.jpg"), "wb") as fh:
+                fh.write(data)
+            saved.append(f"photo-{i}.jpg ({len(data) // 1024} KB)")
+        with open(os.path.join(d, "photo.jpg"), "wb") as fh:   # compatibility: photo.jpg = photo 1
+            fh.write(photos[0])
         with open(os.path.join(d, "request.json"), "w", encoding="utf-8") as fh:
             json.dump(meta, fh, indent=1)
         show(meta)
-        print(f"saved {d}/photo.jpg ({len(photo) // 1024} KB) and request.json")
+        print(f"saved to {d}/: " + ", ".join(saved) + ", photo.jpg (= photo-1.jpg), request.json")
         return 0
     if args.cmd == "complete":
         with open(args.image, "rb") as fh:

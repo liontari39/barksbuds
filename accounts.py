@@ -348,6 +348,7 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
 def delete_dog(dog_id):
     q("DELETE FROM photos WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM reports WHERE dog_id=:d", d=dog_id)
+    q("DELETE FROM portrait_request_photos WHERE request_id IN (SELECT id FROM portrait_requests WHERE dog_id=:d)", d=dog_id)
     q("DELETE FROM portrait_requests WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM dogs WHERE id=:d", d=dog_id)
 

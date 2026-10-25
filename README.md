@@ -106,17 +106,17 @@ Members help grow the dog run map (`runsugg.py` data layer, `runsweb.py` routes,
 
 ## Pixel Pals (hand-made portraits)
 
-There's no in-browser maker. Members request a pixel-art portrait and the team makes it by hand with AI, one per dog (`portraits.py`, table `portrait_requests`).
+There's no in-browser maker. Members request a pixel-art portrait and the team makes it by hand with AI, one per dog (`portraits.py`, tables `portrait_requests` and `portrait_request_photos`).
 
-- **Member side:** the "Get a pixel portrait" panel sits on `/me/dogs/<id>/edit#portrait-panel` and on the owner's view of the dog page. The owner picks a gallery photo or uploads one (`POST /me/dogs/<id>/portrait`). Uploads are stored as `kind='request'` and never served publicly. While a request is pending or done, the panel shows its status. A finished portrait is stored as `kind='portrait'`, can't be deleted from the gallery, and the owner can switch the main picture between it and photos.
-- **Emails:** every request emails hello@barksbuds.app ("New pixel portrait request: <name>"). The owner's ready/rejected emails go through the `MEETUP_EMAIL_ALLOWLIST` gate.
+- **Member side:** the "Get a pixel portrait" panel sits on `/me/dogs/<id>/edit#portrait-panel` and on the owner's view of the dog page. The owner sends 1 to 3 reference photos, any mix of gallery photos (checkboxes) and new uploads (`POST /me/dogs/<id>/portrait`, repeated `photo_id` fields and `photo` files). The panel says: "Add up to 3 photos. Best results: one full-body shot (standing, facing the camera) plus a clear close-up of the face, in good light. More angles help us get markings and ears just right." Uploads are stored as `kind='request'` and never served publicly. If any upload is bad, or there are more than 3 photos, nothing is saved. The photos are kept in order in `portrait_request_photos(request_id, n, photo_id)`, and `portrait_requests.photo_id` stays photo 1. Older single-photo requests are backfilled at startup. While a request is pending or done, the panel shows its status. A finished portrait is stored as `kind='portrait'`, can't be deleted from the gallery, and the owner can switch the main picture between it and photos.
+- **Emails:** every request emails hello@barksbuds.app ("New pixel portrait request: <name>"; the body says how many reference photos were sent). The owner's ready/rejected emails go through the `MEETUP_EMAIL_ALLOWLIST` gate.
 - **Admin** (header `X-Admin-Key`, a wrong key returns 404):
   - `GET /admin/portraits` HTML queue
-  - `GET /admin/portraits/pending` JSON
-  - `GET /admin/portraits/<id>` and `/admin/portraits/<id>/photo.jpg`
+  - `GET /admin/portraits/pending` and `GET /admin/portraits/<id>` JSON, with `photo_count`, `photo_ids` and `photo_urls` (plus `photo_url` for photo 1)
+  - `GET /admin/portraits/<id>/photo/<n>.jpg` for reference photo n (1..3); `/admin/portraits/<id>/photo.jpg` is an alias for photo 1
   - `POST /admin/portraits/<id>/complete` multipart `image`. It becomes the main picture unless the owner changed it after requesting.
   - `POST /admin/portraits/<id>/reject` field `note`, shown to the owner. This frees the slot.
   - `POST /admin/portraits/<id>/reset` deletes the request and keeps the images.
-- **Helper:** `python3 scripts/portraits.py [--url URL] list | fetch <id> | complete <id> <image.png> | reject <id> <note> | reset <id>`. It reads `.admin_key` without printing it. `fetch` saves to `/workspace/barksbuds-assets/portrait-requests/<id>/`.
+- **Helper:** `python3 scripts/portraits.py [--url URL] list | fetch <id> | complete <id> <image.png> | reject <id> <note> | reset <id>`. It reads `.admin_key` without printing it. `fetch` saves `photo-1.jpg`…`photo-N.jpg`, `photo.jpg` (a copy of photo 1) and `request.json` to `/workspace/barksbuds-assets/portrait-requests/<id>/`.
 - **Showcase:** `/pixel-pals` and the homepage section list done portraits. Lily's and Maggie's seeded AI portraits are marked done automatically (`mark_seeded_done`).
 - The old 48 px maker sprites (`kind='pixel'`) stay stored and served at `/px/...`, but they aren't shown (`accounts.SHOW_OLD_SPRITES = False`). Old maker URLs redirect to the edit panel.
