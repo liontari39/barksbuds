@@ -10,14 +10,14 @@
 <meta property="og:site_name" content="BarksBuds">
 <meta property="og:url" content="{{SITE_URL}}/">
 <meta property="og:title" content="BarksBuds · A group of friends that love their dogs">
-<meta property="og:description" content="Find nearby dog runs, meet local dog owners, and plan playdates. Join the BarksBuds waitlist.">
+<meta property="og:description" content="Find nearby dog runs, meet local dog owners, and plan playdates. Join BarksBuds, free.">
 <meta property="og:image" content="{{SITE_URL}}/img/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="BarksBuds logo: a scruffy terrier with the tagline A group of friends that love their dogs">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BarksBuds · A group of friends that love their dogs">
-<meta name="twitter:description" content="Find nearby dog runs, meet local dog owners, and plan playdates. Join the waitlist.">
+<meta name="twitter:description" content="Find nearby dog runs, meet local dog owners, and plan playdates. Join BarksBuds, free.">
 <meta name="twitter:image" content="{{SITE_URL}}/img/og-image.jpg">
 <meta name="theme-color" content="#FBB321">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -236,7 +236,7 @@ footer .bottom p{margin:0}
   <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
 </svg>
-<a class="skip" href="#join">Skip to the waitlist form</a>
+<a class="skip" href="#join">Skip to sign up</a>
 
 <header class="nav">
   <div class="wrap">
@@ -262,7 +262,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div>
       <div class="logo-card"><img src="/img/logo.webp" alt="BarksBuds: A group of friends that love their dogs" width="1040" height="370" fetchpriority="high"></div>
-      <p class="kicker"><span class="dot" aria-hidden="true"></span>Coming back soon · Join the waitlist</p>
+      <p class="kicker"><span class="dot" aria-hidden="true"></span>Now open · Starting on the North Shore</p>
       <h1 id="hero-title">The social network for dogs <em>and the people who love them.</em></h1>
       <p class="lead">Find the <strong>best dog runs and parks near you</strong>, meet the regulars, and turn "see you at the park" into real <strong>meetups and playdates</strong>. Give your pup a profile, share their best photos, and swap tips with dog people you trust.</p>
       <ul class="pills" aria-label="Highlights">
@@ -275,25 +275,12 @@ footer .bottom p{margin:0}
 
     <div class="signup" id="join">
       <img class="badge" src="/img/icon-192.webp" width="84" height="84" alt="">
-      <form id="wl" novalidate aria-labelledby="join-title" aria-describedby="join-sub">
+      <div class="joinbox">
         <h2 id="join-title">Get in on <span class="script">the pack</span></h2>
-        <p class="sub" id="join-sub">Join the waitlist and be first through the gate when BarksBuds opens near you.</p>
-        <div class="row">
-          <div class="field"><label for="first_name">Your first name</label><input id="first_name" name="first_name" autocomplete="given-name" maxlength="60" required aria-describedby="err-first_name"><span class="err" id="err-first_name" aria-live="polite"></span></div>
-          <div class="field"><label for="dog_name">Your dog's name</label><input id="dog_name" name="dog_name" maxlength="60" placeholder="e.g. Biscuit" required aria-describedby="err-dog_name"><span class="err" id="err-dog_name" aria-live="polite"></span></div>
-        </div>
-        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="254" placeholder="you@example.com" required aria-describedby="err-email"><span class="err" id="err-email" aria-live="polite"></span></div>
-        <div class="field"><label for="zip">Zip code <span class="opt">(optional, helps us find your local dog runs)</span></label><input id="zip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="10" placeholder="e.g. 11030" aria-describedby="err-zip"><span class="err" id="err-zip" aria-live="polite"></span></div>
-        <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
-        <button class="btn btn-gold cta" type="submit">Save my spot <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></button>
-        <span class="err" id="formerr" role="alert" style="text-align:center"></span>
-        <p class="privacy"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span>We only use your details to tell you when BarksBuds launches near you. No spam, and we never sell or share your info. <a href="#privacy-note">Privacy note</a></span></p>
-      </form>
-      <div class="thanks" role="status" aria-live="polite" tabindex="-1">
-        <img src="/img/icon-192.webp" width="96" height="96" alt="">
-        <h3>You're on the list!</h3>
-        <p id="thanksmsg"></p>
-        <p class="script">See you at the dog run!</p>
+        <p class="sub" id="join-sub">BarksBuds is open. Sign in with your email, no password needed, and give your pup a profile in a couple of minutes.</p>
+        <a class="btn btn-gold cta" href="/signin" style="display:flex;justify-content:center;text-decoration:none">Join BarksBuds <svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <p class="sub" style="margin:14px 0 0;text-align:center">Then RSVP to a <a href="/meetups">meetup</a>, join a <a href="/packs">pack</a>, or <a href="/pixel-pals">get a pixel portrait</a> of your dog.</p>
+        <p class="privacy"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span>Free for dog people. No spam, and we never sell or share your info. <a href="/privacy">Privacy</a></span></p>
       </div>
     </div>
   </div>
@@ -370,8 +357,8 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <span class="eyebrow">ready, set, sniff</span>
     <h2 id="final-title">Bring your best friend.</h2>
-    <p>Waitlist members get first access to BarksBuds, starting with dog runs and meetups in their area.</p>
-    <a class="btn" href="#join">Join the waitlist</a>
+    <p>Make a profile for your pup, find a meetup at your run, or start a pack with your dog's friends. It's free.</p>
+    <a class="btn" href="/signin">Join BarksBuds</a>
   </div>
 </section>
 </main>
@@ -380,35 +367,15 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="/signin">Join BarksBuds</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
     </div>
-    <p id="privacy-note"><strong>Privacy note:</strong> When you join the waitlist we store your first name, email, your dog's name and, if you share it, your zip code. We use them only to tell you about BarksBuds and its launch in your area. We never sell or share them, and we'll delete them if you ask. Read the full <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>, or write to <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a>.</p>
+    <p id="privacy-note"><strong>Privacy note:</strong> When you join we store your email, your name and what you add about your dogs. We use them to run BarksBuds and send the emails you choose. We never sell or share them, and you can delete your account any time. Read the full <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>, or write to <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a>.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>
   </div>
 </footer>
 
 <script>
 document.getElementById('yr').textContent=new Date().getFullYear();
-(function(){
- const f=document.getElementById('wl'),box=f.closest('.signup'),btn=f.querySelector('.cta'),fe=document.getElementById('formerr'),label=btn.innerHTML;
- const emailRe=/^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
- const fields=['first_name','dog_name','email','zip'];
- function setErr(n,m){const e=document.getElementById('err-'+n),i=f.elements[n];if(e)e.textContent=m||'';if(i){if(m)i.setAttribute('aria-invalid','true');else i.removeAttribute('aria-invalid')}}
- function check(d){const e={};if(!d.first_name)e.first_name="Please tell us your first name.";if(!d.dog_name)e.dog_name="What's your pup's name?";if(!emailRe.test(d.email))e.email="That email doesn't look quite right.";if(d.zip&&!/^\d{5}(-\d{4})?$/.test(d.zip))e.zip="Zip should be 5 digits (or leave it blank).";return e}
- fields.forEach(n=>f.elements[n].addEventListener('input',()=>setErr(n,'')));
- f.addEventListener('submit',async ev=>{ev.preventDefault();fe.textContent='';
-  const d=Object.fromEntries([...new FormData(f)].map(([k,v])=>[k,String(v).trim()]));
-  fields.forEach(n=>setErr(n,''));
-  const e=check(d);const bad=fields.filter(n=>e[n]);if(bad.length){bad.forEach(k=>setErr(k,e[k]));f.elements[bad[0]].focus();return}
-  btn.disabled=true;btn.textContent='Saving your spot…';
-  const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),45000);
-  try{const r=await fetch('/api/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),signal:ctl.signal});const j=await r.json();
-   if(j.ok){document.getElementById('thanksmsg').textContent=j.message;if(j.duplicate)box.querySelector('.thanks h3').textContent="You're already in!";box.classList.add('done');box.querySelector('.thanks').focus({preventScroll:false})}
-   else if(j.errors){const ks=Object.keys(j.errors);ks.forEach(k=>setErr(k,j.errors[k]));if(f.elements[ks[0]])f.elements[ks[0]].focus()}
-   else fe.textContent=j.error||'Something went wrong. Please try again.'}
-  catch(_){fe.textContent="Hmm, we couldn't reach the server. Please try again in a moment."}
-  finally{clearTimeout(t);btn.disabled=false;btn.innerHTML=label}});
-})();
 </script>
 </body>
 </html>

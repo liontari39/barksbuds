@@ -291,7 +291,8 @@ class PackRoutes:
             return "/packs" + (("?" + urlencode(kw)) if kw else "")
         chips = [(link(), "All", not (area or region)), (link(region="northshore"), "North Shore", region == "northshore")]
         chips += [(link(region=r), A.REGIONS[r][0], region == r) for r in A.REGIONS]
-        chips += [(link(area=a), area_label(a), area == a) for a in A.AREA_NAMES]
+        chips += [(link(area=a), area_label(a), area == a) for a in A.AREA_NAMES
+                  if area_label(a) not in {A.REGIONS[r][0] for r in A.REGIONS}]   # no second "Westchester" chip
         filt = "".join(f'<a class="chip{" on" if on else ""}" href="{e(h)}"{" aria-current=true" if on else ""}>{e(t)}</a>' for h, t, on in chips)
         u = self.user()
         start = "/packs/new" if u else self.signin_href("/packs/new")

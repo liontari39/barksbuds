@@ -92,7 +92,7 @@ def mobile_menu_html(user, active=""):
     """Hamburger menu shown at 920px and below (styles: .mmenu in app.css, index.html and runs.html)."""
     li = "".join(f'<li><a href="{h}"{" aria-current=page" if active and h == "/" + active else ""}>{t}</a></li>' for h, t in MENU_LINKS)
     li += ('<li class="mm-acct"><a href="/me">My dogs</a></li>' if user else
-           '<li class="mm-acct"><a href="/signin">Sign in</a></li><li><a href="/#join">Join the waitlist</a></li>')
+           '<li class="mm-acct"><a href="/signin">Sign in</a></li><li><a href="/signin">Join BarksBuds</a></li>')
     return (f'<details class="mmenu"><summary aria-label="Menu" aria-controls="mmenu-list"><span class="mm-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>'
             f'<nav aria-label="Menu" id="mmenu-list"><ul>{li}</ul></nav></details>{MENU_JS}')
 
@@ -102,7 +102,7 @@ def nav_account_html(user, active=""):
         return ('<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
                 + mobile_menu_html(user, active))
     return ('<a class="nav-signin" href="/signin">Sign in</a>'
-            '<a class="btn" href="/#join">Join<span class="hide-xs"> the waitlist</span></a>' + mobile_menu_html(user, active))
+            '<a class="btn" href="/signin">Join<span class="hide-xs"> BarksBuds</span></a>' + mobile_menu_html(user, active))
 
 
 def safe_next(nxt):
@@ -313,7 +313,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}

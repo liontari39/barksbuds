@@ -360,9 +360,9 @@ class MeetupRoutes:
     def north_shore_html(self, ms):
         feat = "".join(self.meetup_card(m) for m in ms[:2])
         return f"""<div class="nshore"><div class="nsl"><span class="eyebrow">where it all began</span><h2>Starting on the North Shore</h2>
-<p>BarksBuds started with a group of friends and their dogs in Manhasset. Our first meetups are around Manhasset and the North Shore of Long Island. Come meet the founding pack, then host one at your own run.</p>
+<p>BarksBuds started with a group of friends and their dogs in Manhasset. Our first meetups are around Manhasset and the North Shore of Long Island. Host one at your usual run, or RSVP to one near you.</p>
 <div class="formfoot"><a class="btn btn-gold btn-sm" href="/meetups?ns=1">North Shore meetups</a><a class="btn btn-ghost btn-sm" href="/meetups/new">Host a meetup</a></div></div>
-<div class="nsr">{feat or '<p class="nsempty">The first North Shore meetup is being planned. Check back soon!</p>'}</div></div>"""
+<div class="nsr">{feat or '<p class="nsempty">No North Shore meetups yet. Host the first one!</p>'}</div></div>"""
 
     def meetups_page(self, q):
         g = lambda k: q.get(k, [""])[0]
@@ -1129,7 +1129,7 @@ def landing_html():
         cards.append(f'<a class="ns-card" href="{e(meetup_path(m))}"><span class="ns-date"><b>{s.strftime("%a").upper()}</b>{s.day}<small>{s.strftime("%b")}</small></span>'
                      f'<span class="ns-body">{sample}<b class="ns-t">{e(m["title"])}</b><span>{e(M.when_text(m["starts_at"], m["duration_min"]))}</span>'
                      f'<span>{e(where_line(m))}</span><span class="ns-go">{n} dog{"s" if n != 1 else ""} going &rarr;</span></span></a>')
-    right = "".join(cards) or '<p class="ns-empty">The first North Shore meetup is being planned. Check back soon!</p>'
+    right = "".join(cards) or '<p class="ns-empty">No North Shore meetups yet. Host the first one!</p>'
     return f"""<style>
 .nsh{{padding:72px 0;background:var(--black);color:#E9E1D3}}
 .nsh .wrap{{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}}

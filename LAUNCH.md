@@ -1,5 +1,7 @@
 # BarksBuds launch checklist
 
+**Status: soft launch on Oct 25, 2026 (11:38 AM ET).** Samples are deleted, `RUN_SUGGEST_EMAIL` is set, `MEETUP_EMAIL_ALLOWLIST` is removed, and the waitlist CTAs now point to sign-up. Mike is inviting friends personally, so there's no public announcement yet (step 5 is still open).
+
 Mike picks the day. Nothing here runs automatically.
 
 ## Hard deadline: database upgrade before **Nov 23, 2026**
