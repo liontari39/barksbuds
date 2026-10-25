@@ -200,7 +200,7 @@ It runs on this device, so <b>it may take a few minutes</b>, and the first time 
 <label class="small"><input type="checkbox" id="pxaion" checked disabled> Use the AI painting</label></div>
 <div class="pxaibar" id="pxaibarw" hidden><progress id="pxaibar" max="100" value="0"></progress></div>
 <p class="small" id="pxaist" role="status" aria-live="polite"></p></div>""" if ai else ""
-        portrait_btn = ("""<button type="button" data-preset="portrait" aria-pressed="false"><img src="/img/style-game.png" width="64" height="64" alt=""><span><b>Portrait</b><small>96 px, AI detail</small></span></button>""" if ai else "")
+        portrait_btn = ("""<button type="button" data-preset="cartoon" aria-pressed="false"><img src="/img/style-chunky.png" width="64" height="64" alt=""><span><b>Cartoon</b><small>96 px, bold lines</small></span></button><button type="button" data-preset="portrait" aria-pressed="false"><img src="/img/style-game.png" width="64" height="64" alt=""><span><b>Portrait</b><small>96 px, AI detail</small></span></button>""" if ai else "")
         save_btns = ("""<button type="button" class="btn" id="pxdl">Download PNG</button>
 <button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
 <p class="small muted">Test page: portraits are download-only for now.</p>""" if ai else
@@ -264,7 +264,7 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <div class="pxsave"><div class="pxrowbtn">{save_btns}
 <p class="small" id="pxsaved" role="status" aria-live="polite"></p></div></div>
 </div></div></section>"""
-        js = '<script src="/pixelpal.js?v=5"></script><script type="module" src="/pixelmaker.js?v=5"></script>'
+        js = '<script src="/pixelpal.js?v=6"></script><script type="module" src="/pixelmaker.js?v=6"></script>'
         return self.page(f"{d['name']}'s AI pixel portrait (test)" if ai else f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")
 
 

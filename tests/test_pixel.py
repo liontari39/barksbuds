@@ -55,13 +55,14 @@ class PixelTests(unittest.TestCase):
         other, _, _, _ = member("pxaix")
         r = c.get(f"/me/dogs/{did}/pixel-ai")
         self.assertEqual(r.status, 200)
-        for s in ('id="pxaigo"', "may take a few minutes", 'data-preset="portrait"', "Download PNG", '\\"ai\\": true', 'content="noindex"'):
+        for s in ('id="pxaigo"', "may take a few minutes", 'data-preset="portrait"', 'data-preset="cartoon"', "Download PNG", '\\"ai\\": true', 'content="noindex"'):
             self.assertIn(s, r.text.replace("&quot;", '\\"'), s)
         self.assertNotIn('id="pxsavebtn"', r.text)          # test page can never save or change the avatar
         self.assertNotIn('id="pxsave2"', r.text)
         self.assertNotEqual(other.get(f"/me/dogs/{did}/pixel-ai").status, 200)
         normal = c.get(f"/me/dogs/{did}/pixel").text
         self.assertNotIn("pixel-ai", normal); self.assertNotIn('id="pxaigo"', normal)   # not linked from the real maker
+        self.assertNotIn('data-preset="cartoon"', normal); self.assertNotIn('data-preset="portrait"', normal)
         for page in ("/", "/pixel-pals", f"/me/dogs/{did}/edit", "/dogs"):
             self.assertNotIn("pixel-ai", c.get(page).text, page)
         w = c.get("/pixelai-worker.js"); self.assertEqual(w.status, 200); self.assertIn("face_paint_512_v2.onnx", w.text)

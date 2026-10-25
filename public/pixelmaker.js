@@ -22,10 +22,14 @@ const TOON_DETAIL = [                   // Chunky: big flat shapes; "detail" onl
 const PORTRAIT_DETAIL = [               // Portrait (AI test page, 96 px): the 4th step is exactly the preset
   { smooth: 3, cluster: 2, sharpen: 0.2, features: 0.6 }, { smooth: 2, cluster: 1, sharpen: 0.3, features: 0.7 },
   { smooth: 2, cluster: 0 }, {}, { smooth: 0, cluster: 0, sharpen: 0.6, features: 0.9 }];
+const CARTOON_DETAIL = [                // Cartoon (AI test page): the middle step is exactly the preset
+  { smooth: 3, smoothPasses: 3, cluster: 3, inkLines: 0.8 }, { smooth: 3, cluster: 2, inkLines: 0.9 }, {},
+  { smooth: 2, cluster: 1, inkLines: 1.1, features: 0.5 }, { smooth: 1, cluster: 1, inkLines: 1.25, sharpen: 0.3, features: 0.6 }];
 // only Game Sprite and Chunky are offered in the UI (plus Portrait on the hidden AI test page); classic/retro/soft stay in pixelpal.js
 const PRESET_UI = { game: { detail: 2, face: true, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] },
   chunky: { detail: 2, face: true, eyes: [["dots", "Dots"], ["happy", "Happy (^ ^)"]] },
-  portrait: { detail: 3, face: false, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] } };
+  portrait: { detail: 3, face: false, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] },
+  cartoon: { detail: 2, face: true, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] } };
 const SIZE_NAMES = ["Small", "Medium", "Large"];
 
 let seg = null, segState = "idle", segWaiters = [];
@@ -295,7 +299,7 @@ src.addEventListener("keydown", (ev) => {
 function opts() {
   const det = +$("pxdetail").value;
   const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? CEL_DETAIL[det] : preset === "chunky" ? TOON_DETAIL[det]
-    : preset === "portrait" ? PORTRAIT_DETAIL[det] : DETAIL[det]);
+    : preset === "portrait" ? PORTRAIT_DETAIL[det] : preset === "cartoon" ? CARTOON_DETAIL[det] : DETAIL[det]);
   const hasFace = $("pxface").checked && (face.eyes.length || face.nose);
   return Object.assign(base, {
     face: hasFace ? { eyes: face.eyes, nose: face.nose } : null,
@@ -351,6 +355,7 @@ function applyPreset(name) {
   $("pxface").checked = !!PRESET_UI[name].face;
   const ey = $("pxeyes");
   ey.replaceChildren(...PRESET_UI[name].eyes.map(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; return o; }));
+  if (p.backdrop) { const r = document.querySelector(`input[name="backdrop"][value="${p.backdrop}"]`); if (r) r.checked = true; }
   $("pxblush").checked = !!p.blush; $("pxmouth").value = p.mouth || "none"; ey.value = p.eyes || PRESET_UI[name].eyes[0][0]; $("pxchibi").value = String(p.chibi || 0);
   document.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.preset === name ? "true" : "false"));
   schedule();
@@ -459,7 +464,7 @@ function aiPaint() {
         root.dataset.aiMs = m.ms; root.dataset.aiTotalMs = Math.round(performance.now() - t0); root.dataset.aiBackend = m.backend;
         aiProgress(100, `Done in ${Math.max(1, Math.round((performance.now() - t0) / 1000))}s. If you change the selection a lot, paint again.`);
         $("pxaigo").textContent = "Paint again";
-        if (preset !== "portrait") applyPreset("portrait"); else schedule();
+        if (preset !== "portrait" && preset !== "cartoon") applyPreset("cartoon"); else schedule();
         draw(); finish(true);
       } else if (m.type === "error") {
         console.warn("pixel pal AI:", m.message);
@@ -480,7 +485,7 @@ $("pxreset").addEventListener("click", () => {
   $("pxed").hidden = true; $("pxpick").hidden = false; status(""); $("pxsaved").textContent = "";
   $("pxpick").scrollIntoView({ behavior: "smooth", block: "start" });
 });
-applyPreset("game");
+applyPreset(cfg.ai ? "cartoon" : "game");
 loadSeg();
 window.__pixelpal = { status: () => segState, useImage, tapAt: (x, y) => tapAt({ x: x * W, y: y * H }), setTool,
   eraseRect: (x0, y0, x1, y1) => { pushUndo(); for (let y = Math.round(y0 * H); y < Math.round(y1 * H); y++) edit.fill(2, y * W + Math.round(x0 * W), y * W + Math.round(x1 * W)); draw(); schedule(); },

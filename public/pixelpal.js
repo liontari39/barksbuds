@@ -15,6 +15,8 @@
     retro: { size: 32, colors: 8, outline: "dark", dither: 0.5, shadow: true, shade: true, saturation: 1.3, contrast: 1.12, smooth: 1, cluster: 1, sharpen: 0.3, features: 0.8 },
     // "Portrait" (AI test page): a bigger, more detailed grid meant for the on-device AI painting
     portrait: { size: 96, sizes: [64, 96, 128], colors: 24, outline: "ink", dither: 0, shadow: true, shade: false, saturation: 1.12, contrast: 1.0, smooth: 1, cluster: 0, sharpen: 0.4, features: 0.8, eyes: "friendly", blush: false, mouth: "none", chibi: 0 },
+    // "Cartoon" (AI test page): flat cel color bands, bold ink lines inside and around, lifted dark coats, friendly eyes
+    cartoon: { size: 96, sizes: [64, 80, 96, 128], colors: 12, outline: "ink", dither: 0, shadow: true, cel: true, cartoon: true, saturation: 1.15, contrast: 1.0, smooth: 3, smoothPasses: 2, cluster: 2, sharpen: 0.15, features: 0.4, accents: true, chibi: 0, blush: false, mouth: "none", eyes: "friendly", inkLines: 1, inkDark: 0.5, backdrop: "rose" },
     soft: { size: 64, colors: 16, outline: "soft", dither: 0, shadow: true, shade: false, saturation: 1.08, contrast: 1.0, smooth: 2, cluster: 1, sharpen: 0.25, features: 0.6 }
   };
   var BACKDROPS = { none: null, cream: [255, 248, 234], sunny: [255, 231, 168], sky: [205, 232, 247], mint: [214, 240, 222], rose: [251, 221, 214] };
@@ -234,7 +236,8 @@
     // 7. tone: median-anchored contrast stretch, dark-coat lift, saturation boost
     var Ls = []; for (g = 0; g < G; g++) if (ga[g]) Ls.push(gl[g][0]);
     var darkCoat = false;
-    if (Ls.length && opts.cel) darkCoat = celTone(gl, ga, Ls, opts);
+    if (Ls.length && opts.cartoon) darkCoat = cartoonTone(gl, ga, Ls, opts);
+    else if (Ls.length && opts.cel) darkCoat = celTone(gl, ga, Ls, opts);
     else if (Ls.length) {
       Ls.sort(function (a, b) { return a - b; });
       var lo = Ls[Math.floor(Ls.length * 0.03)], hi = Ls[Math.floor(Ls.length * 0.97)], med = Ls[Math.floor(Ls.length / 2)];
@@ -258,7 +261,8 @@
 
     // 8. palette (k-means) and mapping with optional 4x4 ordered dither
     var pts = [], wts = []; for (g = 0; g < G; g++) if (ga[g]) { pts.push(gl[g]); wts.push(1); }
-    var K = Math.max(2, Math.min(32, (opts.colors | 0) - (darkCoat ? 1 : 0)));
+    // cartoon: cel shading, ink lines and face stamps add their own tones, so k-means gets ~60% of the color budget
+    var K = Math.max(2, Math.min(32, opts.cartoon ? Math.round((opts.colors | 0) * 0.6) : (opts.colors | 0) - (darkCoat ? 1 : 0)));
     var pal = kmeans(pts, wts, K, 16);
     // accent colors: a small, vivid detail (a red collar tag, a pink tongue) loses the k-means vote to the coat,
     // so strongly colored pixels that no palette entry represents get up to two extra entries of their own
@@ -289,12 +293,13 @@
 
     // 10. rim shading: lighter top edge, darker bottom edge (or cel shading: flat regions, top-left light)
     if (opts.cel) {
-      mergeIslands(ix, gw, gh, pal, N >= 56 ? 4 : N >= 40 ? 3 : 2);
+      mergeIslands(ix, gw, gh, pal, opts.cartoon ? Math.round(N / 14) : N >= 56 ? 4 : N >= 40 ? 3 : 2);
       celShade(ix, gw, gh, pal, N >= 56 ? 2 : 1, darkCoat);
     } else if (opts.shade) shadeRims(ix, gw, gh, pal);
 
     // 10b. face stamps: crisp hand-drawn eyes, nose, mouth, blush
     var ink = inkColor(pal, ix, darkCoat);
+    if (opts.cartoon && opts.inkLines) inkLines(ix, gw, gh, pal, ink, darkCoat, opts.inkLines, opts.inkDark);
     if (face && opts.faceStamps !== false) stampFace(ix, gw, gh, pal, face, { x0: x0, y0: y0, bw: bw, bh: bh }, opts, ink, src, N, darkCoat);
 
     // 11. compose onto N x N with outline, shadow and backdrop
@@ -541,6 +546,49 @@
     return dark;
   }
 
+  // cartoon tone: keeps the coat's own pattern (merle patches, curls) but lifts a black coat into a readable
+  // charcoal-to-grey ramp so curls and highlights show, and nudges light coats a bit brighter and more colorful
+  function cartoonTone(gl, ga, Ls, opts) {
+    Ls.sort(function (a, b) { return a - b; });
+    var lo = Ls[Math.floor(Ls.length * 0.04)], hi = Ls[Math.floor(Ls.length * 0.96)], med = Ls[Math.floor(Ls.length / 2)];
+    var dark = med < 0.4, sat = opts.saturation || 1.15, span = Math.max(0.05, hi - lo);
+    var tm = Math.max(0.05, Math.min(0.95, (med - lo) / span)), gam = Math.max(0.45, Math.min(1.6, Math.log(0.42) / Math.log(tm)));
+    for (var g = 0; g < gl.length; g++) if (ga[g]) {
+      var c = gl[g], t = (c[0] - lo) / span, chroma = Math.sqrt(c[1] * c[1] + c[2] * c[2]), L, A, B;
+      var tg = t <= 0 ? t : Math.pow(Math.min(1.3, t), gam);
+      if (dark) {
+        L = 0.17 + 0.42 * Math.max(-0.15, tg);                       // ~#1f1d22 shadows .. #8a8287 curl highlights
+        if (chroma > 0.06) { A = c[1] * sat; B = c[2] * sat; } else { A = c[1] * 0.6 + 0.003; B = c[2] * 0.6 - 0.008; }
+      } else {
+        L = Math.max(0.2, Math.min(0.96, Math.max(med, opts.lightBase || 0.7) + (c[0] - med) * (opts.contrast || 1) * 0.9));
+        A = c[1] * (opts.lightSat || 1.0); B = c[2] * (opts.lightSat || 1.0) + 0.004;
+      }
+      gl[g] = [L, A, B];
+    }
+    return dark;
+  }
+
+  // cartoon ink: where two flat regions meet with a big jump in lightness, the darker side becomes an ink line
+  // (separates legs, ears, jowls and wrinkles like hand-drawn line art); lone ink specks are dropped
+  function inkLines(ix, w, h, pal, ink, dark, strength, opts_inkDark) {
+    var thr = (dark ? 0.2 : 0.18) / Math.max(0.5, strength), ii = pal.push(ink) - 1, mark = new Uint8Array(w * h), x, y, i;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x; var v = ix[i]; if (v < 0) continue;
+      var nbs = [x < w - 1 ? i + 1 : -1, y < h - 1 ? i + w : -1, x < w - 1 && y < h - 1 ? i + w + 1 : -1];
+      for (var k = 0; k < 3; k++) {
+        var q = nbs[k]; if (q < 0 || ix[q] < 0 || ix[q] === v) continue;
+        var a = pal[v], b = pal[ix[q]]; if (Math.sqrt(a[1] * a[1] + a[2] * a[2]) > 0.09 || Math.sqrt(b[1] * b[1] + b[2] * b[2]) > 0.09) continue;  // not around accents
+        // light coats: only real features (eyes, wrinkles, leg gaps) get ink, not soft coat patches like merle
+        if (Math.abs(a[0] - b[0]) > thr && (dark || Math.min(a[0], b[0]) < (opts_inkDark || 0.42))) mark[a[0] < b[0] ? i : q] = 1;
+      }
+    }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x; if (!mark[i]) continue;
+      var n = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; var xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h && mark[yy * w + xx]) n++; }
+      if (n >= 1) ix[i] = ii;
+    }
+  }
+
   // merge small single-color islands into their surroundings (keeps vivid accents like a red tag)
   function mergeIslands(ix, w, h, pal, minSize) {
     var lbl = new Int32Array(w * h).fill(-1), stack = [], comp = [];
@@ -643,8 +691,8 @@
     var sz = unit >= 13 ? "xl" : unit >= 7.5 ? "l" : unit >= 5 ? "m" : "s";
     // "friendly" eyes: no colored iris or ring on light coats (big amber rings read as scary); dark eyes with a
     // white shine, one size smaller. Dark coats keep their eyes as before.
-    var friendly = opts.eyes === "friendly" && !dark;
-    var esz = friendly ? { xl: "l", l: "m", m: "m", s: "s" }[sz] : sz;
+    var friendly = opts.eyes === "friendly" && (!dark || opts.cartoon);
+    var esz = opts.cartoon ? ({ xl: "xl", l: "l", m: "l", s: "m" }[sz]) : friendly ? { xl: "l", l: "m", m: "m", s: "s" }[sz] : sz;
     var cache = {};
     function idx(key, lab) { if (cache[key] != null) return cache[key]; cache[key] = pal.push(lab) - 1; return cache[key]; }
     var spread = Math.max(1.5, Math.max(box.bw, box.bh) * 0.012);
@@ -670,7 +718,8 @@
     var iris = !friendly && !dark && raw && chroma > 0.025 && raw[0] > 0.18 ? [Math.max(0.62, Math.min(0.74, raw[0] + 0.12)), raw[1] * boost, raw[2] * boost] : null;
     eyes.forEach(function (e) {
       var pupil = idx("pupil", [Math.min(0.17, ink[0]), ink[1] * 0.7, ink[2] * 0.7]), white = idx("white", STAMP_COLORS.w);
-      var irisI = iris ? idx("iris", iris) : idx("iris-dark", dark ? [0.2, 0.01, 0.012] : friendly ? [0.26, 0.012, 0.02] : [Math.max(0.36, ink[0] + 0.2), 0.025, 0.045]);
+      var irisI = opts.cartoon ? idx("iris-warm", [0.4, 0.035, 0.06]) : iris ? idx("iris", iris)
+        : idx("iris-dark", dark ? [0.2, 0.01, 0.012] : friendly ? [0.26, 0.012, 0.02] : [Math.max(0.36, ink[0] + 0.2), 0.025, 0.045]);
       var ringI = friendly ? pupil : idx("ring", [Math.min(0.2, ink[0]), ink[1], ink[2]]);
       put(EYES[esz], e[0], e[1], function (ch) { return ch === "e" ? pupil : ch === "w" ? white : ch === "k" ? ringI : irisI; });
     });
@@ -681,7 +730,8 @@
       put(mp, nose[0], nose[1] + 0.5, function (ch) { return ch === "u" ? muz2 : muz; }, true);
     }
     if (nose) {
-      var nI = idx("nose", dark ? [0.14, 0.01, -0.004] : [Math.min(0.26, ink[0] + 0.06), ink[1] * 0.6 + 0.01, ink[2] * 0.4]), hI = idx("noseshine", STAMP_COLORS.h);
+      var nI = idx("nose", dark ? [0.14, 0.01, -0.004] : opts.cartoon ? [0.22, 0.025, 0.004] : [Math.min(0.26, ink[0] + 0.06), ink[1] * 0.6 + 0.01, ink[2] * 0.4]);
+      var hI = idx("noseshine", opts.cartoon ? [0.72, 0.045, 0.012] : STAMP_COLORS.h);
       var np = NOSES[sz], nh = np.length;
       put(np, nose[0], nose[1], function (ch) { return ch === "h" ? hI : nI; });
       var below = nose[1] + nh / 2 + (sz === "s" ? 0.5 : 1);
