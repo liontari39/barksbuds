@@ -360,6 +360,7 @@ class H(webapp.AppRoutes, coownweb.CoownerRoutes, meetweb.MeetupRoutes, packweb.
             body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "home").encode())
                     .replace(b"{{NORTH_SHORE}}", meetweb.landing_html().encode())
                     .replace(b"{{PIXEL_PALS}}", pixelweb.landing_html().encode())
+                    .replace(b"{{PIXEL_HERO}}", pixelweb.hero_html().encode())
                     .replace(b"{{TIPS}}", tipsweb.landing_html().encode()))
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):

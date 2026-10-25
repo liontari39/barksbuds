@@ -85,6 +85,49 @@ def landing_html():
 <div class="pp-cards">{cards}</div></div></section>"""
 
 
+
+def hero_html():
+    """Pixel-portrait highlight inside the homepage hero (index.html {{PIXEL_HERO}}), so the finished portraits (Lily and
+    Maggie) show above the fold on desktop and phones. The full Pixel Pals section ({{PIXEL_PALS}}) follows the hero."""
+    try:
+        done = P.done_portraits(limit=2)
+    except Exception as ex:  # never break the homepage
+        print(f"pixel pals: hero highlight skipped ({ex.__class__.__name__})", flush=True)
+        return ""
+    if not done:
+        return ""
+    dogs = "".join(f'<a class="pxh-dog" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])}\'s hand-made pixel portrait" '
+                   f'width="160" height="160" fetchpriority="high"><span>{e(d["name"])}</span></a>' for d, pid in done)
+    return f"""<style>
+.pxhero{{display:grid;grid-template-columns:auto 1fr;gap:18px 20px;align-items:center;margin:0;padding:18px;
+ background:var(--gold-l);background-image:linear-gradient(rgba(20,20,20,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(20,20,20,.06) 1px,transparent 1px);background-size:16px 16px;
+ border:3px solid var(--black);border-radius:24px;box-shadow:7px 7px 0 var(--black)}}
+.pxh-dogs{{display:flex;gap:12px}}
+.pxh-dog{{position:relative;display:block;width:150px;text-decoration:none;transition:transform .12s}}
+.pxh-dog:hover{{transform:translateY(-3px) rotate(-1deg)}}
+.pxh-dog img{{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;background:#fff;border:3px solid var(--black);border-radius:16px;image-rendering:pixelated}}
+.pxh-dog span{{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:var(--black);color:#fff;border-radius:999px;padding:2px 12px;font:800 .85rem/1.5 "Baloo 2",sans-serif;white-space:nowrap}}
+.pxh-txt .eyebrow{{display:block;margin-bottom:4px}}
+.pxh-txt p{{margin:0 0 12px;font:800 1.18rem/1.25 "Baloo 2",sans-serif;color:var(--black)}}
+.pxh-txt small{{display:block;margin-top:4px;font:600 .85rem/1.4 inherit;color:var(--muted)}}
+/* desktop: the highlight sits at the top of the right column, above the join card; the hero copy spans both rows */
+@media (min-width:921px){{.hero .wrap{{grid-template-rows:auto auto;row-gap:34px}}.hero .wrap>div:first-child{{grid-row:1/3}}
+ .pxhero{{grid-column:2;grid-row:1;align-self:end;grid-template-columns:1fr}}.hero .wrap>.signup{{grid-column:2;grid-row:2;align-self:start}}
+ .pxh-dogs{{justify-content:center}}.pxh-dog{{flex:1;max-width:190px;width:auto}}
+ .pxh-txt{{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 16px;margin-top:6px}}.pxh-txt .eyebrow{{display:none}}
+ .pxh-txt p{{margin:0}}.pxh-txt small{{grid-column:1/-1;margin:0}}}}
+/* phones/tablets: show it right after the headline, before the intro copy */
+@media (max-width:920px){{.hero .wrap{{display:flex;flex-direction:column;gap:0}}.hero .wrap>div:first-child{{display:contents}}
+ .hero .logo-card,.hero .kicker{{align-self:flex-start}}.hero .logo-card{{order:1}}.hero .kicker{{order:2}}.hero h1{{order:3}}
+ .pxhero{{order:4;margin:4px 0 26px;max-width:600px;align-self:flex-start;width:100%}}.hero .lead{{align-self:flex-start;margin-left:0}}.hero .lead{{order:5}}.hero .pills{{order:6}}.hero .wrap>.signup{{order:7;margin-top:44px}}}}
+@media (max-width:560px){{.pxhero{{grid-template-columns:1fr;gap:18px;padding:14px;margin:2px 0 22px}}
+ .pxh-dogs{{gap:10px}}.pxh-dog{{flex:1;width:auto}}.pxh-txt{{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0}}
+ .pxh-txt .eyebrow{{display:none}}.pxh-txt p{{margin:0;font-size:1.08rem;flex:1 1 100%}}.pxh-txt small{{display:none}}}}
+</style>
+<div class="pxhero" aria-label="Pixel Pals"><div class="pxh-dogs">{dogs}</div>
+<div class="pxh-txt"><span class="eyebrow">pixel pals</span><p>Every member's dog gets a hand-made pixel portrait.</p>
+<a class="btn btn-sm" href="/pixel-pals/start">Get your dog's portrait</a><small>Free for members, usually ready within a day.</small></div></div>"""
+
 class PixelRoutes:
     # ------------------------------------------------------------ dispatch
     def pixel_get(self, path, q):
