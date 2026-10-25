@@ -120,9 +120,10 @@ class CoownerRoutes:
         except CO.InviteError as ex:
             return self._co_back(d["id"], coe=str(ex))
         link = f"{self._base()}/invite/{raw}"
-        who = u["display_name"] or u["email"]
-        subject = f"{who} invited you to co-own {d['name']} on BarksBuds"
-        paras = [f"Hi,", f"{who} added you as a co-owner of {d['name']} on BarksBuds, the local social network for dogs and their people.",
+        who = u["display_name"] or "A BarksBuds member"  # never reveal the inviter's email (privacy promise on /me)
+        subject = (f"{who} invited you to co-own {d['name']} on BarksBuds" if u["display_name"]
+                   else f"You're invited to co-own {d['name']} on BarksBuds")
+        paras = ["Hi,", f"{who} added you as a co-owner of {d['name']} on BarksBuds, the local social network for dogs and their people.",
                  f"As a co-owner you can edit {d['name']}'s profile and photos and bring {d['name']} to meetups and packs.",
                  "The link below works for 7 days and signs you in (it creates your free account if you don't have one). No password needed."]
         text = "\n\n".join(paras + [f"Accept the invite: {link}",
