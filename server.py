@@ -358,6 +358,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
             self._app_reset()
             body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "home").encode())
                     .replace(b"{{NORTH_SHORE}}", meetweb.landing_html().encode())
+                    .replace(b"{{PIXEL_PALS}}", pixelweb.landing_html().encode())
                     .replace(b"{{TIPS}}", tipsweb.landing_html().encode()))
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
@@ -383,6 +384,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                    + "".join(f'<url><loc>{base}{meetweb.meetup_path(m)}</loc></url>' for m in meetweb.M.upcoming(limit=500) if not m["is_sample"])
                    + f'<url><loc>{base}/packs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}{packweb.pack_path(p)}</loc></url>' for p in packweb.P.browse() if not p["is_sample"])
+                   + f'<url><loc>{base}/pixel-pals</loc><changefreq>weekly</changefreq></url>'
                    + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
                    + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
                    + f'<url><loc>{base}/trails</loc><lastmod>{trailsweb.T.CHECKED}</lastmod><changefreq>monthly</changefreq></url>'

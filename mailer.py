@@ -391,6 +391,11 @@ def send_async(to, subject, body, text, unsub, tag):
     if tag.startswith("runs") and RUNS_ALLOW and to.strip().lower() not in RUNS_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on the runs email allowlist)", flush=True)
         return False
+    # member-facing pixel portrait emails ("portrait-ready", "portrait-rejected") follow the meetup allowlist; the
+    # "portrait-request" heads-up goes to the team's own inbox and isn't gated
+    if tag.startswith("portrait-") and tag != "portrait-request" and MEETUP_ALLOW and to.strip().lower() not in MEETUP_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on MEETUP_EMAIL_ALLOWLIST)", flush=True)
+        return False
     if tag.startswith("pack") and PACK_ALLOW and to.strip().lower() not in PACK_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on the pack email allowlist)", flush=True)
         return False

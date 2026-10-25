@@ -438,7 +438,14 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(asha(maggie), A.sha(rd("sprites/maggie-sprite.jpg")))
         self.assertEqual(A.avatar_info(A.dog_by_id(lily["id"]))["kind"], "photo")
         lp = Client().get("/dogs/" + lily["slug"]).text
-        self.assertIn(f'/px/{A.dog_by_id(lily["id"])["pixel_photo_id"]}-1x.png', lp)  # pixel pal still on the profile
+        self.assertNotIn('/px/', lp)  # the old maker sprite stays stored but isn't shown any more
+        self.assertIn(f'/p/{A.dog_by_id(lily["id"])["avatar_photo_id"]}.webp', lp)
+        # the AI portraits count as Lily's and Maggie's done pixel portraits (kept when the main picture changes)
+        import portraits
+        for dd in (lily, maggie):
+            av = A.dog_by_id(dd["id"])["avatar_photo_id"]
+            self.assertEqual([(r["status"], r["result_photo_id"]) for r in portraits.recent() if r["dog_id"] == dd["id"]], [("done", av)])
+            self.assertEqual(A.one("SELECT kind FROM photos WHERE id=:i", i=av)[0], "portrait")
         self.assertIn(f'/p/{A.dog_by_id(lily["id"])["avatar_photo_id"]}.webp', Client().get("/dogs").text)  # card uses the main picture
         rerun = lambda: (setattr(sys, "argv", ["seed.py", "--assets", assets]), seed.main(), setattr(sys, "argv", old))
         # the live database as revision 3 left it (real photo lily-1 as the main picture, the AI portrait still stored as

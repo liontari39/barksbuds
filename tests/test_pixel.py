@@ -1,5 +1,5 @@
-"""Pixel pals (retired): the maker, its /pixel-pals showcase and landing section are gone and their old URLs redirect
-to /dogs; sprites dogs already have are still stored, re-encoded, served from /px/ and shown on their pages.
+"""Pixel pals: the in-browser maker is retired (old URLs redirect, old endpoints 404); sprites dogs already have are still
+stored and served from /px/ but no longer shown. /pixel-pals is back as a showcase of hand-made portraits (test_portraits).
 
 Run with the rest:  python3 -m unittest discover -s tests -v   (TEST_DATABASE_URL=... for Postgres)
 """
@@ -48,14 +48,12 @@ def dog(did):
 
 
 class PixelTests(unittest.TestCase):
-    def test_maker_and_showcase_retired(self):
+    def test_maker_retired_pixel_pals_back(self):
         c, _, _, (did,) = member("pxgone")
         anon = Client("10.11.0.31")
-        for path in ("/pixel-pals", "/pixel-pals/", "/pixel-pals/start", f"/me/dogs/{did}/pixel", f"/me/dogs/{did}/pixel/",
-                     f"/me/dogs/{did}/pixel-ai", "/me/dogs/999999/pixel"):
-            for who in (c, anon):
-                r = who.get(path)
-                self.assertEqual((r.status, r.headers.get("Location")), (301, "/dogs"), path)
+        for path in (f"/me/dogs/{did}/pixel", f"/me/dogs/{did}/pixel/", f"/me/dogs/{did}/pixel-ai"):
+            r = c.get(path)
+            self.assertEqual((r.status, r.headers.get("Location")), (301, f"/me/dogs/{did}/edit#portrait-panel"), path)
         for path in (f"/me/dogs/{did}/pixel", f"/me/dogs/{did}/pixel/primary", f"/me/dogs/{did}/pixel/delete"):
             self.assertEqual(c.post(path, {}).status, 404, path)
         r = multipart(c, f"/me/dogs/{did}/pixel", {"primary": "1"}, [("sprite", "s.png", sprite_png())])
@@ -64,11 +62,17 @@ class PixelTests(unittest.TestCase):
         for asset in ("/pixelpal.js", "/pixelmaker.js", "/pixelai-worker.js", "/vendor/mediapipe/vision_bundle.mjs",
                       "/vendor/animegan/face_paint_512_v2.onnx", "/img/pp-lily.png", "/img/style-game.png"):
             self.assertEqual(anon.get(asset).status, 404, asset)
-        slug = dog(did)["slug"]
-        for page in ("/", "/dogs", f"/dogs/{slug}", f"/me/dogs/{did}/edit", "/me", "/runs", "/tips", "/sitemap.xml"):
-            t = c.get(page).text
-            self.assertNotIn("/pixel-pals", t, page); self.assertNotIn(f"/me/dogs/{did}/pixel", t, page)
-            self.assertNotIn("Make my pixel pal", t, page); self.assertNotIn('id="pixel-pals"', t, page)
+        # the showcase and its links are back (portraits, not the maker)
+        for who in (c, anon):
+            self.assertEqual(who.get("/pixel-pals").status, 200)
+        self.assertIn("Sign up and request one for your dog", anon.get("/pixel-pals").text)
+        r = anon.get("/pixel-pals/start")
+        self.assertEqual(r.status, 303); self.assertIn("/signin?next=%2Fpixel-pals%2Fstart", r.headers["Location"])
+        self.assertEqual(c.get("/pixel-pals/start").headers["Location"], f"/me/dogs/{did}/edit#portrait-panel")
+        for page in ("/", "/dogs", "/runs", "/tips", "/sitemap.xml"):
+            t = anon.get(page).text
+            self.assertIn("/pixel-pals", t, page)
+            self.assertNotIn(f"/me/dogs/{did}/pixel", t, page); self.assertNotIn("Make my pixel pal", t, page)
         self.assertNotIn("{{PIXEL_PALS}}", anon.get("/").text)
 
     def test_storage_reencode_and_routes(self):
@@ -118,39 +122,22 @@ class PixelTests(unittest.TestCase):
         self.assertEqual(upload(c, did, pal.getvalue()).status, 200)
         self.assertEqual(A.one("SELECT width FROM photos WHERE id=:i", i=dog(did)["pixel_photo_id"])[0], 64)
 
-    def test_profile_picture_switch_and_display(self):
+    def test_old_sprites_not_shown(self):
         c, _, _, (did,) = member("pxd")
         multipart(c, f"/me/dogs/{did}/photos", {}, [("photos", "a.jpg", jpeg_with_exif())])
         slug = dog(did)["slug"]
-        self.assertEqual(upload(c, did, sprite_png()).status, 200)
+        self.assertEqual(upload(c, did, sprite_png(), primary="1").status, 200)
         pid = dog(did)["pixel_photo_id"]
-        page = Client().get(f"/dogs/{slug}").text
-        self.assertIn(f"/px/{pid}-1x.png", page)          # sprite panel + toggle
-        self.assertIn('class="avsw"', page)
-        self.assertIn('data-v="pixel" hidden', page)       # photo is still the primary avatar
-        self.assertNotIn(f"/px/{pid}-og.png", page)
-        self.assertIn("pixel art", page)
-        browse = Client().get("/dogs").text
-        self.assertIn(f'class="pxbadge" src="/px/{pid}-1x.png"', browse)
-        # make the sprite the profile picture
-        A.set_pixel_primary(did, True)
-        self.assertTrue(dog(did)["pixel_primary"])
-        page = Client().get(f"/dogs/{slug}").text
-        self.assertIn('data-v="photo" hidden', page)
-        self.assertIn(f'content="http://127.0.0.1:{T.PORT}/px/{pid}-og.png"', page)
-        self.assertIn(f'class="ph pxph"><img src="/px/{pid}-1x.png"', Client().get("/dogs").text)
-        # attendee list shows the sprite
+        self.assertTrue(pid and dog(did)["pixel_primary"])
+        for page in (f"/dogs/{slug}", "/dogs", "/me", f"/me/dogs/{did}/edit"):
+            t = c.get(page).text
+            self.assertNotIn(f"/px/{pid}", t, page)
+            self.assertNotIn('class="avsw"', t, page); self.assertNotIn("pxbadge", t, page); self.assertNotIn("pxshow", t, page)
         mid, _ = create(c)
         rsvp(c, mid, [did])
-        self.assertIn(f'class="pxav" src="/px/{pid}-1x.png"', mpage(c, mid).text)
-        self.assertEqual(A.tile_img({"pixel": pid, "photo": 5}), A.tile_img({"pixel": pid}))
-        # back to the photo, then remove the sprite
-        A.set_pixel_primary(did, False)
-        self.assertFalse(dog(did)["pixel_primary"])
-        self.assertNotIn(f'class="pxav" src="/px/{pid}', mpage(c, mid).text)
-        A.clear_pixel(did)
-        self.assertIsNone(dog(did)["pixel_photo_id"])
-        self.assertNotIn("/px/", Client().get(f"/dogs/{slug}").text)
+        self.assertNotIn("/px/", mpage(c, mid).text)
+        self.assertNotIn("/px/", A.tile_img({"pixel": pid, "photo": 5}))
+        self.assertEqual(Client().get(f"/px/{pid}-1x.png").status, 200)   # still stored and served
 
     def test_hidden_dog_sprites_404(self):
         c, _, _, (did,) = member("pxh")

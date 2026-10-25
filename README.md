@@ -104,6 +104,19 @@ Members help grow the dog run map (`runsugg.py` data layer, `runsweb.py` routes,
 - **Email:** each new suggestion emails `RUN_SUGGEST_EMAIL`, which defaults to the single address on the runs/pack/meetup allowlist. It goes only to addresses on `RUNS_EMAIL_ALLOWLIST` (falling back to `PACK_EMAIL_ALLOWLIST`, then `MEETUP_EMAIL_ALLOWLIST`), and the admin key is never included.
 - There is no geocoding (no paid APIs). A run suggested with only an address goes live without a pin unless the admin adds coordinates.
 
-## Pixel pals (retired)
+## Pixel Pals (hand-made portraits)
 
-The pixel-art maker (`/me/dogs/<id>/pixel`), the hidden on-device AI test page (`/pixel-ai`), the `/pixel-pals` showcase and the landing-page section were removed (Oct 2026). Old URLs redirect to `/dogs` with a 301, and the old maker POST endpoints return 404. Sprites dogs already have stay in the `photos` table (`kind='pixel'`). They are still served at `/px/<id>-1x.png`, `/px/<id>.png` and `/px/<id>-og.png`, and shown on dog cards and pages (`pixelweb.py`). `seed.py` still gives Lily and Maggie their existing sprites, but their main pictures are the AI-made portraits.
+There's no in-browser maker. Members request a pixel-art portrait and the team makes it by hand with AI, one per dog (`portraits.py`, table `portrait_requests`).
+
+- **Member side:** the "Get a pixel portrait" panel sits on `/me/dogs/<id>/edit#portrait-panel` and on the owner's view of the dog page. The owner picks a gallery photo or uploads one (`POST /me/dogs/<id>/portrait`). Uploads are stored as `kind='request'` and never served publicly. While a request is pending or done, the panel shows its status. A finished portrait is stored as `kind='portrait'`, can't be deleted from the gallery, and the owner can switch the main picture between it and photos.
+- **Emails:** every request emails hello@barksbuds.app ("New pixel portrait request: <name>"). The owner's ready/rejected emails go through the `MEETUP_EMAIL_ALLOWLIST` gate.
+- **Admin** (header `X-Admin-Key`, a wrong key returns 404):
+  - `GET /admin/portraits` HTML queue
+  - `GET /admin/portraits/pending` JSON
+  - `GET /admin/portraits/<id>` and `/admin/portraits/<id>/photo.jpg`
+  - `POST /admin/portraits/<id>/complete` multipart `image`. It becomes the main picture unless the owner changed it after requesting.
+  - `POST /admin/portraits/<id>/reject` field `note`, shown to the owner. This frees the slot.
+  - `POST /admin/portraits/<id>/reset` deletes the request and keeps the images.
+- **Helper:** `python3 scripts/portraits.py [--url URL] list | fetch <id> | complete <id> <image.png> | reject <id> <note> | reset <id>`. It reads `.admin_key` without printing it. `fetch` saves to `/workspace/barksbuds-assets/portrait-requests/<id>/`.
+- **Showcase:** `/pixel-pals` and the homepage section list done portraits. Lily's and Maggie's seeded AI portraits are marked done automatically (`mark_seeded_done`).
+- The old 48 px maker sprites (`kind='pixel'`) stay stored and served at `/px/...`, but they aren't shown (`accounts.SHOW_OLD_SPRITES = False`). Old maker URLs redirect to the edit panel.

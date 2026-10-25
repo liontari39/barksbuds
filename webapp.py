@@ -49,6 +49,7 @@ ICONS = """<svg width="0" height="0" style="position:absolute" aria-hidden="true
 FLASH = {"welcome": "You're signed in. Welcome to BarksBuds!", "signedin": "You're signed in.",
          "saved": "Saved.", "profile": "Your profile is saved.", "created": "Profile created! Now add a few photos.",
          "photos": "Photos added.", "photo_deleted": "Photo removed.", "avatar": "Profile picture updated.",
+         "portrait": "Thanks! Your pixel portrait request is in. Our team usually finishes within a day.",
          "deleted": "That dog profile was deleted.", "reported": "Thanks. Our team will take a look.",
          "signedout": "You're signed out. See you at the dog run!"}
 PHOTO_ERR = {"type": "That file isn't a JPEG, PNG, WebP or GIF photo.", "big": "Photos can be up to 12 MB each.",
@@ -80,7 +81,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/tips", "Tips")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -263,7 +264,7 @@ class AppRoutes:
         u = self.user()
         base = self._base()
         links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
-                 ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
+                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
         meta = [f'<meta name="robots" content="{"index,follow" if index else "noindex"}">']
@@ -300,7 +301,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=11">
+<link rel="stylesheet" href="/app.css?v=12">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -312,7 +313,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -511,7 +512,7 @@ It comes from hello@barksbuds.app.</div>
         cards = []
         for d in dogs:
             pid = d.get("avatar_photo_id") or firsts.get(d["id"])  # the chosen main picture, else the first photo
-            ph = (self.card_ph(d, pid) if pid or d.get("pixel_photo_id") else
+            ph = (self.card_ph(d, pid) if pid or (d.get("pixel_photo_id") and A.SHOW_OLD_SPRITES) else
                   '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg></div>')
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
@@ -686,7 +687,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0])
+        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.portrait_panel(d, q)
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
@@ -904,7 +905,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
     @staticmethod
     def card_ph(d, pid, alt=""):
         """Card image: the pixel pal when it's the avatar (or there's no photo), else the photo with a small sprite badge."""
-        px = d.get("pixel_photo_id")
+        px = d.get("pixel_photo_id") if A.SHOW_OLD_SPRITES else None  # old maker sprites aren't shown
         if px and (d.get("pixel_primary") or not pid):
             return (f'<div class="ph pxph"><img src="/px/{px}-1x.png" alt="{e(alt and alt + ", pixel art")}" loading="lazy"></div>')
         if pid:
@@ -981,7 +982,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         alt = f'{d["name"]}, ' + (d["breed"] or "a dog")
         cov = (f'<div class="cover"><img src="/p/{cover}.jpg" alt="{e(alt)}" fetchpriority="high"></div>' if cover else
                '<div class="cover empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>')
-        px = d.get("pixel_photo_id")
+        px = d.get("pixel_photo_id") if A.SHOW_OLD_SPRITES else None  # old maker sprites aren't shown
         av_photo = f'<img class="av" src="/p/{avatar}.webp" width="92" height="92" alt="{e(d["name"])}"' if avatar else ""
         av_pixel = f'<img class="av pxav" src="/px/{px}-1x.png" width="92" height="92" alt="{e(d["name"])}, pixel art"' if px else ""
         show_px = bool(px and (d.get("pixel_primary") or not avatar))
@@ -1007,6 +1008,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                   if is_owner else "")
             side.insert(0, f'<div class="panel pxshow"><h2>{e(d["name"])}\'s pixel pal</h2><div class="pxstage">'
                            f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy"></div>{dl}</div>')
+        if is_owner:  # "Get a pixel portrait" / its status; only the owner sees it
+            side.insert(0, self.portrait_panel(d, compact=True))
         if d["play_style"]:
             side.append('<div class="panel"><h2>Play style</h2><ul class="taglist dark">' + "".join(f"<li>{e(t)}</li>" for t in d["play_style"]) + "</ul></div>")
         if d["bio"]:

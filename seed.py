@@ -173,6 +173,8 @@ def run(load, log=print):
         log(f"  page: /dogs/{d['slug']}")
     mid = seed_meetup(uid, log)
     seed_pack(uid, mid, load, log)
+    import portraits
+    portraits.mark_seeded_done()   # Lily and Maggie's AI portraits count as their done pixel portraits
     return uid
 
 
@@ -181,7 +183,7 @@ def _set_main_photo(dog_id, spec, load, log=print):
     the pixel pal. Deletes nothing (unlike A.set_avatar, which drops a replaced avatar-only image); an avatar image that
     isn't stored yet is added as kind='avatar'."""
     raw = load(spec["main_photo"])
-    row = A.one("SELECT id FROM photos WHERE dog_id=:d AND kind IN ('gallery','avatar') AND sha=:s ORDER BY id",
+    row = A.one("SELECT id FROM photos WHERE dog_id=:d AND kind IN ('gallery','avatar','portrait') AND sha=:s ORDER BY id",
                 d=dog_id, s=A.sha(raw)) if raw else None
     if not row and raw and spec["main_photo"].startswith("sprites/"):
         row = (A.add_photo(dog_id, raw, kind="avatar"),)

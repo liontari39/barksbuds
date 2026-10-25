@@ -116,9 +116,10 @@ def init_schema(store):
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
     if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
-    import meetups, packs
+    import meetups, packs, portraits
     meetups.init_schema(store)
     packs.init_schema(store)
+    portraits.init_schema(store)
 
 
 # ---------------------------------------------------------------- rate limiting (in-memory, per process)
@@ -347,6 +348,7 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
 def delete_dog(dog_id):
     q("DELETE FROM photos WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM reports WHERE dog_id=:d", d=dog_id)
+    q("DELETE FROM portrait_requests WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM dogs WHERE id=:d", d=dog_id)
 
 
@@ -454,17 +456,18 @@ def add_photo(dog_id, raw, kind="gallery"):
 
 def photo_blob(photo_id, which):
     col = "full_jpeg" if which == "full" else "thumb_webp"
-    r = one(f"""SELECT p.{col} FROM photos p JOIN dogs d ON d.id=p.dog_id WHERE p.id=:i AND d.hidden=0 AND p.kind<>'pixel'""", i=photo_id)
+    r = one(f"""SELECT p.{col} FROM photos p JOIN dogs d ON d.id=p.dog_id WHERE p.id=:i AND d.hidden=0 AND p.kind NOT IN ('pixel','request')""", i=photo_id)
     return bytes(r[0]) if r else None
 
 
 def delete_photo(dog_id, photo_id):
-    q("DELETE FROM photos WHERE id=:p AND dog_id=:d AND kind<>'pixel'", p=photo_id, d=dog_id)
+    # pixel sprites, hand-made pixel portraits and photos sent in for one aren't removed through the gallery
+    q("DELETE FROM photos WHERE id=:p AND dog_id=:d AND kind NOT IN ('pixel','portrait','request')", p=photo_id, d=dog_id)
     q("UPDATE dogs SET avatar_photo_id=NULL WHERE id=:d AND avatar_photo_id=:p", d=dog_id, p=photo_id)
 
 
 def set_avatar(dog_id, photo_id):
-    if one("SELECT id FROM photos WHERE id=:p AND dog_id=:d", p=photo_id, d=dog_id):
+    if one("SELECT id FROM photos WHERE id=:p AND dog_id=:d AND kind IN ('gallery','avatar','portrait')", p=photo_id, d=dog_id):
         old = one("SELECT avatar_photo_id FROM dogs WHERE id=:d", d=dog_id)
         q("UPDATE dogs SET avatar_photo_id=:p, updated_at=:t WHERE id=:d", p=photo_id, d=dog_id, t=now())
         if old and old[0] and old[0] != photo_id:  # drop a replaced avatar-only image
@@ -474,6 +477,9 @@ def set_avatar(dog_id, photo_id):
 
 
 # ---------------------------------------------------------------- pixel pals (sprites made in the browser)
+# The in-browser maker is retired (Oct 2026); pixel pals are now hand-made portraits (portraits.py, photos kind='portrait').
+# The old 48 px sprites stay stored but are no longer shown anywhere.
+SHOW_OLD_SPRITES = False
 PIXEL_MAX_BYTES = 200 * 1024
 PIXEL_MIN, PIXEL_MAX = 16, 128
 PIXEL_BIG = 512  # stored nearest-neighbor upscale is at least this wide
@@ -576,7 +582,7 @@ def pixel_og_png(native_png, name):
 def tile_img(d, size=72):
     """<img> for a small dog tile (attendee/member lists): the sprite when the owner made it the avatar, else the photo."""
     import html as _h
-    if d.get("pixel"):
+    if d.get("pixel") and SHOW_OLD_SPRITES:
         return (f'<img class="pxav" src="/px/{int(d["pixel"])}-1x.png" alt="" loading="lazy" width="{size}" height="{size}">')
     if d.get("photo"):
         return f'<img src="/p/{int(d["photo"])}.webp" alt="" loading="lazy" width="{size}" height="{size}">'
@@ -586,7 +592,7 @@ def tile_img(d, size=72):
 def avatar_info(d, photos=None):
     """How to show a dog's avatar: dict(kind='pixel'|'photo'|None, id=..., photo=..., pixel=...)."""
     cover, av = cover_and_avatar(d, photos)
-    px = d.get("pixel_photo_id")
+    px = d.get("pixel_photo_id") if SHOW_OLD_SPRITES else None
     kind = "pixel" if px and d.get("pixel_primary") else ("photo" if av else ("pixel" if px else None))
     return dict(kind=kind, photo=av, pixel=px, id=px if kind == "pixel" else av)
 
