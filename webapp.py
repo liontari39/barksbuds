@@ -80,7 +80,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/tips", "Tips")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -263,7 +263,7 @@ class AppRoutes:
         u = self.user()
         base = self._base()
         links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
-                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
+                 ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
         meta = [f'<meta name="robots" content="{"index,follow" if index else "noindex"}">']
@@ -312,7 +312,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -516,8 +516,7 @@ It comes from hello@barksbuds.app.</div>
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
             cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
-<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div>
-<p class="small" style="margin:10px 0 0"><a href="/me/dogs/{d["id"]}/pixel">{"Remake" if d.get("pixel_photo_id") else "Make"} {e(d["name"])}'s pixel pal</a></p></div></article>""")
+<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div></div></article>""")
         if len(dogs) < A.MAX_DOGS:
             hint = ""
             wl = A.waitlist_dog_name(u.get("waitlist_id"))
@@ -687,7 +686,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.pixel_panel(d, nudge=q.get("m", [""])[0] in ("created", "photos"))
+        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0])
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
@@ -770,33 +769,6 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         return f"""<div class="panel" id="photos-panel"><h2>Photos</h2><p class="hint">The first photo is the cover on {e(d["name"])}'s page.</p>
 {av_html}{grid}{upload}</div>"""
 
-    def pixel_panel(self, d, nudge=False):
-        """Edit-page panel for the dog's pixel-art sprite (a bigger nudge right after a new dog gets its photos)."""
-        px, did, nm = d.get("pixel_photo_id"), d["id"], e(d["name"])
-        if not px and nudge and A.photo_count(did) > 0:
-            return (f'<div class="panel pxnudge" id="pixel-panel" role="region" aria-label="Make a pixel pal">'
-                    f'<div class="pxn-art" aria-hidden="true"><img src="/img/pp-maggie-photo.webp?v=2" alt="" width="72" height="96">'
-                    f'<span>&rarr;</span><img class="pxn-sp" src="/img/pp-maggie.png?v=2" alt="" width="84" height="84"></div><div>'
-                    f'<span class="eyebrow">new &middot; free</span><h2>Now make {nm} a pixel pal!</h2>'
-                    f'<p class="hint">Turn {nm}\'s photo into a classic game character in about a minute. It all happens in your browser.</p>'
-                    f'<a class="btn btn-gold" href="/me/dogs/{did}/pixel">Make my pixel pal</a></div></div>')
-        if not px:
-            return (f'<div class="panel pxpanel" id="pixel-panel"><h2>Pixel pal</h2><div class="pxrow">'
-                    f'<span class="pxempty" aria-hidden="true"><svg class="ico"><use href="#i-paw"/></svg></span><div>'
-                    f'<p class="hint" style="margin-top:0">Turn a photo of {nm} into a little piece of game-style pixel art. '
-                    f'It all happens on your phone or computer, and it takes about a minute.</p>'
-                    f'<a class="btn btn-gold btn-sm" href="/me/dogs/{did}/pixel">Make my pixel pal</a></div></div></div>')
-        on = bool(d.get("pixel_primary"))
-        hint = f"Showing as {nm}&#39;s profile picture." if on else f"Shown on {nm}&#39;s page next to the photo."
-        tog = (f'<form method="post" action="/me/dogs/{did}/pixel/{"photo" if on else "primary"}">{self.csrf_field()}'
-               f'<button class="btn btn-ghost btn-sm" type="submit">{"Use the photo as profile pic" if on else "Use as profile pic"}</button></form>')
-        return (f'<div class="panel pxpanel" id="pixel-panel"><h2>Pixel pal</h2><div class="pxrow">'
-                f'<img class="pxbig" src="/px/{px}-1x.png" alt="{nm}\'s pixel pal" width="128" height="128"><div>'
-                f'<p class="hint" style="margin-top:0">{hint}</p>'
-                f'<div class="pxacts"><a class="btn btn-sm" href="/me/dogs/{did}/pixel">Remake</a>{tog}'
-                f'<a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a></div>'
-                f'<form method="post" action="/me/dogs/{did}/pixel/delete" onsubmit="return confirm(\'Remove the pixel pal?\')">{self.csrf_field()}'
-                f'<button class="linkbtn small" type="submit">Remove pixel pal</button></form></div></div></div>')
 
     def parse_dog(self, f):
         v = dict(name=clean(f.get("name"), 40), breed=clean(f.get("breed"), 60), birthday=f.get("birthday").strip()[:10],
@@ -1031,13 +1003,10 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                           f'<span>{e(r["name"])}<small>{e(sm)}</small></span></a></li>')
             side.append(f'<div class="panel"><h2>Favorite runs</h2><ul class="runlist">{"".join(li)}</ul></div>')
         if px:
-            dl = (f'<p style="margin:14px 0 0"><a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a> '
-                  f'<a class="btn btn-sm" href="/me/dogs/{d["id"]}/pixel">Remake</a></p>') if is_owner else ""
+            dl = (f'<p style="margin:14px 0 0"><a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a></p>'
+                  if is_owner else "")
             side.insert(0, f'<div class="panel pxshow"><h2>{e(d["name"])}\'s pixel pal</h2><div class="pxstage">'
                            f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy"></div>{dl}</div>')
-        elif is_owner:
-            side.insert(0, f'<div class="panel pxshow"><h2>Pixel pal</h2><p class="small">Turn a photo of {e(d["name"])} into game-style pixel art. '
-                           f'Only you can see this box.</p><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/pixel">Make my pixel pal</a></div>')
         if d["play_style"]:
             side.append('<div class="panel"><h2>Play style</h2><ul class="taglist dark">' + "".join(f"<li>{e(t)}</li>" for t in d["play_style"]) + "</ul></div>")
         if d["bio"]:
@@ -1058,8 +1027,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                          f'<a href="{e(d["website"])}" rel="nofollow noopener noreferrer ugc" target="_blank">{e(host)}</a></p>')
         owner_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-user"/></svg>'
                       f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
-        edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a>'
-                f'<a class="btn btn-ghost btn-sm" href="/me/dogs/{d["id"]}/pixel">{"Remake" if px else "Make"} my pixel pal</a></p>'
+        edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
                 if is_owner else "")
         hidden_note = ('<div class="wrap" style="padding-top:20px"><p class="formerr">This profile is hidden from the public while our team reviews a report.</p></div>'
                        if d["hidden"] else "")

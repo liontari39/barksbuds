@@ -272,7 +272,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
                       ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8",
-                      ".mjs": "text/javascript", ".wasm": "application/wasm", ".tflite": "application/octet-stream", ".onnx": "application/octet-stream"}
+                      ".mjs": "text/javascript", ".wasm": "application/wasm", ".tflite": "application/octet-stream"}
     sys_version = ""
 
     def __init__(self, *a, **k):
@@ -283,11 +283,9 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
         p = urlsplit(self.path).path
-        if p.startswith(("/vendor/mediapipe/", "/vendor/animegan/")):  # pinned third-party builds; large, so cache for a week
-            self.send_header("Cache-Control", "public, max-age=604800")
-        elif p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
+        if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
-        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js", "/pixelai-worker.js", "/suggest.js"):
+        elif p in ("/runs.js", "/app.css", "/suggest.js"):
             self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
 
@@ -360,7 +358,6 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
             self._app_reset()
             body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "home").encode())
                     .replace(b"{{NORTH_SHORE}}", meetweb.landing_html().encode())
-                    .replace(b"{{PIXEL_PALS}}", pixelweb.landing_html().encode())
                     .replace(b"{{TIPS}}", tipsweb.landing_html().encode()))
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
@@ -386,7 +383,6 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                    + "".join(f'<url><loc>{base}{meetweb.meetup_path(m)}</loc></url>' for m in meetweb.M.upcoming(limit=500) if not m["is_sample"])
                    + f'<url><loc>{base}/packs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}{packweb.pack_path(p)}</loc></url>' for p in packweb.P.browse() if not p["is_sample"])
-                   + f'<url><loc>{base}/pixel-pals</loc><changefreq>weekly</changefreq></url>'
                    + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
                    + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
                    + f'<url><loc>{base}/trails</loc><lastmod>{trailsweb.T.CHECKED}</lastmod><changefreq>monthly</changefreq></url>'
