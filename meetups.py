@@ -15,6 +15,7 @@ except Exception:  # pragma: no cover  (tzdata missing)
     ET = timezone(timedelta(hours=-5), "ET")
 
 import accounts as A
+import coowners
 
 FITS = [("all", "All dogs welcome"), ("small", "Small dogs"), ("big", "Big dogs"), ("puppies", "Puppies"), ("seniors", "Senior dogs")]
 FIT_LABEL = dict(FITS)
@@ -347,11 +348,13 @@ def attendees(mid):
                                                             "FROM dogs WHERE id IN (%s)" % ",".join(str(i) for i in ids)):
             dogs[did] = dict(id=did, slug=slug, name=name, avatar=av, user_id=uid, hidden=hidden, pixel=px if pxp else None)
         firsts = A.first_photos(ids)
+        owners = coowners.owners_map(ids)
         for d in dogs.values():
             d["photo"] = d["avatar"] or firsts.get(d["id"])
+            d["owners"] = owners.get(d["id"], {d["user_id"]})
     out = {"going": [], "maybe": [], "waitlist": []}
     for uid, st, dj, name in rows:
-        ds = [dogs[i] for i in _dogs(dj) if i in dogs and not dogs[i]["hidden"] and dogs[i]["user_id"] == uid]
+        ds = [dogs[i] for i in _dogs(dj) if i in dogs and not dogs[i]["hidden"] and uid in dogs[i]["owners"]]
         out.setdefault(st, []).append(dict(user_id=uid, name=name or "A member", dogs=ds, ndogs=len(_dogs(dj))))
     return out
 

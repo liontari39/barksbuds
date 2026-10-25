@@ -9,6 +9,7 @@ can be hidden or deleted from /admin/packs with the other samples.
 import hashlib, hmac, json
 
 import accounts as A
+import coowners
 
 VISIBILITY = [("open", "Open: anyone can join"), ("request", "Request to join: an organizer approves each member")]
 FITS = [("all", "All dogs welcome"), ("small", "Small dogs"), ("big", "Big dogs"), ("puppies", "Puppies"), ("seniors", "Senior dogs")]
@@ -260,11 +261,13 @@ def members(pid, status="active"):
                                                             "FROM dogs WHERE id IN (%s)" % ",".join(str(i) for i in ids)):
             dogs[did] = dict(id=did, slug=slug, name=name, avatar=av, user_id=uid, hidden=hidden, pixel=px if pxp else None)
         firsts = A.first_photos(ids)
+        owners = coowners.owners_map(ids)
         for d in dogs.values():
             d["photo"] = d["avatar"] or firsts.get(d["id"])
+            d["owners"] = owners.get(d["id"], {d["user_id"]})
     out = []
     for uid, role, dj, msg, ts, name, area, town in rows:
-        ds = [dogs[i] for i in _dogs(dj) if i in dogs and not dogs[i]["hidden"] and dogs[i]["user_id"] == uid]
+        ds = [dogs[i] for i in _dogs(dj) if i in dogs and not dogs[i]["hidden"] and uid in dogs[i]["owners"]]
         out.append(dict(user_id=uid, role=role, dogs=ds, message=msg, created_at=ts, name=name or "A member", area=area, town=town))
     return out
 

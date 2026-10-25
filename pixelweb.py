@@ -206,14 +206,14 @@ class PixelRoutes:
         if f is None:
             return
         back = f"/me/dogs/{d['id']}/edit"
-        if not A.LIMITER.allow(f"portrait:{d['user_id']}", 10, 3600):
+        if not A.LIMITER.allow(f"portrait:{self.user()['id']}", 10, 3600):
             return self.redirect(back + "?pre=limit#portrait-panel")
         raws = [data for name, fn, data in f.files if name == "photo" and data]
         pids = [x.strip() for x in f.getlist("photo_id") if x.strip()]
         if any(not x.isdigit() for x in pids):
             return self.redirect(back + "?pre=photo#portrait-panel")
         try:
-            rid = P.create(d, d["user_id"], photo_ids=[int(x) for x in pids], raws=raws, owner_note=f.get("note").strip())
+            rid = P.create(d, self.user()["id"], photo_ids=[int(x) for x in pids], raws=raws, owner_note=f.get("note").strip())
         except P.PortraitError as ex:
             return self.redirect(back + f"?pre={ex}#portrait-panel")
         except A.BadImage as ex:
@@ -227,7 +227,7 @@ class PixelRoutes:
     def _portrait_notice(self, rid, d):
         """Heads-up to the team inbox (not gated: it goes to our own address). Never includes the admin key."""
         try:
-            owner = A.one("SELECT display_name FROM users WHERE id=:u", u=d["user_id"])
+            owner = A.one("SELECT display_name FROM users WHERE id=:u", u=(self.user() or {}).get("id") or d["user_id"])
             req = P.get(rid)
             n = len(P.photo_ids(rid))
             subject = f"New pixel portrait request: {d['name']}"

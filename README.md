@@ -104,6 +104,24 @@ Members help grow the dog run map (`runsugg.py` data layer, `runsweb.py` routes,
 - **Email:** each new suggestion emails `RUN_SUGGEST_EMAIL`, which defaults to the single address on the runs/pack/meetup allowlist. It goes only to addresses on `RUNS_EMAIL_ALLOWLIST` (falling back to `PACK_EMAIL_ALLOWLIST`, then `MEETUP_EMAIL_ALLOWLIST`), and the admin key is never included.
 - There is no geocoding (no paid APIs). A run suggested with only an address goes live without a pin unless the admin adds coordinates.
 
+## Co-owners (shared dogs)
+
+A dog can belong to several accounts (partners, family, a dog walker). Code: `coowners.py` (data) and `coownweb.py` (pages).
+
+- `dog_owners(dog_id, user_id, role)`: one `owner` row (the main owner, same as `dogs.user_id`) plus up to 5 `co-owner`
+  rows. Existing dogs get their owner row at startup (idempotent backfill).
+- The main owner invites by email from the dog's edit page ("Co-owners" panel). The email (tag `coowner-invite`, sent through
+  the normal mailer from `EMAIL_FROM`) links to `/invite/<token>`. The token is stored hashed, works once, expires after 7 days
+  and can be cancelled. Open invites count toward the cap of 5. Each account can send 10 invites a day.
+- `/invite/<token>` shows a confirmation; accepting (a POST, so link scanners can't) signs the person in as the invited email
+  (creating the account if needed), or adds the account that's already signed in.
+- Co-owners can edit the profile and photos, RSVP to meetups and join packs with the dog, and see/request its pixel portrait.
+  There's still one profile and one portrait per dog. Only the main owner can invite, cancel invites, remove co-owners and
+  delete the dog. A co-owner can leave (`/me/dogs/<id>/leave`). Co-owned dogs show on `/me` with a "Co-owner" badge and
+  don't count toward `MAX_DOGS`.
+- When a main owner deletes their account, each dog with a co-owner passes to the longest-standing co-owner; dogs without one
+  are deleted as before.
+
 ## Pixel Pals (hand-made portraits)
 
 There's no in-browser maker. Members request a pixel-art portrait and the team makes it by hand with AI, one per dog (`portraits.py`, tables `portrait_requests` and `portrait_request_photos`).

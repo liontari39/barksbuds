@@ -11,6 +11,7 @@ from http.cookies import SimpleCookie
 from urllib.parse import parse_qs, quote, urlsplit
 
 import accounts as A
+import coowners as CO
 import mailer
 
 e = html.escape
@@ -51,7 +52,8 @@ FLASH = {"welcome": "You're signed in. Welcome to BarksBuds!", "signedin": "You'
          "photos": "Photos added.", "photo_deleted": "Photo removed.", "avatar": "Profile picture updated.",
          "portrait": "Thanks! Your pixel portrait request is in. Our team usually finishes within a day.",
          "deleted": "That dog profile was deleted.", "reported": "Thanks. Our team will take a look.",
-         "signedout": "You're signed out. See you at the dog run!"}
+         "signedout": "You're signed out. See you at the dog run!",
+         "left": "Done. You're no longer a co-owner of that dog."}
 PHOTO_ERR = {"type": "That file isn't a JPEG, PNG, WebP or GIF photo.", "big": "Photos can be up to 12 MB each.",
              "toobig": "That upload was too big. Try a few photos at a time (up to 40 MB per upload).",
              "count": f"Each dog can have up to {A.MAX_PHOTOS} photos. Remove one to add another.",
@@ -301,7 +303,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=12">
+<link rel="stylesheet" href="/app.css?v=13">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -333,6 +335,8 @@ class AppRoutes:
     # ------------------------------------------------------------ routing
     def app_get(self, path, q):
         self._app_reset()
+        if self.coown_get(path, q):
+            return True
         if path == "/signin":
             nxt = safe_next(q.get("next", [""])[0])
             if self.user():
@@ -373,6 +377,8 @@ class AppRoutes:
 
     def app_post(self, path, q):
         self._app_reset()
+        if self.coown_post(path, q):
+            return True
         routes = [(r"/signin", self.post_signin), (r"/auth", self.post_auth), (r"/signout", self.post_signout),
                   (r"/me/profile", self.post_profile), (r"/me/delete", self.post_delete_account),
                   (r"/me/dogs/new", self.post_dog), (r"/me/dogs/(\d+)/edit", self.post_dog),
@@ -510,15 +516,17 @@ It comes from hello@barksbuds.app.</div>
         dogs = A.dogs_for_user(u["id"])
         firsts = A.first_photos([d["id"] for d in dogs])
         cards = []
+        owned = sum(1 for d in dogs if d["user_id"] == u["id"])  # MAX_DOGS counts only dogs you're the main owner of
         for d in dogs:
             pid = d.get("avatar_photo_id") or firsts.get(d["id"])  # the chosen main picture, else the first photo
             ph = (self.card_ph(d, pid) if pid or (d.get("pixel_photo_id") and A.SHOW_OLD_SPRITES) else
                   '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-camera"/></svg></div>')
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
-            cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
+            co = ' <span class="badge">Co-owner</span>' if d["user_id"] != u["id"] else ""
+            cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}{co}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
 <div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div></div></article>""")
-        if len(dogs) < A.MAX_DOGS:
+        if owned < A.MAX_DOGS:
             hint = ""
             wl = A.waitlist_dog_name(u.get("waitlist_id"))
             if wl and not dogs:
@@ -531,7 +539,7 @@ It comes from hello@barksbuds.app.</div>
                           'dog owners know who they\'re meeting. <a href="/me/profile">Complete your profile</a></div>')
         name = u["display_name"] or "there"
         wh = where_text(u["town"], u["area"])
-        add_btn = "" if len(dogs) >= A.MAX_DOGS else '<a class="btn btn-gold" href="/me/dogs/new">+ Add a dog</a>'
+        add_btn = "" if owned >= A.MAX_DOGS else '<a class="btn btn-gold" href="/me/dogs/new">+ Add a dog</a>'
         body = f"""<section class="phead"><div class="wrap"><div class="mehead"><div><span class="eyebrow">my dogs</span>
 <h1>Hi, {e(name)}!</h1><p class="lead">{e(wh) or "Welcome to BarksBuds."}</p></div>{add_btn}</div></div></section>
 <section class="section"><div class="wrap">{incomplete}
@@ -612,7 +620,7 @@ It comes from hello@barksbuds.app.</div>
         if not u:
             return self.need_login()
         return self.msg_page("Delete your account?", f"""<p class="sub">This permanently deletes your profile, all of your dogs' profiles and their photos.
-It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field()}
+It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.</p><form method="post" action="/me/delete">{self.csrf_field()}
 <label class="switch" style="text-align:left;margin-bottom:16px"><input type="checkbox" name="confirm" value="yes" required><span>Yes, delete my account and all my dogs' profiles.</span></label>
 <button class="btn" type="submit">Delete my account</button></form><p class="small" style="margin-top:14px"><a href="/me">Keep my account</a></p>""", icon="i-alert")
 
@@ -633,13 +641,17 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
                              '<p><a class="btn" href="/">Back to BarksBuds</a></p>')
 
     # ------------------------------------------------------------ dogs: owner side
-    def own_dog(self, dog_id):
+    def own_dog(self, dog_id, primary=False):
+        """The dog when the signed-in account owns or co-owns it (primary=True: only the primary owner), else a 404 page."""
         u = self.user()
         if not u:
             self.need_login()
             return None
         d = A.dog_by_id(dog_id)
-        if not d or d["user_id"] != u["id"]:
+        role = CO.role(d, u["id"]) if d else None
+        if d:
+            d["my_role"] = role  # 'owner' (primary) or 'co-owner'
+        if not d or not role or (primary and role != "owner"):
             self.msg_page("Dog not found", '<p class="sub">We couldn\'t find that dog on your account.</p>'
                           '<p><a class="btn" href="/me">My dogs</a></p>', code=404)
             return None
@@ -665,7 +677,7 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         if not u:
             return self.need_login()
         q = q or {}
-        if d is None and len(A.dogs_for_user(u["id"])) >= A.MAX_DOGS:
+        if d is None and A.owned_dog_count(u["id"]) >= A.MAX_DOGS:
             return self.msg_page("That's a full pack", f'<p class="sub">Each account can have up to {A.MAX_DOGS} dogs.</p>'
                                  '<p><a class="btn" href="/me">My dogs</a></p>')
         errs = errs or {}
@@ -687,12 +699,12 @@ It can't be undone.</p><form method="post" action="/me/delete">{self.csrf_field(
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.portrait_panel(d, q)
+        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.portrait_panel(d, q) + self.coowner_panel(d, q)
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
                 f'Changes show up on <a href="/dogs/{e(d["slug"])}">{dn}\'s public page</a> right away.')
-        delete_link = "" if is_new else f'<a class="small" href="/me/dogs/{d["id"]}/delete">Delete this profile</a>'
+        delete_link = "" if is_new or CO.role(d, u["id"]) != "owner" else f'<a class="small" href="/me/dogs/{d["id"]}/delete">Delete this profile</a>'
         body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">{'new pup' if is_new else 'dog profile'}</span><h1>{e(title)}</h1>
 <p class="lead">{lead}</p></div></section>
 <section class="section"><div class="wrap narrow">
@@ -829,7 +841,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             d = self.own_dog(int(dog_id))
             if d is None:
                 return
-        elif len(A.dogs_for_user(u["id"])) >= A.MAX_DOGS:
+        elif A.owned_dog_count(u["id"]) >= A.MAX_DOGS:
             return self.dog_form_page(None)
         f = self._form_or_fail()
         if f is None:
@@ -849,7 +861,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
 <p class="small" style="margin-top:14px"><a href="/me/dogs/{d["id"]}/edit">Keep it</a></p>""", icon="i-alert")
 
     def post_delete_dog(self, dog_id):
-        d = self.own_dog(int(dog_id))
+        d = self.own_dog(int(dog_id), primary=True)
         if d is None:
             return
         if self._form_or_fail() is None:
@@ -871,7 +883,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         files = [x for x in f.files if x[0] == "photos"]
         if not files:
             return self.redirect(back + "?pe=none#photos-panel")
-        if not A.LIMITER.allow(f"upload:{d['user_id']}", 40, 3600):
+        if not A.LIMITER.allow(f"upload:{self.user()['id']}", 40, 3600):
             return self.redirect(back + "?pe=count#photos-panel")
         added, err = 0, ""
         for _, _fn, data in files:
@@ -955,7 +967,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
     def dog_page(self, slug, q):
         d = A.dog_by_slug(slug)
         u = self.user()
-        is_owner = bool(d and u and u["id"] == d["user_id"])
+        is_owner = bool(d and u and CO.can_manage(d, u["id"]))  # owner or co-owner
         if not d or (d["hidden"] and not is_owner):
             return self.msg_page("We couldn't find that dog", '<p class="sub">This profile may have been removed.</p>'
                                  '<p><a class="btn" href="/dogs">Meet the dogs</a></p>', code=404)

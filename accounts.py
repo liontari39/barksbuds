@@ -116,7 +116,8 @@ def init_schema(store):
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
     if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
-    import meetups, packs, portraits
+    import coowners, meetups, packs, portraits
+    coowners.init_schema(store)
     meetups.init_schema(store)
     packs.init_schema(store)
     portraits.init_schema(store)
@@ -247,6 +248,8 @@ def delete_user(user_id):
     import meetups, packs
     packs.purge_user(user_id)
     meetups.purge_user(user_id)
+    import coowners
+    coowners.purge_user(user_id)  # dogs with a co-owner pass to them; the rest are deleted below
     for (dog_id,) in q("SELECT id FROM dogs WHERE user_id=:u", u=user_id):
         delete_dog(dog_id)
     q("DELETE FROM sessions WHERE user_id=:u", u=user_id)
@@ -301,7 +304,14 @@ def dog_by_id(dog_id):
 
 
 def dogs_for_user(user_id):
-    return [_dog(r) for r in q(f"SELECT {DOG_COLS} FROM dogs WHERE user_id=:u ORDER BY created_at, id", u=user_id)]
+    """Dogs the account owns or co-owns (see coowners.py), oldest first."""
+    return [_dog(r) for r in q(f"""SELECT {DOG_COLS} FROM dogs WHERE user_id=:u OR id IN
+                                   (SELECT dog_id FROM dog_owners WHERE user_id=:u) ORDER BY created_at, id""", u=user_id)]
+
+
+def owned_dog_count(user_id):
+    """Dogs where the account is the primary owner (what MAX_DOGS limits; co-owned dogs don't count)."""
+    return one("SELECT COUNT(*) FROM dogs WHERE user_id=:u", u=user_id)[0]
 
 
 def browse_dogs(areas=None, limit=60):
@@ -332,13 +342,15 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
                 fr=json.dumps(f["fav_runs"]), bio=f["bio"], w=f.get("website", ""), t=t)
     if dog_id:
         q("""UPDATE dogs SET name=:n,breed=:b,birthday=:bd,birth_year=:by,sex=:sx,size=:sz,temperament=:tm,play_style=:ps,
-             vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,updated_at=:t WHERE id=:i AND user_id=:u""", i=dog_id, u=user_id, **vals)
+             vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,updated_at=:t WHERE id=:i""", i=dog_id, **vals)  # caller checked owner/co-owner
         return dog_id
     for attempt in range(3):
         try:
             r = one("""INSERT INTO dogs(user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,
                        fav_runs,bio,website,seed_key,created_at,updated_at) VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:sk,:t,:t)
                        RETURNING id""", u=user_id, s=unique_slug(f["name"]), sk=seed_key, **vals)
+            import coowners
+            coowners.add_owner_row(r[0], user_id)
             return r[0]
         except Exception:
             if attempt == 2:
@@ -346,6 +358,8 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
 
 
 def delete_dog(dog_id):
+    import coowners
+    coowners.purge_dog(dog_id)
     q("DELETE FROM photos WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM reports WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM portrait_request_photos WHERE request_id IN (SELECT id FROM portrait_requests WHERE dog_id=:d)", d=dog_id)

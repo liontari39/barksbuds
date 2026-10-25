@@ -26,6 +26,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
 
 import accounts
+import coownweb
 import mailer
 import meetweb
 import packweb
@@ -267,7 +268,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, coownweb.CoownerRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
