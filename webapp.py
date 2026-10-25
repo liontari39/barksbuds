@@ -42,6 +42,7 @@ ICONS = """<svg width="0" height="0" style="position:absolute" aria-hidden="true
 <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
 <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 3l-6 8h3.5L5 17h14l-4.5-6H18z"/><path d="M12 17v4"/></symbol>
 <symbol id="i-dog" viewBox="0 0 24 24"><path d="M10 5.2C9.2 3.8 7.4 3 6 3.5 4.5 4 3.5 6 4 8l1 3M14 5.2c.8-1.4 2.6-2.2 4-1.7 1.5.5 2.5 2.5 2 4.5l-1 3"/><path d="M8 14.5c0 3 1.8 5.5 4 5.5s4-2.5 4-5.5S14.2 6 12 6s-4 5.5-4 8.5z"/><path d="M11 16h2"/></symbol>
 </svg>"""
 
@@ -79,7 +80,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -261,7 +262,7 @@ class AppRoutes:
     def page(self, title, body, *, code=200, desc="", canonical="", og=None, index=False, active="", scripts="", flash=""):
         u = self.user()
         base = self._base()
-        links = [("/runs", "Dog run map", "runs"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
+        links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
                  ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
@@ -311,7 +312,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/#join">Join the waitlist</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}

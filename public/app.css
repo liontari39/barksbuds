@@ -41,6 +41,8 @@ a{color:var(--red);text-underline-offset:3px}
 .nav-links{display:flex;gap:24px;list-style:none;padding:0;margin:0}
 .nav-links a{color:var(--ink);text-decoration:none;font-weight:700;font-size:.98rem;white-space:nowrap}
 @media (max-width:1100px){.nav-links{gap:18px}.nav-links a[href="/#story"]{display:none}}
+@media (max-width:1060px){.nav-links{gap:12px}.nav-links a{font-size:.92rem}}
+@media (max-width:960px){.nav-links{gap:9px}.nav-links a{font-size:.9rem}}
 .nav-links a:hover,.nav-links a[aria-current]{color:var(--red)}
 .nav-signin{color:var(--ink);text-decoration:none;font-weight:800;font-size:.98rem;white-space:nowrap}
 .nav-signin:hover{color:var(--red)}

@@ -124,6 +124,34 @@ TIPS = [
 <li>When in doubt, ask the regulars. They know the crowd at each time of day.</li>
 </ul>
 """),
+    dict(slug="trail-etiquette-with-dogs", cat="runs", icon="i-pin", minutes=4, vet=True,
+         title="Trail etiquette with dogs: leashes, passing, ticks and leaving no trace",
+         short="Trail etiquette with dogs",
+         desc="How to hike with your dog on NYC, Long Island and Westchester trails: leash rules, passing other hikers, wildlife, ticks, water and packing out every bag.",
+         body="""
+<p class="lede">A good trail day is quiet, muddy and happy for everyone: you, your dog, the people coming the other way and the wildlife who live there. These habits keep it that way and keep trails open to dogs.</p>
+<h2>Before you go</h2>
+<ul>
+<li><strong>Check the official rules for that park.</strong> They really do differ: some parks welcome dogs on every trail, some only on certain paths, and some not at all. Our <a href="/trails">dog-friendly trails list</a> links the official page for each one. If a sign at the trailhead says something different, the sign wins.</li>
+<li><strong>Bring the paperwork.</strong> Many parks can ask for proof of your dog's license or rabies vaccination. A photo on your phone is easy.</li>
+<li><strong>Pack for your dog, too:</strong> water and a bowl, poop bags, a towel for the car, and a tick comb.</li>
+</ul>
+<h2>On the trail</h2>
+<ul>
+<li><strong>Leash up, every time.</strong> On almost every trail around here the rule is a leash no longer than six feet. Retractable leashes count, so lock them short.</li>
+<li><strong>Step aside and shorten up when people pass.</strong> Move your dog to the far side of you, let them sit if they can, and say hi to the humans first. Not every hiker (or dog) wants a greeting.</li>
+<li><strong>Give horses and bikes plenty of room.</strong> Many trails are shared. Step off to the side, keep your dog calm and close, and let them go by.</li>
+<li><strong>Stay on the marked trail.</strong> It protects plants and nesting birds, and it keeps you out of the brush where ticks wait.</li>
+<li><strong>Let wildlife be.</strong> No chasing squirrels, deer, geese or shorebirds. Lily would love to argue this one, which is exactly why she stays on a short leash in the woods.</li>
+</ul>
+<h2>Leave no trace</h2>
+<p>Bag it and carry it out, all the way to a trash can. A bag left by the trail "for later" is still litter, and it's the number one complaint parks hear about dogs.</p>
+<h2>Know your dog's limits</h2>
+<p>Start short and build up. Small and flat-faced dogs, like Maggie the Frenchie, overheat faster than you'd think, so keep summer hikes short, shady and early, and turn around while your dog still has energy to spare. Watch for heavy panting, lagging behind or looking for shade.</p>
+<h2>After the hike</h2>
+<p>Do a full tick check: between toes, inside ears, around the collar and under the legs. Our guide to <a href="/tips/ticks-and-lyme-on-long-island">ticks on Long Island</a> covers what to look for.</p>
+<p class="aside-note">Seasonal rules matter, too. Beaches, nesting areas and hunting seasons can change where dogs may go. Check the official page close to the day you hike.</p>
+"""),
     dict(slug="summer-heat-and-paw-safety", cat="health", icon="i-check", minutes=4, vet=True,
          title="Summer heat and hot pavement: keeping paws and pups safe",
          short="Summer heat and paw safety",

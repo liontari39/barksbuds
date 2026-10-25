@@ -33,6 +33,7 @@ import pixelweb
 import runsugg
 import runsweb
 import tipsweb
+import trailsweb
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -266,7 +267,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, SimpleHTTPRequestHandler):
+class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -388,6 +389,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                    + f'<url><loc>{base}/pixel-pals</loc><changefreq>weekly</changefreq></url>'
                    + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
                    + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
+                   + f'<url><loc>{base}/trails</loc><lastmod>{trailsweb.T.CHECKED}</lastmod><changefreq>monthly</changefreq></url>'
                    + f'<url><loc>{base}/privacy</loc></url><url><loc>{base}/terms</loc></url>'
                    + f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
                    + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in accounts.browse_dogs(limit=5000))
@@ -407,7 +409,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.tips_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):

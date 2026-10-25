@@ -26,6 +26,14 @@ POLICY_UPDATED = "October 24, 2026"
 CAT_ICON = {"runs": "i-pin", "health": "i-shield", "community": "i-users", "puppies": "i-paw"}
 
 
+def topic_choices():
+    return D.CATS + [("trail", "A dog-friendly trail"), ("other", "Something else")]
+
+
+def topic_label(k):
+    return dict(D.CATS + [("trail", "Trail suggestion")]).get(k, "Other")
+
+
 def init_schema(store):
     pg = store.kind == "postgres"
     ID = "BIGSERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
@@ -108,7 +116,9 @@ class TipRoutes:
         if path in ("/tips", "/tips/"):
             self._app_reset(); self.tips_index(q); return True
         if path in ("/tips/suggest", "/tips/suggest/"):
-            self._app_reset(); self.tip_suggest_page(); return True
+            self._app_reset()
+            t = q.get("topic", [""])[0]
+            self.tip_suggest_page({"topic": t} if t in dict(topic_choices()) else None); return True
         m = re.fullmatch(r"/tips/([a-z0-9-]{1,80})/?", path)
         if m:
             self._app_reset(); self.tip_page(m.group(1)); return True
@@ -185,24 +195,34 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
 
     # ------------------------------------------------------------ member tip suggestions
     def tip_suggest_page(self, vals=None, errs=None, code=200):
+        vals, errs = vals or {}, errs or {}
+        tr = vals.get("topic") == "trail"
         u = self.user()
         if not u:
-            return self.need_login("/tips/suggest")
-        vals, errs = vals or {}, errs or {}
+            return self.need_login("/tips/suggest?topic=trail" if tr else "/tips/suggest")
         v = lambda k: e(str(vals.get(k) or ""))
         err = lambda k: f'<span class="err" id="{k}-err">{e(errs[k])}</span>' if k in errs else ""
         inv = lambda k: f' aria-invalid="true" aria-describedby="{k}-err"' if k in errs else ""
-        opts = "".join(f'<option value="{k}"{" selected" if vals.get("topic") == k else ""}>{e(t)}</option>' for k, t in D.CATS + [("other", "Something else")])
+        opts = "".join(f'<option value="{k}"{" selected" if vals.get("topic") == k else ""}>{e(t)}</option>' for k, t in topic_choices())
         top = '<div class="formerr" role="alert">Please fix the highlighted fields.</div>' if errs else ""
-        body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">share what you know</span><h1>Suggest a tip</h1>
-<p class="lead">A favorite trail, a training trick, a rainy-day idea? Send it in. We read every one and may turn it into a tip, with credit if you'd like.</p></div></section>
+        if tr:
+            h1, lead = "Suggest a trail", ("Know a trail where dogs are welcome in NYC, Long Island or Westchester? Tell us the trail and park, and where the dog rules "
+                                           "are posted. We check every suggestion against the official park page before adding it to the trails map.")
+            t_lbl, t_ph, b_lbl, b_ph, btn, back = ("Trail and park", "Blue Trail, Clove Lakes Park", "Where is it, and what are the dog rules?",
+                                                   "Town or borough, trailhead or parking, and a link to the official page or what the sign says.", "Send trail", "/trails")
+        else:
+            h1, lead = "Suggest a tip", "A favorite trail, a training trick, a rainy-day idea? Send it in. We read every one and may turn it into a tip, with credit if you'd like."
+            t_lbl, t_ph, b_lbl, b_ph, btn, back = ("Your tip in a few words", "Bring a towel to the beach run", "The details",
+                                                   "What works for you and your dog?", "Send tip", "/tips")
+        body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">share what you know</span><h1>{h1}</h1>
+<p class="lead">{e(lead)}</p></div></section>
 <section class="section"><div class="wrap narrow"><form class="panel mform" method="post" action="/tips/suggest" novalidate>{self.csrf_field()}{top}
 <div class="field"><label for="topic">Topic</label><select id="topic" name="topic">{opts}</select></div>
-<div class="field"><label for="title">Your tip in a few words</label><input type="text" id="title" name="title" maxlength="{MAX_TITLE}" required value="{v("title")}" placeholder="Bring a towel to the beach run"{inv("title")}>{err("title")}</div>
-<div class="field"><label for="body">The details</label><textarea id="body" name="body" rows="7" maxlength="{MAX_TIP}" required placeholder="What works for you and your dog?"{inv("body")}>{v("body")}</textarea>{err("body")}</div>
-<div class="formfoot"><button class="btn" type="submit">Send tip</button><a class="small" href="/tips">Cancel</a></div>
-<p class="small muted" style="margin:14px 0 0">Up to {SUGGEST_DAILY} tips a day. Please keep it about dogs, kind and practical. We don't publish anything automatically.</p></form></div></section>"""
-        return self.page("Suggest a tip", body, code=code, active="tips")
+<div class="field"><label for="title">{t_lbl}</label><input type="text" id="title" name="title" maxlength="{MAX_TITLE}" required value="{v("title")}" placeholder="{e(t_ph)}"{inv("title")}>{err("title")}</div>
+<div class="field"><label for="body">{b_lbl}</label><textarea id="body" name="body" rows="7" maxlength="{MAX_TIP}" required placeholder="{e(b_ph)}"{inv("body")}>{v("body")}</textarea>{err("body")}</div>
+<div class="formfoot"><button class="btn" type="submit">{btn}</button><a class="small" href="{back}">Cancel</a></div>
+<p class="small muted" style="margin:14px 0 0">Up to {SUGGEST_DAILY} suggestions a day. Please keep it about dogs, kind and practical. We don't publish anything automatically.</p></form></div></section>"""
+        return self.page(h1, body, code=code, active="trails" if tr else "tips")
 
     def post_tip_suggest(self):
         u = self.user()
@@ -216,7 +236,7 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
         if n >= SUGGEST_DAILY or not A.LIMITER.allow("tipsugg-ip:" + self._client_ip(), 10, 86400):
             return self.msg_page("That's plenty for today", f'<p class="sub">You can send up to {SUGGEST_DAILY} tips a day. Thank you! '
                                  'Please come back tomorrow.</p><p><a class="btn" href="/tips">Back to tips</a></p>', code=429, icon="i-chat")
-        vals = {"topic": f.get("topic") if f.get("topic") in dict(D.CATS + [("other", "")]) else "other",
+        vals = {"topic": f.get("topic") if f.get("topic") in dict(topic_choices()) else "other",
                 "title": W.clean(f.get("title"), MAX_TITLE), "body": W.clean(f.get("body"), MAX_TIP, multiline=True)}
         errs = {}
         if len(vals["title"]) < 4:
@@ -229,7 +249,7 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
             u=u["id"], t=vals["topic"], ti=vals["title"], b=vals["body"], c=int(time.time()))
         print("tips: new suggestion", flush=True)
         self._notify_tip(vals, u)
-        return self.redirect("/tips?m=sent")
+        return self.redirect("/trails?m=sent" if vals["topic"] == "trail" else "/tips?m=sent")
 
     def _notify_tip(self, vals, u):
         import runsweb
@@ -238,7 +258,7 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
             return False
         who = u.get("display_name") or "A member"
         subject = f"New tip suggestion: {vals['title']}"
-        text = f"{who} suggested a tip ({D.CAT_LABEL.get(vals['topic'], 'Other')}):\n\n{vals['title']}\n\n{vals['body']}\n\nReview it at {self._base()}/admin/tips (add ?key= with your admin key)."
+        text = f"{who} suggested a tip ({topic_label(vals['topic'])}):\n\n{vals['title']}\n\n{vals['body']}\n\nReview it at {self._base()}/admin/tips (add ?key= with your admin key)."
         body = ('<div style="font:16px/1.5 system-ui,sans-serif;color:#2a2622"><h2 style="margin:0 0 8px">' + e(subject) + "</h2>"
                 f"<p>{e(who)} suggested a tip.</p><p style=\"white-space:pre-line\">{e(vals['body'])}</p>"
                 f"<p>Review it at {e(self._base())}/admin/tips (add ?key= with your admin key).</p></div>")
@@ -256,7 +276,7 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
             acts = "".join(f'<form method="post" action="/admin/tips" style="display:inline">{hid}<input type="hidden" name="id" value="{i}">'
                            f'<button class="btn btn-sm{" btn-ghost" if a != "delete" else " btn-danger"}" name="action" value="{a}">{lbl}</button></form> '
                            for a, lbl in (("reviewed", "Mark reviewed"), ("pending", "Back to pending"), ("delete", "Delete")) if a != st)
-            cards.append(f'<div class="panel"><p class="small muted" style="margin:0">#{i} &middot; {e(D.CAT_LABEL.get(topic, "Other"))} &middot; '
+            cards.append(f'<div class="panel"><p class="small muted" style="margin:0">#{i} &middot; {e(topic_label(topic))} &middot; '
                          f'<b>{e(st)}</b> &middot; {e(name or "")} &lt;{e(email or "")}&gt;</p><h2 style="font-size:1.25rem;margin:6px 0">{e(title)}</h2>'
                          f'<p style="white-space:pre-line">{e(b)}</p>{acts}</div>')
         body = (f'<section class="phead"><div class="wrap narrow"><h1>Tip suggestions</h1><p class="lead">{sum(1 for r in rows if r[4] == "pending")} waiting for review. '

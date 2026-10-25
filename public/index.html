@@ -62,8 +62,11 @@ a{color:var(--red);text-underline-offset:3px}
 .nav-links{display:flex;gap:26px;list-style:none;padding:0;margin-top:0;margin-bottom:0}
 .nav-links a{color:var(--ink);text-decoration:none;font-weight:700;font-size:.98rem;white-space:nowrap}
 @media (max-width:1100px){.nav-links{gap:18px}.nav-links a[href="#story"]{display:none}}
+@media (max-width:1060px){.nav-links{gap:12px}.nav-links a{font-size:.92rem}}
+@media (max-width:960px){.nav-links{gap:9px}.nav-links a{font-size:.9rem}}
 .nav-links a:hover{color:var(--red)}
 .nav .btn{padding:11px 20px 9px;font-size:1rem}
+@media (min-width:921px) and (max-width:960px){.nav .btn{padding-left:14px;padding-right:14px;font-size:.92rem}.nav-signin{font-size:.92rem}}
 /* hero */
 .hero{position:relative;overflow:hidden;padding:64px 0 88px;background:radial-gradient(900px 480px at 92% -8%,var(--gold-l),transparent 62%),radial-gradient(700px 400px at -10% 110%,#FFEFD0,transparent 60%),var(--cream)}
 .hero .wrap{display:grid;grid-template-columns:1.08fr .92fr;gap:56px;align-items:center}
@@ -240,6 +243,7 @@ footer .bottom p{margin:0}
     <a class="brand" href="#top" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="40" height="40" alt="">BarksBuds</a>
     <nav aria-label="Main"><ul class="nav-links">
       <li><a href="/runs">Dog run map</a></li>
+      <li><a href="/trails">Trails</a></li>
       <li><a href="/meetups">Meetups</a></li>
       <li><a href="/packs">Packs</a></li>
       <li><a href="/dogs">Dogs</a></li>
@@ -376,7 +380,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="#join">Join the waitlist</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join the waitlist we store your first name, email, your dog's name and, if you share it, your zip code. We use them only to tell you about BarksBuds and its launch in your area. We never sell or share them, and we'll delete them if you ask. Read the full <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>, or write to <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a>.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>
