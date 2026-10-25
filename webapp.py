@@ -299,8 +299,8 @@ class AppRoutes:
 <title>{e(title)} | BarksBuds</title>
 {chr(10).join(meta)}
 <meta name="theme-color" content="#FBB321">
-<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/icon-32.png">
-<link rel="apple-touch-icon" href="/img/icon-180.png"><link rel="manifest" href="/site.webmanifest">
+<link rel="icon" href="/favicon.ico?v=jack2" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/icon-32.png?v=jack2">
+<link rel="apple-touch-icon" href="/img/icon-180.png?v=jack2"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css?v=13">
@@ -308,13 +308,13 @@ class AppRoutes:
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav"><div class="wrap">
-<a class="brand" href="/" aria-label="BarksBuds home"><img src="/img/icon-96.webp" width="40" height="40" alt="">BarksBuds</a>
+<a class="brand" href="/" aria-label="BarksBuds home"><img src="/img/icon-96.webp?v=jack2" width="40" height="40" alt="">BarksBuds</a>
 <nav aria-label="Main"><ul class="nav-links">{nav}</ul></nav>
 {nav_account_html(u, active)}
 </div></header>
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
-<div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
+<div class="top"><div><a class="brand" href="/"><img src="/img/icon-96.webp?v=jack2" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
 <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
@@ -416,7 +416,7 @@ class AppRoutes:
                 "We never show your email on the site.</span></p>")
         inv = ' aria-invalid="true" aria-describedby="err-email"' if err else ""
         body = f"""<div class="authwrap"><div class="authcard">
-<img class="logo" src="/img/icon-192.webp" width="84" height="84" alt="">
+<img class="logo" src="/img/icon-192.webp?v=jack2" width="84" height="84" alt="">
 <span class="eyebrow">welcome to the pack</span>
 <h1>Sign in to BarksBuds</h1>
 <p class="sub">{"Sign in to continue. We'll bring you right back." if nxt else "Create your dog's profile, add photos and pick your favorite runs."}</p>
@@ -473,7 +473,7 @@ It comes from hello@barksbuds.app.</div>
             return self.msg_page(t, f'<p class="sub">{e(msg)}</p><p><a class="btn" href="/signin">Get a new link</a></p>',
                                  code=400, icon="i-lock")
         body = f"""<div class="authwrap"><div class="authcard">
-<img class="logo" src="/img/icon-192.webp" width="84" height="84" alt="">
+<img class="logo" src="/img/icon-192.webp?v=jack2" width="84" height="84" alt="">
 <h1>Signing you in…</h1><p class="sub">One moment. If nothing happens, tap the button.</p>
 <form id="authf" method="post" action="/auth">{self.csrf_field()}<input type="hidden" name="t" value="{e(raw)}">{f'<input type="hidden" name="next" value="{e(nxt)}">' if nxt else ''}
 <button class="btn" type="submit">Continue to BarksBuds</button></form></div></div>"""
@@ -962,7 +962,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         title = "Dogs" + (f" in {label}" if areas else " near you")
         return self.page(title, body, index=True, active="dogs", canonical=canon,
                          desc="Meet dogs and dog owners across NYC, Long Island and Westchester on BarksBuds, and find your dog's next best friend.",
-                         og={"title": "Dogs on BarksBuds", "image": self._base() + "/img/og-image.jpg", "w": 1200, "h": 630})
+                         og={"title": "Dogs on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630})
 
     def dog_page(self, slug, q):
         d = A.dog_by_slug(slug)
@@ -1059,7 +1059,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             desc = f"Meet {d['name']}" + (f", a {d['breed']}" if d["breed"] else "") + (f" in {wh}" if wh else "") + ", on BarksBuds."
         og_title = d["name"] + (f", {d['breed']}" if d["breed"] else "") + (f" in {wh}" if wh else "")
         og = {"title": og_title, "desc": desc, "type": "profile", "alt": f"Photo of {d['name']}",
-              "image": self._base() + (f"/p/{cover}.jpg" if cover else "/img/og-image.jpg")}
+              "image": self._base() + (f"/p/{cover}.jpg" if cover else "/img/og-image.jpg?v=jack2")}
         og.update(w=photos[0]["width"], h=photos[0]["height"]) if cover else og.update(w=1200, h=630)
         if px and (d.get("pixel_primary") or not cover):  # share card with the sprite
             og.update(image=self._base() + f"/px/{px}-og.png", w=1200, h=630, alt=f"{d['name']} as pixel art")

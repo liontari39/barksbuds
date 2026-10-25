@@ -147,7 +147,7 @@ Keep your dog leashed (6 ft or shorter almost everywhere here), pack out every b
                   for i, t in enumerate(T.TRAILS)]}
         body += '<script type="application/ld+json">' + json.dumps(ld).replace("<", "\\u003c") + "</script>"
         desc = f"{n} dog-friendly hiking trails in NYC, Long Island and Westchester with leash rules, parking, seasonal limits and official sources."
-        og = {"title": "Dog-friendly hiking trails | BarksBuds", "desc": desc, "image": base + "/img/og-image.jpg", "w": 1200, "h": 630,
+        og = {"title": "Dog-friendly hiking trails | BarksBuds", "desc": desc, "image": base + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630,
               "alt": "BarksBuds: a group of friends that love their dogs"}
         return self.page("Dog-friendly hiking trails", body, index=True, active="trails", canonical="/trails", desc=desc, og=og,
                          scripts=JS.replace("PIN", json.dumps(PIN_SVG).replace("</", "<\\/")), flash=flash)

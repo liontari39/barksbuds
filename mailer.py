@@ -122,7 +122,7 @@ Questions? Just reply, or write to hello@barksbuds.app. Privacy: {base}/privacy
 <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
 <tr><td style="background:#141414;padding:22px 32px;" class="pad">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-  <td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="52" height="52" alt="" style="display:block;border-radius:14px;border:3px solid #FBB321;"></td>
+  <td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack2" width="52" height="52" alt="" style="display:block;border-radius:14px;border:3px solid #FBB321;"></td>
   <td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:26px;color:#ffffff;">BarksBuds</td>
   </tr></table>
 </td></tr>
@@ -309,7 +309,7 @@ Questions? Write to hello@barksbuds.app. Privacy: {base}/privacy
 <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
 <tr><td style="background:#141414;padding:22px 32px;" class="pad">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-  <td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="52" height="52" alt="" style="display:block;border-radius:14px;border:3px solid #FBB321;"></td>
+  <td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack2" width="52" height="52" alt="" style="display:block;border-radius:14px;border:3px solid #FBB321;"></td>
   <td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:26px;color:#ffffff;">BarksBuds</td>
   </tr></table>
 </td></tr>
@@ -486,7 +486,7 @@ def build_meetup(base, kind, m, name="", status="", dogs=None, who="", who_dogs=
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
 <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
 <tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack2" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
 <td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
 <tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
 <p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>
@@ -563,7 +563,7 @@ def build_pack(base, kind, p, name="", who="", who_dogs=None, message="", meetup
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
 <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
 <tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack2" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
 <td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
 <tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
 <p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>

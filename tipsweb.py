@@ -139,7 +139,7 @@ class TipRoutes:
 
     # ------------------------------------------------------------ articles
     def _og(self, title, desc):
-        return {"title": title, "desc": desc, "image": self._base() + "/img/og-image.jpg", "w": 1200, "h": 630,
+        return {"title": title, "desc": desc, "image": self._base() + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630,
                 "alt": "BarksBuds: a group of friends that love their dogs"}
 
     def tips_index(self, q):
@@ -176,9 +176,9 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
                "about your dog's health, vaccines and prevention, and call right away if something seems wrong.</div></aside>") if t["vet"] else ""
         base = self._base()
         ld = {"@context": "https://schema.org", "@type": "Article", "headline": t["title"], "description": t["desc"],
-              "datePublished": t["updated"], "dateModified": t["updated"], "image": base + "/img/og-image.jpg",
+              "datePublished": t["updated"], "dateModified": t["updated"], "image": base + "/img/og-image.jpg?v=jack2",
               "mainEntityOfPage": f"{base}/tips/{slug}", "author": {"@type": "Organization", "name": "BarksBuds"},
-              "publisher": {"@type": "Organization", "name": "BarksBuds", "logo": {"@type": "ImageObject", "url": base + "/img/icon-512.png"}}}
+              "publisher": {"@type": "Organization", "name": "BarksBuds", "logo": {"@type": "ImageObject", "url": base + "/img/icon-512.png?v=jack2"}}}
         bc = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Tips", "item": base + "/tips"},
             {"@type": "ListItem", "position": 2, "name": t["short"], "item": f"{base}/tips/{slug}"}]}

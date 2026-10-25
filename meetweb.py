@@ -431,7 +431,7 @@ class MeetupRoutes:
         return self.page("Dog meetups" + (f" in {label}" if areas else ""), body, index=not (when or view or ns), active="meetups",
                          canonical=canon, scripts=scripts, flash=self.flash_from(q),
                          desc="Find and host dog meetups at dog runs across NYC, Long Island and Westchester. RSVP with your dogs on BarksBuds.",
-                         og={"title": "Dog meetups on BarksBuds", "image": self._base() + "/img/og-image.jpg", "w": 1200, "h": 630})
+                         og={"title": "Dog meetups on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630})
 
     def meetups_api(self):
         """Upcoming meetups keyed by run id, for the dog run finder."""
@@ -977,7 +977,7 @@ class MeetupRoutes:
         extra = (m["description"][:110] + ("…" if len(m["description"]) > 110 else "")) if m["description"] else "RSVP with your dogs on BarksBuds."
         og_desc = f"{when_s} at {where_line(m)}. {extra}"
         og = {"title": m["title"], "desc": og_desc, "type": "website", "alt": f"{m['title']} on BarksBuds",
-              "image": base + "/img/og-image.jpg", "w": 1200, "h": 630}
+              "image": base + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630}
         if going_dogs and going_dogs[0]["photo"]:
             og["image"] = f"{base}/p/{going_dogs[0]['photo']}.jpg"
             og.pop("w"); og.pop("h")
