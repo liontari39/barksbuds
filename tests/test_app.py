@@ -414,11 +414,11 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(len(A.gallery(lily["id"])), 3)
         self.assertEqual(lily["sex"], "female")
         self.assertIn("Smart", lily["temperament"])
-        self.assertEqual(lily["seed_rev"], 2)
+        self.assertEqual(lily["seed_rev"], 3)
         maggie = A.dog_by_id(A.one("SELECT id FROM dogs WHERE seed_key='mike-maggie'")[0])
         self.assertEqual((maggie["sex"], maggie["size"], maggie["birth_year"]), ("female", "medium", 2023))
         self.assertEqual(len(A.gallery(maggie["id"])), 5)  # 2 originals + 2 from the site + the grey-bed photo, not duplicated on re-run
-        self.assertEqual(maggie["seed_rev"], 3)
+        self.assertEqual(maggie["seed_rev"], 4)
         mp = Client().get("/dogs/" + maggie["slug"]).text
         self.assertIn('href="https://maggiethemerle.com/" rel="nofollow noopener noreferrer ugc"', mp)
         self.assertIn("couch monster", mp)
@@ -426,25 +426,45 @@ class SiteTests(unittest.TestCase):
         self.assertIn("6 years old", page)
         self.assertIn("Manhasset", page)
         self.assertNotIn("mike.karachalios", page)
-        # pixel pals: Lily keeps her 48 px cartoon sprite, Maggie gets the grey-bed sprite; both shown as the avatar
+        # main pictures are the real photos (lily-1, maggie-1); the pixel pals stay their pixel pals, not the avatar
         rd = lambda rel: open(os.path.join(assets, rel), "rb").read()
         psha = lambda d: A.one("SELECT sha FROM photos WHERE id=:i", i=A.dog_by_id(d["id"])["pixel_photo_id"])[0]
+        asha = lambda d: A.one("SELECT sha FROM photos WHERE id=:i", i=A.dog_by_id(d["id"])["avatar_photo_id"])[0]
         self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
         self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-new-A-48.png")))
-        self.assertEqual((A.dog_by_id(lily["id"])["pixel_primary"], A.dog_by_id(maggie["id"])["pixel_primary"]), (1, 1))
+        self.assertEqual((A.dog_by_id(lily["id"])["pixel_primary"], A.dog_by_id(maggie["id"])["pixel_primary"]), (0, 0))
+        self.assertEqual(asha(lily), A.sha(rd("dogs/lily-1.jpg")))
+        self.assertEqual(asha(maggie), A.sha(rd("dogs/maggie-1.jpg")))
+        self.assertEqual(A.avatar_info(A.dog_by_id(lily["id"]))["kind"], "photo")
+        lp = Client().get("/dogs/" + lily["slug"]).text
+        self.assertIn(f'/px/{A.dog_by_id(lily["id"])["pixel_photo_id"]}-1x.png', lp)  # pixel pal still on the profile
         rerun = lambda: (setattr(sys, "argv", ["seed.py", "--assets", assets]), seed.main(), setattr(sys, "argv", old))
-        # the owner switching back to the photo sticks across re-runs
-        A.set_pixel_primary(lily["id"], False); rerun()
-        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 0)
-        self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
-        # an older seeded 32 px sprite is upgraded to the cartoon one (never the other way round)
+        # the live database as the Pixel Pals showcase left it (rev 2/3, sprite as avatar, illustrated avatar image):
+        # the new revision puts the real photo back once, keeps the profile edits, and deletes nothing
+        ill = A.add_photo(lily["id"], rd("dogs/lily-2.jpg"), kind="avatar")
+        A.q("UPDATE dogs SET seed_rev=2, pixel_primary=1, avatar_photo_id=:a, bio='edited on the site' WHERE id=:i", a=ill, i=lily["id"])
+        nphotos = A.one("SELECT COUNT(*) FROM photos")[0]
+        rerun()
+        ld = A.dog_by_id(lily["id"])
+        self.assertEqual((ld["seed_rev"], ld["pixel_primary"], ld["bio"]), (3, 0, "edited on the site"))
+        self.assertEqual(asha(lily), A.sha(rd("dogs/lily-1.jpg")))
+        self.assertEqual(A.one("SELECT COUNT(*) FROM photos")[0], nphotos)
+        self.assertTrue(A.one("SELECT id FROM photos WHERE id=:i", i=ill))
+        # the owner's later choices stick across re-runs (sprite as avatar, or another photo)
+        A.set_pixel_primary(lily["id"], True); rerun()
+        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 1)
+        A.set_pixel_primary(lily["id"], False)
+        other = A.gallery(lily["id"])[1]["id"]
+        A.set_avatar(lily["id"], other); rerun()
+        self.assertEqual(A.dog_by_id(lily["id"])["avatar_photo_id"], other)
+        # an older seeded sprite is upgraded (never the other way round) without becoming the main picture
         A.set_pixel(lily["id"], rd("sprites/lily-game-32.png"), primary=False); rerun()
         self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
-        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 1)
-        # Maggie's earlier cream-rug sprite is upgraded to the grey-bed one and becomes the avatar again
+        self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 0)
         A.set_pixel(maggie["id"], rd("sprites/maggie-sprite-48.png"), primary=False); rerun()
         self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-new-A-48.png")))
-        self.assertEqual(A.dog_by_id(maggie["id"])["pixel_primary"], 1)
+        self.assertEqual(A.dog_by_id(maggie["id"])["pixel_primary"], 0)
+        self.assertEqual(asha(maggie), A.sha(rd("dogs/maggie-1.jpg")))
         self.assertEqual(len(A.gallery(maggie["id"])), 5)
 
     def test_admin_seed_endpoint_requires_key(self):

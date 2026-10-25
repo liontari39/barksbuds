@@ -32,19 +32,26 @@ MAGGIE_BIO = ("Meet Maggie, a.k.a. the couch monster: a merle French Bulldog bor
               "Her big sister is Lily.")
 
 # "rev" bumps re-apply "profile" (and add "extra_photos") once per revision, so later edits made on the site
-# are only overwritten when a new revision is deliberately added here.
+# are only overwritten when a new revision is deliberately added here. "profile_rev" (default: rev) is the last revision
+# that changed "profile", so a revision that only changes the main picture doesn't re-apply the profile.
+# "main_photo" is the real photo used as the dog's main picture (avatar). Revision 3 (Lily) / 4 (Maggie) puts it back
+# once, on Mike's request (Oct 24, 2026), after the Pixel Pals showcase had made the sprites the avatars; the pixel pals
+# stay the dogs' pixel pals but are never made the main picture by the seed again. Nothing is deleted: the earlier
+# illustrated avatar images stay stored. An owner who later picks another main picture on the site is never flipped back.
 DOGS = [
     dict(seed_key="mike-lily", name="Lily", breed="Standard Poodle mix", age=6, size="large",
          bio="Say hi to Lily! She's a standard poodle mix with a curly black-and-grey coat. "
              "Look for the red heart tag on her collar.",
-         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg", pixel="sprites/lily-cartoon-48.png", pixel_replaces=["sprites/lily-game-32.png", "sprites/lily-pixel-64.png"], pixel_primary=True,
-         rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
+         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], main_photo="dogs/lily-1.jpg",
+         pixel="sprites/lily-cartoon-48.png", pixel_replaces=["sprites/lily-game-32.png", "sprites/lily-pixel-64.png"],
+         rev=3, profile_rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
                              play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-new-A-48.png", pixel_primary=True,   # Game Sprite from dogs/maggie-3.jpg (grey bed, Mike's photo)
+         photos=["maggie-1.jpg", "maggie-2.jpg"], main_photo="dogs/maggie-1.jpg",
+         pixel="sprites/maggie-new-A-48.png",   # Game Sprite from dogs/maggie-3.jpg (grey bed, Mike's photo)
          pixel_replaces=["sprites/maggie-game-32.png", "sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png", "sprites/maggie-sprite-48.png"],
-         rev=3, profile=dict(sex="female", size="medium", birth_year=2023,
+         rev=4, profile_rev=3, profile=dict(sex="female", size="medium", birth_year=2023,
                              temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
                              bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
          extra_photos=["maggie-site/maggie-beanbag-nap-960.webp", "maggie-site/maggie-g-cream-rug-960.webp", "dogs/maggie-3.jpg"]),
@@ -80,7 +87,8 @@ PROFILE_COLS = {"sex", "size", "birth_year", "birthday", "breed", "bio", "websit
 def asset_names():
     out = []
     for spec in DOGS:
-        out += [f"dogs/{fn}" for fn in spec["photos"]] + [f"sprites/{spec['sprite']}"] + spec.get("extra_photos", [])
+        out += [f"dogs/{fn}" for fn in spec["photos"]] + spec.get("extra_photos", [])
+        out += [f"sprites/{spec['sprite']}"] if spec.get("sprite") else []
         out += [spec["pixel"]] if spec.get("pixel") else []
         out += spec.get("pixel_replaces", [])
     return out + [SAMPLE_PACK["cover"]]
@@ -109,6 +117,8 @@ def run(load, log=print):
                     log(f"  + photo {fn} -> {A.add_photo(dog_id, raw)}")
                 else:
                     log(f"  ! missing {fn}")
+        if spec.get("main_photo") and not A.dog_by_id(dog_id).get("avatar_photo_id") and (A.dog_by_id(dog_id).get("seed_rev") or 0) < spec.get("rev", 0):
+            _set_main_photo(dog_id, spec, load, log)   # new database: the real photo is the main picture from the start
         if not A.dog_by_id(dog_id).get("avatar_photo_id") and spec.get("sprite"):
             raw = load(f"sprites/{spec['sprite']}")
             if raw:
@@ -117,8 +127,8 @@ def run(load, log=print):
                 log(f"  + avatar {spec['sprite']} -> {pid}")
         # pixel pal made with the site's own maker (/me/dogs/N/pixel); added when the dog has none, and swapped for a
         # newer seeded one only while the dog still has an older seeded sprite (pixel_replaces), so a sprite the owner
-        # made themselves is never overwritten. "pixel_primary" makes the sprite the avatar only at the moment the seed
-        # adds or swaps it, so an owner who later switches back to the photo is never flipped again.
+        # made themselves is never overwritten. "pixel_primary" (no longer set for Lily or Maggie) would make the sprite the
+        # avatar only at the moment the seed adds or swaps it; a swap keeps whatever the owner chose.
         if spec.get("pixel"):
             assert spec["pixel"] not in spec.get("pixel_replaces", []), "a seeded sprite must never replace itself"
             raw, cur = load(spec["pixel"]), A.dog_by_id(dog_id)
@@ -132,16 +142,17 @@ def run(load, log=print):
                     pid = A.set_pixel(dog_id, raw, primary=want_primary or bool(cur.get("pixel_primary")))
                     log(f"  ~ pixel pal replaced with {spec['pixel']} -> {pid}")
         d = A.dog_by_id(dog_id)
-        missing = [rel for rel in spec.get("extra_photos", []) if not load(rel)]
+        missing = [rel for rel in spec.get("extra_photos", []) + ([spec["main_photo"]] if spec.get("main_photo") else []) if not load(rel)]
         if spec.get("rev") and (d.get("seed_rev") or 0) < spec["rev"] and missing:
             log(f"  ! revision {spec['rev']} not applied, missing {', '.join(missing)}")
         elif spec.get("rev") and (d.get("seed_rev") or 0) < spec["rev"]:
             sets, vals = [], {}
-            for k, v in spec.get("profile", {}).items():
+            redo_profile = (d.get("seed_rev") or 0) < spec.get("profile_rev", spec["rev"])
+            for k, v in (spec.get("profile", {}) if redo_profile else {}).items():
                 assert k in PROFILE_COLS, k
                 sets.append(f"{k}=:{k}")
                 vals[k] = json.dumps(v) if isinstance(v, list) else v
-            A.q(f"UPDATE dogs SET {', '.join(sets)}, seed_rev=:rev, updated_at=:t WHERE id=:i",
+            A.q(f"UPDATE dogs SET {''.join(x + ', ' for x in sets)}seed_rev=:rev, updated_at=:t WHERE id=:i",
                 rev=spec["rev"], t=A.now(), i=dog_id, **vals)
             have = {r[0] for r in A.q("SELECT sha FROM photos WHERE dog_id=:d", d=dog_id)}
             for rel in spec.get("extra_photos", []):
@@ -152,13 +163,28 @@ def run(load, log=print):
                     log(f"  = photo {rel} already there")
                 elif A.photo_count(dog_id) < A.MAX_PHOTOS:
                     log(f"  + photo {rel} -> {A.add_photo(dog_id, raw)}")
-            log(f"  profile updated to revision {spec['rev']}")
+            if spec.get("main_photo"):
+                _set_main_photo(dog_id, spec, load, log)
+            log(f"  {'profile' if redo_profile else 'dog'} updated to revision {spec['rev']}")
         else:
             log(f"  profile at revision {d.get('seed_rev') or 0}, nothing to update")
         log(f"  page: /dogs/{d['slug']}")
     mid = seed_meetup(uid, log)
     seed_pack(uid, mid, load, log)
     return uid
+
+
+def _set_main_photo(dog_id, spec, load, log=print):
+    """Make the gallery photo spec["main_photo"] the dog's main picture and show it instead of the pixel pal.
+    Deletes nothing (unlike A.set_avatar, which drops a replaced avatar-only image)."""
+    raw = load(spec["main_photo"])
+    row = A.one("SELECT id FROM photos WHERE dog_id=:d AND kind='gallery' AND sha=:s ORDER BY id", d=dog_id, s=A.sha(raw)) if raw else None
+    if not row:
+        log(f"  ! main photo {spec['main_photo']} not found in the gallery, main picture left as is")
+        return None
+    A.q("UPDATE dogs SET avatar_photo_id=:p, pixel_primary=0, updated_at=:t WHERE id=:d", p=row[0], t=A.now(), d=dog_id)
+    log(f"  main picture: photo {row[0]} ({spec['main_photo']}), pixel pal kept as the pixel pal")
+    return row[0]
 
 
 def _run(run_id):
