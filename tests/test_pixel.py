@@ -50,6 +50,22 @@ def dog(did):
 
 
 class PixelTests(unittest.TestCase):
+    def test_ai_test_page_hidden_owner_only_download_only(self):
+        c, _, _, (did,) = member("pxai")
+        other, _, _, _ = member("pxaix")
+        r = c.get(f"/me/dogs/{did}/pixel-ai")
+        self.assertEqual(r.status, 200)
+        for s in ('id="pxaigo"', "may take a few minutes", 'data-preset="portrait"', "Download PNG", '\\"ai\\": true', 'content="noindex"'):
+            self.assertIn(s, r.text.replace("&quot;", '\\"'), s)
+        self.assertNotIn('id="pxsavebtn"', r.text)          # test page can never save or change the avatar
+        self.assertNotIn('id="pxsave2"', r.text)
+        self.assertNotEqual(other.get(f"/me/dogs/{did}/pixel-ai").status, 200)
+        normal = c.get(f"/me/dogs/{did}/pixel").text
+        self.assertNotIn("pixel-ai", normal); self.assertNotIn('id="pxaigo"', normal)   # not linked from the real maker
+        for page in ("/", "/pixel-pals", f"/me/dogs/{did}/edit", "/dogs"):
+            self.assertNotIn("pixel-ai", c.get(page).text, page)
+        w = c.get("/pixelai-worker.js"); self.assertEqual(w.status, 200); self.assertIn("face_paint_512_v2.onnx", w.text)
+
     def test_maker_page_owner_only(self):
         c, _, _, (did,) = member("pxo")
         other, _, _, (oid,) = member("pxx")

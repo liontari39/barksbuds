@@ -272,7 +272,7 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
                       ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8",
-                      ".mjs": "text/javascript", ".wasm": "application/wasm", ".tflite": "application/octet-stream"}
+                      ".mjs": "text/javascript", ".wasm": "application/wasm", ".tflite": "application/octet-stream", ".onnx": "application/octet-stream"}
     sys_version = ""
 
     def __init__(self, *a, **k):
@@ -283,11 +283,11 @@ class H(webapp.AppRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.Pix
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
         p = urlsplit(self.path).path
-        if p.startswith("/vendor/mediapipe/"):  # pinned third-party build; large, so cache it for a week
+        if p.startswith(("/vendor/mediapipe/", "/vendor/animegan/")):  # pinned third-party builds; large, so cache for a week
             self.send_header("Cache-Control", "public, max-age=604800")
         elif p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
-        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js", "/suggest.js"):
+        elif p in ("/runs.js", "/app.css", "/pixelpal.js", "/pixelmaker.js", "/pixelai-worker.js", "/suggest.js"):
             self.send_header("Cache-Control", "public, max-age=300")
         super().end_headers()
 

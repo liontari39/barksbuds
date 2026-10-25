@@ -13,6 +13,8 @@
     chunky: { size: 32, sizes: [24, 32, 40], colors: 10, outline: "ink", dither: 0, shadow: true, toon: true, clean: 2, saturation: 1.15, chibi: 1, blush: true, mouth: "tongue", eyes: "dots" },
     classic: { size: 48, colors: 10, outline: "dark", dither: 0, shadow: true, shade: true, saturation: 1.18, contrast: 1.05, smooth: 2, cluster: 2, sharpen: 0.35, features: 0.75 },
     retro: { size: 32, colors: 8, outline: "dark", dither: 0.5, shadow: true, shade: true, saturation: 1.3, contrast: 1.12, smooth: 1, cluster: 1, sharpen: 0.3, features: 0.8 },
+    // "Portrait" (AI test page): a bigger, more detailed grid meant for the on-device AI painting
+    portrait: { size: 96, sizes: [64, 96, 128], colors: 24, outline: "ink", dither: 0, shadow: true, shade: false, saturation: 1.12, contrast: 1.0, smooth: 1, cluster: 0, sharpen: 0.4, features: 0.8, eyes: "friendly", blush: false, mouth: "none", chibi: 0 },
     soft: { size: 64, colors: 16, outline: "soft", dither: 0, shadow: true, shade: false, saturation: 1.08, contrast: 1.0, smooth: 2, cluster: 1, sharpen: 0.25, features: 0.6 }
   };
   var BACKDROPS = { none: null, cream: [255, 248, 234], sunny: [255, 231, 168], sky: [205, 232, 247], mint: [214, 240, 222], rose: [251, 221, 214] };
@@ -112,6 +114,14 @@
         var cwt = me > 0.6 ? Math.min(1, (me - 0.6) / 0.3) : 0; cwt *= cwt;
         sr[o] += px[4 * p] * cwt; sg[o] += px[4 * p + 1] * cwt; sb[o] += px[4 * p + 2] * cwt; sm[o] += cwt; sa[o] += m; sc[o] += 1;
       }
+    }
+    // big grids (Portrait) on a small selection: the supersample grid can be finer than the photo, so cells that
+    // no photo pixel landed in take their nearest photo pixel (otherwise they would read as see-through holes)
+    if (SW > bw || SH > bh) for (y = 0; y < SH; y++) for (x = 0; x < SW; x++) {
+      var oh = y * SW + x; if (sc[oh]) continue;
+      var hx = Math.min(bw - 1, Math.floor((x + 0.5) * bw / SW)), hy = Math.min(bh - 1, Math.floor((y + 0.5) * bh / SH));
+      var ph = (hy + y0) * W + hx + x0, mh = cm[hy * bw + hx] / 255, cwh = mh > 0.6 ? Math.min(1, (mh - 0.6) / 0.3) : 0; cwh *= cwh;
+      sr[oh] += px[4 * ph] * cwh; sg[oh] += px[4 * ph + 1] * cwh; sb[oh] += px[4 * ph + 2] * cwh; sm[oh] += cwh; sa[oh] += mask[ph] / 255; sc[oh] += 1;
     }
     var cov = new Float64Array(SN), lab = new Array(SN);
     for (i = 0; i < SN; i++) {

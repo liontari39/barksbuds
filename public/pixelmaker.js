@@ -7,7 +7,7 @@ const root = document.getElementById("pxm");
 const cfg = JSON.parse(root.dataset.cfg);
 const PP = window.PixelPal;
 const $ = (id) => document.getElementById(id);
-const MAXW = 640;                       // working resolution: plenty for a 64 px sprite, quick on phones
+const MAXW = cfg.ai ? 1024 : 640;       // working resolution: plenty for a 64 px sprite, quick on phones (AI Portrait: 96 px, so more)
 const DETAIL = [                        // "Detail" slider: smoother/cleaner  ->  more texture
   { smooth: 3, cluster: 3, sharpen: 0.25, features: 0.65 },
   { smooth: 2, cluster: 2, sharpen: 0.35, features: 0.75 },
@@ -19,9 +19,13 @@ const CEL_DETAIL = [                    // Game Sprite (48 px cel): the middle s
   { smooth: 2, cluster: 2, sharpen: 0.2, features: 0.3 }, { smooth: 1, cluster: 1, sharpen: 0.4, features: 0.6 }];
 const TOON_DETAIL = [                   // Chunky: big flat shapes; "detail" only changes how small a color patch may be
   { clean: 4 }, { clean: 3 }, { clean: 2 }, { clean: 1 }, { clean: 0 }];
-// only Game Sprite and Chunky are offered in the UI; classic/retro/soft stay in pixelpal.js
+const PORTRAIT_DETAIL = [               // Portrait (AI test page, 96 px): the 4th step is exactly the preset
+  { smooth: 3, cluster: 2, sharpen: 0.2, features: 0.6 }, { smooth: 2, cluster: 1, sharpen: 0.3, features: 0.7 },
+  { smooth: 2, cluster: 0 }, {}, { smooth: 0, cluster: 0, sharpen: 0.6, features: 0.9 }];
+// only Game Sprite and Chunky are offered in the UI (plus Portrait on the hidden AI test page); classic/retro/soft stay in pixelpal.js
 const PRESET_UI = { game: { detail: 2, face: true, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] },
-  chunky: { detail: 2, face: true, eyes: [["dots", "Dots"], ["happy", "Happy (^ ^)"]] } };
+  chunky: { detail: 2, face: true, eyes: [["dots", "Dots"], ["happy", "Happy (^ ^)"]] },
+  portrait: { detail: 3, face: false, eyes: [["friendly", "Shiny"], ["ring", "Ringed"]] } };
 const SIZE_NAMES = ["Small", "Medium", "Large"];
 
 let seg = null, segState = "idle", segWaiters = [];
@@ -30,6 +34,9 @@ let face = { eyes: [], nose: null };   // normalized eye/nose points for the car
 let tool = "tap", preset = "game", sprite = null, view = "after", cursor = null, cropA = null;
 const src = $("pxsrc"), sctx = src.getContext("2d");
 const status = (t) => { $("pxstatus").textContent = t; };
+const saveOff = (v) => ["pxsavebtn", "pxsave2", "pxdl"].forEach((id) => { const b = $(id); if (b) b.disabled = v; });
+// AI test page state: the untouched photo, the AI-painted version (same size), and the full-size original for the AI crop
+let photoRgba = null, painted = null, origImg = null, aiBusy = false, worker = null;
 
 // ---------------------------------------------------------------- smart select (lazy, optional)
 async function loadSeg() {
@@ -85,6 +92,7 @@ async function useImage(source) {
   const wctx = work.getContext("2d", { willReadFrequently: true });
   wctx.imageSmoothingQuality = "high"; wctx.drawImage(bmp, 0, 0, W, H);
   rgba = wctx.getImageData(0, 0, W, H);
+  photoRgba = rgba; painted = null; origImg = bmp; aiReset();
   auto = new Uint8Array(W * H); edit = new Uint8Array(W * H); crop = { x0: 0, y0: 0, x1: W, y1: H }; undo = []; cropA = null;
   face = { eyes: [], nose: null }; faceStatus();
   src.width = W; src.height = H;
@@ -286,7 +294,8 @@ src.addEventListener("keydown", (ev) => {
 // ---------------------------------------------------------------- step 3: style + preview
 function opts() {
   const det = +$("pxdetail").value;
-  const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? CEL_DETAIL[det] : preset === "chunky" ? TOON_DETAIL[det] : DETAIL[det]);
+  const base = Object.assign({}, PP.PRESETS[preset], preset === "game" ? CEL_DETAIL[det] : preset === "chunky" ? TOON_DETAIL[det]
+    : preset === "portrait" ? PORTRAIT_DETAIL[det] : DETAIL[det]);
   const hasFace = $("pxface").checked && (face.eyes.length || face.nose);
   return Object.assign(base, {
     face: hasFace ? { eyes: face.eyes, nose: face.nose } : null,
@@ -303,13 +312,13 @@ function renderNow() {
   let n = 0; for (let k = 0; k < m.length; k += 7) if (m[k] > 127) n++;
   const out = $("pxout"), o = out.getContext("2d");
   o.clearRect(0, 0, out.width, out.height);
-  if (n * 7 < W * H * 0.004) { sprite = null; $("pxsavebtn").disabled = $("pxsave2").disabled = $("pxdl").disabled = true; drawBefore(m); return; }
+  if (n * 7 < W * H * 0.004) { sprite = null; saveOff(true); drawBefore(m); return; }
   const t0 = performance.now();
   sprite = PP.render({ width: W, height: H, data: rgba.data, mask: m }, opts());
   const c = spriteCanvas(sprite, 1);
   o.imageSmoothingEnabled = false; o.drawImage(c, 0, 0, out.width, out.height);
   out.classList.toggle("solid", opts().backdrop !== "none");
-  $("pxsavebtn").disabled = $("pxsave2").disabled = $("pxdl").disabled = false;
+  saveOff(false);
   root.dataset.renderMs = Math.round(performance.now() - t0);
   drawBefore(m);
 }
@@ -366,6 +375,7 @@ $("pxdl").addEventListener("click", async () => {
 async function save(btn) {
   if (!sprite) return;
   const msg = $("pxsaved");
+  if (!$("pxsavebtn")) return;
   $("pxsavebtn").disabled = $("pxsave2").disabled = true; msg.textContent = "Saving…";
   const fd = new FormData();
   fd.append("csrf", cfg.csrf); fd.append("primary", btn.dataset.primary);
@@ -381,10 +391,92 @@ async function save(btn) {
   }
   $("pxsavebtn").disabled = $("pxsave2").disabled = false;
 }
-$("pxsavebtn").addEventListener("click", () => save($("pxsavebtn")));
-$("pxsave2").addEventListener("click", () => save($("pxsave2")));
+if ($("pxsavebtn")) {
+  $("pxsavebtn").addEventListener("click", () => save($("pxsavebtn")));
+  $("pxsave2").addEventListener("click", () => save($("pxsave2")));
+}
+
+// ---------------------------------------------------------------- AI paint (hidden test page only: cfg.ai)
+// The selected dog is cropped from the full-size photo, painted by a small AI model (AnimeGANv2 face paint v2, MIT)
+// in a worker on this device, pasted back over the photo, and then pixelated by pixelpal.js as usual.
+const AI_SIZE = 512, AI_EST_MS = 45000;      // painting estimate for the progress bar (phones: ~10 s to a few minutes)
+function aiReset() {
+  if (!cfg.ai) return;
+  $("pxaion").checked = true; $("pxaion").disabled = true; $("pxaigo").disabled = aiBusy;
+  $("pxaigo").textContent = "Paint with AI"; if (!aiBusy) { $("pxaibarw").hidden = true; $("pxaist").textContent = ""; }
+}
+function aiBox(m) {
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x] > 127) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return null;
+  const side = Math.max(x1 - x0 + 1, y1 - y0 + 1) * 1.1;   // square, a little room around the dog
+  return { x: (x0 + x1 + 1) / 2 - side / 2, y: (y0 + y1 + 1) / 2 - side / 2, side };
+}
+function aiProgress(pct, text) { $("pxaibarw").hidden = false; $("pxaibar").value = Math.round(pct); if (text) $("pxaist").textContent = text; }
+function aiPaint() {
+  if (!cfg.ai || aiBusy || !photoRgba) return Promise.resolve(false);
+  const box = aiBox(finalMask());
+  if (!box) { $("pxaist").textContent = `Select ${cfg.name} first, then paint.`; return Promise.resolve(false); }
+  aiBusy = true; $("pxaigo").disabled = true;
+  const iw = origImg.naturalWidth || origImg.width, k = iw / W;            // working -> original pixels
+  const c = document.createElement("canvas"); c.width = c.height = AI_SIZE;
+  const cx = c.getContext("2d", { willReadFrequently: true }), z = AI_SIZE / (box.side * k);
+  cx.fillStyle = "#808080"; cx.fillRect(0, 0, AI_SIZE, AI_SIZE); cx.imageSmoothingQuality = "high";
+  cx.drawImage(origImg, -box.x * k * z, -box.y * k * z, iw * z, (origImg.naturalHeight || origImg.height) * z);
+  const px = cx.getImageData(0, 0, AI_SIZE, AI_SIZE).data, N = AI_SIZE * AI_SIZE, inp = new Float32Array(3 * N);
+  for (let i = 0; i < N; i++) { inp[i] = px[i * 4] / 127.5 - 1; inp[N + i] = px[i * 4 + 1] / 127.5 - 1; inp[2 * N + i] = px[i * 4 + 2] / 127.5 - 1; }
+  if (!worker) worker = new Worker("/pixelai-worker.js?v=1", { type: "module" });
+  const t0 = performance.now(); let paintT = 0, tick = 0;
+  aiProgress(1, "Getting the AI painter ready… This may take a few minutes. Keep this page open.");
+  return new Promise((resolve) => {
+    const finish = (ok) => { clearInterval(tick); aiBusy = false; $("pxaigo").disabled = false; resolve(ok); };
+    worker.onmessage = (ev) => {
+      const m = ev.data;
+      if (m.type === "progress") {
+        if (m.stage === "download") aiProgress(2 + m.pct * 0.38, `Downloading the AI painter (only the first time): ${m.detail}. This may take a few minutes.`);
+        else if (m.stage === "runtime") aiProgress(m.pct ? 42 : 2, `${m.detail}…`);
+        else if (m.stage === "paint") {
+          paintT = performance.now(); clearInterval(tick);
+          tick = setInterval(() => {
+            const t = performance.now() - paintT, sec = Math.round(t / 1000);
+            aiProgress(45 + 54 * (1 - Math.exp(-t / AI_EST_MS)), `Painting ${cfg.name}… ${sec}s so far. This may take a few minutes on a phone.`);
+          }, 500);
+          aiProgress(45, `Painting ${cfg.name}… This may take a few minutes on a phone.`);
+        }
+      } else if (m.type === "done") {
+        const o = document.createElement("canvas"); o.width = o.height = AI_SIZE;
+        const img = new ImageData(AI_SIZE, AI_SIZE), y = m.pixels, d = img.data;
+        for (let i = 0; i < N; i++) {
+          d[i * 4] = (y[i] + 1) * 127.5; d[i * 4 + 1] = (y[N + i] + 1) * 127.5; d[i * 4 + 2] = (y[2 * N + i] + 1) * 127.5; d[i * 4 + 3] = 255;
+        }
+        o.getContext("2d").putImageData(img, 0, 0);
+        const t = document.createElement("canvas"); t.width = W; t.height = H;
+        const tc = t.getContext("2d", { willReadFrequently: true });
+        tc.putImageData(photoRgba, 0, 0); tc.imageSmoothingQuality = "high";
+        tc.drawImage(o, box.x, box.y, box.side, box.side);
+        painted = tc.getImageData(0, 0, W, H);
+        rgba = $("pxaion").checked ? painted : photoRgba; $("pxaion").disabled = false;
+        root.dataset.aiMs = m.ms; root.dataset.aiTotalMs = Math.round(performance.now() - t0); root.dataset.aiBackend = m.backend;
+        aiProgress(100, `Done in ${Math.max(1, Math.round((performance.now() - t0) / 1000))}s. If you change the selection a lot, paint again.`);
+        $("pxaigo").textContent = "Paint again";
+        if (preset !== "portrait") applyPreset("portrait"); else schedule();
+        draw(); finish(true);
+      } else if (m.type === "error") {
+        console.warn("pixel pal AI:", m.message);
+        aiProgress(0, `The AI painter couldn't run on this device (${m.message}). The regular styles still work.`);
+        finish(false);
+      }
+    };
+    worker.onerror = (ev) => { aiProgress(0, "The AI painter couldn't start on this device. The regular styles still work."); console.warn(ev); finish(false); };
+    worker.postMessage({ type: "run", pixels: inp }, [inp.buffer]);
+  });
+}
+if (cfg.ai) {
+  $("pxaigo").addEventListener("click", () => aiPaint());
+  $("pxaion").addEventListener("change", () => { if (!painted) return; rgba = $("pxaion").checked ? painted : photoRgba; draw(); schedule(); });
+}
 $("pxreset").addEventListener("click", () => {
-  rgba = null; sprite = null; auto = edit = null; undo = []; cursor = null;
+  rgba = null; sprite = null; auto = edit = null; undo = []; cursor = null; photoRgba = painted = origImg = null;
   $("pxed").hidden = true; $("pxpick").hidden = false; status(""); $("pxsaved").textContent = "";
   $("pxpick").scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -392,7 +484,7 @@ applyPreset("game");
 loadSeg();
 window.__pixelpal = { status: () => segState, useImage, tapAt: (x, y) => tapAt({ x: x * W, y: y * H }), setTool,
   eraseRect: (x0, y0, x1, y1) => { pushUndo(); for (let y = Math.round(y0 * H); y < Math.round(y1 * H); y++) edit.fill(2, y * W + Math.round(x0 * W), y * W + Math.round(x1 * W)); draw(); schedule(); },
-  applyPreset, sprite: () => sprite, rerender: renderNow, guessFace: guessFaceNow,
+  applyPreset, sprite: () => sprite, aiPaint, aiPainted: () => !!painted, rerender: renderNow, guessFace: guessFaceNow,
   setFace: (f) => { face = { eyes: (f && f.eyes) || [], nose: (f && f.nose) || null }; faceStatus(); draw(); schedule(); },
   face: () => JSON.parse(JSON.stringify(face)), faceTap: (x, y) => faceTap({ x: x * W, y: y * H }),
   state: () => ({ W, H, data: Array.from(rgba.data), mask: Array.from(finalMask()) }) };

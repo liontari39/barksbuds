@@ -33,12 +33,12 @@ class PixelRoutes:
             self._app_reset(); self.pixel_pals_page(); return True
         if path == "/pixel-pals/start":
             self._app_reset(); self.pixel_pals_start(); return True
-        m = re.fullmatch(r"/me/dogs/(\d+)/pixel/?", path)
+        m = re.fullmatch(r"/me/dogs/(\d+)/pixel(-ai)?/?", path)
         if m:
             self._app_reset()
             d = self.own_dog(int(m.group(1)))
             if d is not None:
-                self.pixel_maker(d)
+                self.pixel_maker(d, ai=bool(m.group(2)))
             return True
         return False
 
@@ -171,7 +171,10 @@ and only the finished sprite is saved.</p>
         return self.redirect(f"/me/dogs/{d['id']}/edit?m={flash}#pixel-panel")
 
     # ------------------------------------------------------------ the maker page
-    def pixel_maker(self, d):
+    def pixel_maker(self, d, ai=False):
+        """The maker page. ai=True is the hidden TEST page /me/dogs/<id>/pixel-ai (not linked anywhere): it adds an
+        on-device AI painter (AnimeGANv2 face_paint_512_v2, MIT, run with ONNX Runtime Web in a worker on the
+        member's phone) and a 96 px Portrait style, and can only download, never save or change the avatar."""
         nm = e(d["name"])
         photos = A.gallery(d["id"])
         picks = "".join(
@@ -183,12 +186,29 @@ and only the finished sprite is saved.</p>
                    f'<img class="pxinline" src="/px/{d["pixel_photo_id"]}-1x.png" alt="current pixel pal" width="40" height="40">'
                    f' Saving a new one replaces it.</p>') if d.get("pixel_photo_id") else ""
         cfg = {"dog": d["id"], "name": d["name"], "slug": d["slug"], "csrf": self.csrf_token(),
-               "primary": bool(d.get("pixel_primary"))}
+               "primary": bool(d.get("pixel_primary")), "ai": ai}
         sw = "".join(f'<label class="sw sw-{k}"><input type="radio" name="backdrop" value="{k}"{" checked" if k == "none" else ""}>'
                      f'<span title="{t}"><span class="vh">{t}</span></span></label>'
                      for k, t in (("none", "See-through"), ("cream", "Cream"), ("sunny", "Sunny"), ("sky", "Sky"), ("mint", "Mint"), ("rose", "Rose")))
-        body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">pixel pal</span><h1>Make {nm}'s pixel pal</h1>
-<p class="lead">Turn a photo into a crisp little piece of game-style pixel art. Everything happens right here on your device: only the finished sprite is saved.</p></div></section>
+        head = (f"""<section class="phead"><div class="wrap"><span class="eyebrow">pixel pal &middot; AI test</span><h1>{nm}'s AI pixel portrait</h1>
+<p class="lead">A test of our free AI painter. It runs entirely on your own phone or computer: your photo never leaves your device, and nothing is saved to {nm}'s page.</p></div></section>""" if ai else
+                f"""<section class="phead"><div class="wrap"><span class="eyebrow">pixel pal</span><h1>Make {nm}'s pixel pal</h1>
+<p class="lead">Turn a photo into a crisp little piece of game-style pixel art. Everything happens right here on your device: only the finished sprite is saved.</p></div></section>""")
+        ai_panel = """<div class="pxai" id="pxai"><p class="small"><b>AI paint (test).</b> Our AI painter redraws the selected dog as a painting first, then we turn it into pixels.
+It runs on this device, so <b>it may take a few minutes</b>, and the first time it downloads about 12 MB. Keep this page open while it works.</p>
+<div class="pxrowbtn"><button type="button" class="btn btn-gold btn-sm" id="pxaigo">Paint with AI</button>
+<label class="small"><input type="checkbox" id="pxaion" checked disabled> Use the AI painting</label></div>
+<div class="pxaibar" id="pxaibarw" hidden><progress id="pxaibar" max="100" value="0"></progress></div>
+<p class="small" id="pxaist" role="status" aria-live="polite"></p></div>""" if ai else ""
+        portrait_btn = ("""<button type="button" data-preset="portrait" aria-pressed="false"><img src="/img/style-game.png" width="64" height="64" alt=""><span><b>Portrait</b><small>96 px, AI detail</small></span></button>""" if ai else "")
+        save_btns = ("""<button type="button" class="btn" id="pxdl">Download PNG</button>
+<button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
+<p class="small muted">Test page: portraits are download-only for now.</p>""" if ai else
+                     """<button type="button" class="btn" id="pxsavebtn" data-primary="1">Use as avatar</button>
+<button type="button" class="btn btn-ghost" id="pxsave2" data-primary="0">Save, keep photo as avatar</button>
+<button type="button" class="btn btn-ghost" id="pxdl">Download PNG</button>
+<button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>""")
+        body = head + f"""
 <section class="section" style="padding-top:28px"><div class="wrap pxm" id="pxm" data-cfg="{e(json.dumps(cfg))}">
 <noscript><p class="notice">The pixel pal maker needs JavaScript turned on.</p></noscript>
 <div class="panel" id="pxpick"><h2><span class="stepn">1</span> Pick a photo</h2>
@@ -226,7 +246,8 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <canvas id="pxbefore" width="384" height="384" role="img" aria-label="The selected part of the photo" hidden></canvas></div>
 <div class="pxstyles" role="group" aria-label="Pick a style">
 <button type="button" data-preset="game" aria-pressed="true"><img src="/img/style-game.png" width="64" height="64" alt=""><span><b>Game Sprite</b><small>48 px, detailed</small></span></button>
-<button type="button" data-preset="chunky" aria-pressed="false"><img src="/img/style-chunky.png" width="64" height="64" alt=""><span><b>Chunky</b><small>32 px, extra cute</small></span></button></div>
+<button type="button" data-preset="chunky" aria-pressed="false"><img src="/img/style-chunky.png" width="64" height="64" alt=""><span><b>Chunky</b><small>32 px, extra cute</small></span></button>{portrait_btn}</div>
+{ai_panel}
 <details class="pxadjust"><summary>Adjust</summary>
 <div class="pxctl">
 <div><label for="pxsize">Size</label><select id="pxsize"><option value="32">Small (32 px)</option><option value="48" selected>Medium (48 px)</option><option value="64">Large (64 px)</option></select></div>
@@ -240,14 +261,11 @@ Keyboard: arrow keys move the cursor, Enter applies the tool.</p>
 <div><label for="pxchibi">Big head</label><input id="pxchibi" type="range" min="0" max="1.5" step="0.25" value="1" aria-describedby="pxchibih"><span class="small muted" id="pxchibih">Needs the eyes marked</span></div>
 </div></details>
 <fieldset class="pxsw"><legend>Background</legend>{sw}</fieldset>
-<div class="pxsave"><div class="pxrowbtn"><button type="button" class="btn" id="pxsavebtn" data-primary="1">Use as avatar</button>
-<button type="button" class="btn btn-ghost" id="pxsave2" data-primary="0">Save, keep photo as avatar</button>
-<button type="button" class="btn btn-ghost" id="pxdl">Download PNG</button>
-<button type="button" class="btn btn-ghost" id="pxreset">Start over</button></div>
+<div class="pxsave"><div class="pxrowbtn">{save_btns}
 <p class="small" id="pxsaved" role="status" aria-live="polite"></p></div></div>
 </div></div></section>"""
-        js = '<script src="/pixelpal.js?v=4"></script><script type="module" src="/pixelmaker.js?v=4"></script>'
-        return self.page(f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")
+        js = '<script src="/pixelpal.js?v=5"></script><script type="module" src="/pixelmaker.js?v=5"></script>'
+        return self.page(f"{d['name']}'s AI pixel portrait (test)" if ai else f"Make {d['name']}'s pixel pal", body, scripts=js, active="dogs")
 
 
 def landing_html():
