@@ -34,24 +34,25 @@ MAGGIE_BIO = ("Meet Maggie, a.k.a. the couch monster: a merle French Bulldog bor
 # "rev" bumps re-apply "profile" (and add "extra_photos") once per revision, so later edits made on the site
 # are only overwritten when a new revision is deliberately added here. "profile_rev" (default: rev) is the last revision
 # that changed "profile", so a revision that only changes the main picture doesn't re-apply the profile.
-# "main_photo" is the real photo used as the dog's main picture (avatar). Revision 3 (Lily) / 4 (Maggie) puts it back
-# once, on Mike's request (Oct 24, 2026), after the Pixel Pals showcase had made the sprites the avatars; the pixel pals
-# stay the dogs' pixel pals but are never made the main picture by the seed again. Nothing is deleted: the earlier
-# illustrated avatar images stay stored. An owner who later picks another main picture on the site is never flipped back.
+# "main_photo" is the image used as the dog's main picture (avatar): a gallery photo or the stored avatar image.
+# Revision 3 (Lily) / 4 (Maggie) put the real photos back (Oct 24, 2026); revision 4 (Lily) / 5 (Maggie), also on Mike's
+# request the same night, makes the AI-made detailed pixel-art portraits (sprites/*-sprite.jpg, the stored avatar images)
+# the main pictures again. The maker's pixel pals stay the dogs' pixel pals and are not made the main picture by the seed;
+# the real photos stay in the galleries. Nothing is deleted. An owner who later picks another main picture is never flipped back.
 DOGS = [
     dict(seed_key="mike-lily", name="Lily", breed="Standard Poodle mix", age=6, size="large",
          bio="Say hi to Lily! She's a standard poodle mix with a curly black-and-grey coat. "
              "Look for the red heart tag on her collar.",
-         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], main_photo="dogs/lily-1.jpg",
+         photos=["lily-1.jpg", "lily-2.jpg", "lily-3.jpg"], sprite="lily-sprite.jpg", main_photo="sprites/lily-sprite.jpg",
          pixel="sprites/lily-cartoon-48.png", pixel_replaces=["sprites/lily-game-32.png", "sprites/lily-pixel-64.png"],
-         rev=3, profile_rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
+         rev=4, profile_rev=2, profile=dict(sex="female", size="large", temperament=["Smart", "Loyal", "Great with kids", "Speedy"],
                              play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], main_photo="dogs/maggie-1.jpg",
+         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", main_photo="sprites/maggie-sprite.jpg",
          pixel="sprites/maggie-new-A-48.png",   # Game Sprite from dogs/maggie-3.jpg (grey bed, Mike's photo)
          pixel_replaces=["sprites/maggie-game-32.png", "sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png", "sprites/maggie-sprite-48.png"],
-         rev=4, profile_rev=3, profile=dict(sex="female", size="medium", birth_year=2023,
+         rev=5, profile_rev=3, profile=dict(sex="female", size="medium", birth_year=2023,
                              temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
                              bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
          extra_photos=["maggie-site/maggie-beanbag-nap-960.webp", "maggie-site/maggie-g-cream-rug-960.webp", "dogs/maggie-3.jpg"]),
@@ -90,6 +91,7 @@ def asset_names():
         out += [f"dogs/{fn}" for fn in spec["photos"]] + spec.get("extra_photos", [])
         out += [f"sprites/{spec['sprite']}"] if spec.get("sprite") else []
         out += [spec["pixel"]] if spec.get("pixel") else []
+        out += [spec["main_photo"]] if spec.get("main_photo") and spec["main_photo"] not in out else []
         out += spec.get("pixel_replaces", [])
     return out + [SAMPLE_PACK["cover"]]
 
@@ -118,7 +120,7 @@ def run(load, log=print):
                 else:
                     log(f"  ! missing {fn}")
         if spec.get("main_photo") and not A.dog_by_id(dog_id).get("avatar_photo_id") and (A.dog_by_id(dog_id).get("seed_rev") or 0) < spec.get("rev", 0):
-            _set_main_photo(dog_id, spec, load, log)   # new database: the real photo is the main picture from the start
+            _set_main_photo(dog_id, spec, load, log)   # new database: the main picture is set from the start
         if not A.dog_by_id(dog_id).get("avatar_photo_id") and spec.get("sprite"):
             raw = load(f"sprites/{spec['sprite']}")
             if raw:
@@ -175,10 +177,14 @@ def run(load, log=print):
 
 
 def _set_main_photo(dog_id, spec, load, log=print):
-    """Make the gallery photo spec["main_photo"] the dog's main picture and show it instead of the pixel pal.
-    Deletes nothing (unlike A.set_avatar, which drops a replaced avatar-only image)."""
+    """Make spec["main_photo"] (a gallery photo or a stored avatar image) the dog's main picture and show it instead of
+    the pixel pal. Deletes nothing (unlike A.set_avatar, which drops a replaced avatar-only image); an avatar image that
+    isn't stored yet is added as kind='avatar'."""
     raw = load(spec["main_photo"])
-    row = A.one("SELECT id FROM photos WHERE dog_id=:d AND kind='gallery' AND sha=:s ORDER BY id", d=dog_id, s=A.sha(raw)) if raw else None
+    row = A.one("SELECT id FROM photos WHERE dog_id=:d AND kind IN ('gallery','avatar') AND sha=:s ORDER BY id",
+                d=dog_id, s=A.sha(raw)) if raw else None
+    if not row and raw and spec["main_photo"].startswith("sprites/"):
+        row = (A.add_photo(dog_id, raw, kind="avatar"),)
     if not row:
         log(f"  ! main photo {spec['main_photo']} not found in the gallery, main picture left as is")
         return None
