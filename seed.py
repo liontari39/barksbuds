@@ -42,12 +42,12 @@ DOGS = [
                              play_style=["Zoomies"], bio=LILY_BIO)),
     dict(seed_key="mike-maggie", name="Maggie", breed="French Bulldog", age=3, size="small",
          bio="Meet Maggie, a merle French Bulldog. Come say hello!",
-         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-sprite-48.png", pixel_primary=True,   # from maggiethemerle.com/img/maggie-sit-1400.webp (cream rug)
-         pixel_replaces=["sprites/maggie-game-32.png", "sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png"],
-         rev=2, profile=dict(sex="female", size="medium", birth_year=2023,
+         photos=["maggie-1.jpg", "maggie-2.jpg"], sprite="maggie-sprite.jpg", pixel="sprites/maggie-new-A-48.png", pixel_primary=True,   # Game Sprite from dogs/maggie-3.jpg (grey bed, Mike's photo)
+         pixel_replaces=["sprites/maggie-game-32.png", "sprites/maggie-cartoon-48.png", "sprites/maggie-pixel-64.png", "sprites/maggie-sprite-48.png"],
+         rev=3, profile=dict(sex="female", size="medium", birth_year=2023,
                              temperament=["Snuggler", "Chill", "Food motivated"], play_style=["Toy lover"],
                              bio=MAGGIE_BIO, website="https://maggiethemerle.com/"),
-         extra_photos=["maggie-site/maggie-beanbag-nap-960.webp", "maggie-site/maggie-g-cream-rug-960.webp"]),
+         extra_photos=["maggie-site/maggie-beanbag-nap-960.webp", "maggie-site/maggie-g-cream-rug-960.webp", "dogs/maggie-3.jpg"]),
 ]
 
 # One clearly marked sample meetup (is_sample=1: no emails, no reminders, hideable/deletable from /admin/meetups).

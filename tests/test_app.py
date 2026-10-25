@@ -417,7 +417,8 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(lily["seed_rev"], 2)
         maggie = A.dog_by_id(A.one("SELECT id FROM dogs WHERE seed_key='mike-maggie'")[0])
         self.assertEqual((maggie["sex"], maggie["size"], maggie["birth_year"]), ("female", "medium", 2023))
-        self.assertEqual(len(A.gallery(maggie["id"])), 4)  # 2 originals + 2 from the site, not duplicated on re-run
+        self.assertEqual(len(A.gallery(maggie["id"])), 5)  # 2 originals + 2 from the site + the grey-bed photo, not duplicated on re-run
+        self.assertEqual(maggie["seed_rev"], 3)
         mp = Client().get("/dogs/" + maggie["slug"]).text
         self.assertIn('href="https://maggiethemerle.com/" rel="nofollow noopener noreferrer ugc"', mp)
         self.assertIn("couch monster", mp)
@@ -425,11 +426,11 @@ class SiteTests(unittest.TestCase):
         self.assertIn("6 years old", page)
         self.assertIn("Manhasset", page)
         self.assertNotIn("mike.karachalios", page)
-        # pixel pals: Lily keeps her 48 px cartoon sprite, Maggie gets the cream-rug sprite; both shown as the avatar
+        # pixel pals: Lily keeps her 48 px cartoon sprite, Maggie gets the grey-bed sprite; both shown as the avatar
         rd = lambda rel: open(os.path.join(assets, rel), "rb").read()
         psha = lambda d: A.one("SELECT sha FROM photos WHERE id=:i", i=A.dog_by_id(d["id"])["pixel_photo_id"])[0]
         self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
-        self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-sprite-48.png")))
+        self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-new-A-48.png")))
         self.assertEqual((A.dog_by_id(lily["id"])["pixel_primary"], A.dog_by_id(maggie["id"])["pixel_primary"]), (1, 1))
         rerun = lambda: (setattr(sys, "argv", ["seed.py", "--assets", assets]), seed.main(), setattr(sys, "argv", old))
         # the owner switching back to the photo sticks across re-runs
@@ -440,6 +441,11 @@ class SiteTests(unittest.TestCase):
         A.set_pixel(lily["id"], rd("sprites/lily-game-32.png"), primary=False); rerun()
         self.assertEqual(psha(lily), A.sha(rd("sprites/lily-cartoon-48.png")))
         self.assertEqual(A.dog_by_id(lily["id"])["pixel_primary"], 1)
+        # Maggie's earlier cream-rug sprite is upgraded to the grey-bed one and becomes the avatar again
+        A.set_pixel(maggie["id"], rd("sprites/maggie-sprite-48.png"), primary=False); rerun()
+        self.assertEqual(psha(maggie), A.sha(rd("sprites/maggie-new-A-48.png")))
+        self.assertEqual(A.dog_by_id(maggie["id"])["pixel_primary"], 1)
+        self.assertEqual(len(A.gallery(maggie["id"])), 5)
 
     def test_admin_seed_endpoint_requires_key(self):
         c = Client()

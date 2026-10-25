@@ -280,5 +280,5 @@ def landing_html():
 <p>Pick a photo, tap your pup, and BarksBuds turns them into a tiny retro sprite, ready for their profile or your group chat. Choose the detailed Game Sprite or the extra-cute Chunky style.</p>
 <ul class="pp-points"><li>Free for members</li><li>About a minute</li><li>Works right in your browser</li></ul>
 <div class="cta-row"><a class="btn" href="/pixel-pals/start">Make your pixel pal</a><a class="textlink" href="/pixel-pals">See the gallery &rarr;</a></div></div>
-<div class="pp-pairs">{pair("Lily", "lily", "pp-lily-photo.webp", "pp-lily.png")}{pair("Maggie", "maggie", "pp-maggie-photo.webp", "pp-maggie.png")}</div>
+<div class="pp-pairs">{pair("Lily", "lily", "pp-lily-photo.webp", "pp-lily.png")}{pair("Maggie", "maggie", "pp-maggie-photo.webp?v=2", "pp-maggie.png?v=2")}</div>
 </div></section>"""

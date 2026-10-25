@@ -775,8 +775,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         px, did, nm = d.get("pixel_photo_id"), d["id"], e(d["name"])
         if not px and nudge and A.photo_count(did) > 0:
             return (f'<div class="panel pxnudge" id="pixel-panel" role="region" aria-label="Make a pixel pal">'
-                    f'<div class="pxn-art" aria-hidden="true"><img src="/img/pp-maggie-photo.webp" alt="" width="72" height="96">'
-                    f'<span>&rarr;</span><img class="pxn-sp" src="/img/pp-maggie.png" alt="" width="84" height="84"></div><div>'
+                    f'<div class="pxn-art" aria-hidden="true"><img src="/img/pp-maggie-photo.webp?v=2" alt="" width="72" height="96">'
+                    f'<span>&rarr;</span><img class="pxn-sp" src="/img/pp-maggie.png?v=2" alt="" width="84" height="84"></div><div>'
                     f'<span class="eyebrow">new &middot; free</span><h2>Now make {nm} a pixel pal!</h2>'
                     f'<p class="hint">Turn {nm}\'s photo into a classic game character in about a minute. It all happens in your browser.</p>'
                     f'<a class="btn btn-gold" href="/me/dogs/{did}/pixel">Make my pixel pal</a></div></div>')
