@@ -512,7 +512,7 @@ class H(webapp.AppRoutes, coownweb.CoownerRoutes, meetweb.MeetupRoutes, packweb.
                     f'<input type="hidden" name="t" value="{e(token)}"><button type="submit">Remove me</button></form>'
                     '<p class="small"><a href="/">Never mind, keep me on the list</a></p>')
         page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex"><title>{e(title)} | BarksBuds</title><link rel="icon" href="/favicon.ico?v=jack3">
+<meta name="robots" content="noindex"><title>{e(title)} | BarksBuds</title><link rel="icon" href="/favicon.ico?v=jack4">
 <style>body{{margin:0;background:#FFF8EA;font:400 17px/1.6 Nunito,system-ui,sans-serif;color:#2a2622;display:grid;place-items:center;min-height:100vh;padding:20px;box-sizing:border-box}}
 main{{max-width:460px;background:#fff;border:1px solid #EADBB9;border-radius:24px;padding:32px;text-align:center}}
 img{{border-radius:18px;border:3px solid #FBB321}}h1{{font:800 28px/1.15 system-ui,sans-serif;color:#141414;margin:14px 0 10px}}
