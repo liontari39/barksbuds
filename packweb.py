@@ -319,7 +319,7 @@ class PackRoutes:
         return self.page("Dog packs" + (f" in {label}" if label else ""), body, active="packs", index=not (area or region),
                          canonical="/packs" if not (area or region) else link(**({"area": area} if area else {"region": region})),
                          desc="Find a friendly dog pack near you in NYC, Long Island and Westchester: regular crews that meet at the same dog runs.",
-                         og={"title": "Dog packs on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack2"} if not (area or region) else None,
+                         og={"title": "Dog packs on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack3"} if not (area or region) else None,
                          flash=self.flash_from(q))
 
     def packs_api(self):
@@ -668,7 +668,7 @@ class PackRoutes:
             og = {"title": f"{p['name']} · BarksBuds pack", "image": f"{base}/pp/{p['cover_photo_id']}.jpg", "w": w, "h": h,
                   "alt": f"{p['name']} cover photo", "desc": og_desc}
         else:
-            og = {"title": f"{p['name']} · BarksBuds pack", "image": base + "/img/og-image.jpg?v=jack2", "w": 1200, "h": 630, "desc": og_desc}
+            og = {"title": f"{p['name']} · BarksBuds pack", "image": base + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630, "desc": og_desc}
         return self.page(p["name"], body, canonical=path, desc=og_desc, og=og, index=not (p["hidden"] or p["is_sample"]), active="packs",
                          flash=self.flash_from(q))
 
