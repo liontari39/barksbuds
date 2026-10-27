@@ -375,6 +375,9 @@ RUNS_ALLOW = {a.strip().lower() for a in os.environ.get("RUNS_EMAIL_ALLOWLIST", 
 # Direct-message notifications are not gated by the soft-launch allowlists (any member can message any member).
 # MESSAGE_EMAIL_ALLOWLIST, only when set, limits them to those addresses (for a quiet rollout).
 MESSAGE_ALLOW = {a.strip().lower() for a in os.environ.get("MESSAGE_EMAIL_ALLOWLIST", "").split(",") if a.strip()}
+# Community emails (park announcements, lost and found alerts, care reminders, birthday/gotcha-day notes; tags
+# "community-*") go only to COMMUNITY_EMAIL_ALLOWLIST when set, otherwise the pack/meetup allowlist.
+COMMUNITY_ALLOW = {a.strip().lower() for a in os.environ.get("COMMUNITY_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or PACK_ALLOW
 
 
 def and_list(xs):
@@ -401,6 +404,9 @@ def send_async(to, subject, body, text, unsub, tag):
         return False
     if tag.startswith("message") and MESSAGE_ALLOW and to.strip().lower() not in MESSAGE_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on MESSAGE_EMAIL_ALLOWLIST)", flush=True)
+        return False
+    if tag.startswith("community") and COMMUNITY_ALLOW and to.strip().lower() not in COMMUNITY_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on the community email allowlist)", flush=True)
         return False
     if tag.startswith("pack") and PACK_ALLOW and to.strip().lower() not in PACK_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on the pack email allowlist)", flush=True)
@@ -633,6 +639,53 @@ def build_message(base, name, sender, snippet, url, unsub=""):
 <tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
 You're getting this because a member messaged you on BarksBuds. We send at most one email per conversation every 30 minutes, and never share your email.<br>
 {f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off message emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
+Questions? Write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
+</td></tr></table></td></tr></table></body></html>"""
+    return subject, body, text
+
+
+def build_community(base, *, subject, eyebrow, heading, name="", paras=(), quote="", quote_by="", button="", url="",
+                    image="", why="", unsub="", unsub_label="Turn off these emails"):
+    """Return (subject, html, text) for a community email (park news, lost and found, care reminder, celebration).
+    Same look as the other BarksBuds emails. Never includes anyone's email address."""
+    e = html.escape
+    hi = f"Hi {name}," if name else "Hi there,"
+    text = (f"{hi}\n\n{heading}.\n\n" + "".join(f"{p}\n\n" for p in paras) + (f"\"{quote}\"\n\n" if quote else "")
+            + (f"{button}: {url}\n\n" if url else "") + "See you at the dog run!\nThe BarksBuds team\n\n"
+            + (f"{why}\n" if why else "") + (f"{unsub_label}: {unsub}\n" if unsub else "")
+            + f"Email preferences: {base}/me#emails\nPrivacy: {base}/privacy\n")
+    btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
+           "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
+    quote_html = (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;"><tr>'
+                  f'<td style="background:#FFF8EA;border:1px solid #EADBB9;border-left:5px solid #FBB321;border-radius:14px;padding:14px 18px;'
+                  f'font-size:16px;line-height:1.55;color:#2a2622;white-space:pre-wrap;">'
+                  + (f'<b style="display:block;font-size:13px;color:#625a50;margin-bottom:4px;">{e(quote_by)}</b>' if quote_by else "")
+                  + f'{e(quote)}</td></tr></table>') if quote else ""
+    img_html = (f'<p style="margin:0 0 18px;"><img src="{e(image)}" width="220" alt="" style="display:block;width:220px;max-width:100%;'
+                f'border-radius:18px;border:3px solid #141414;"></p>') if image else ""
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>{e(subject)}</title>
+<style>@media (max-width:620px){{.wrap{{padding:0 !important}} .card{{border-radius:0 !important}} .pad{{padding:24px 22px !important}} h1{{font-size:27px !important}}}}</style>
+</head><body style="margin:0;padding:0;background:#FFF8EA;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">{e(paras[0] if paras else heading)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
+<tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack3" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
+<tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
+<p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>
+<h1 style="margin:0 0 12px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:31px;line-height:1.1;color:#141414;">{e(heading)}</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;">{e(hi)}</p>
+{"".join(f'<p style="margin:0 0 14px;font-size:16px;line-height:1.6;">{e(p)}</p>' for p in paras)}
+{img_html}{quote_html}
+{f'<p style="margin:0 0 24px;"><a href="{e(url)}" style="{btn}">{e(button)} &rarr;</a></p>' if url else ''}
+<p style="margin:0;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">See you at the dog run!</p>
+<p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
+<tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
+{e(why)}{'<br>' if why else ''}
+{f'<a href="{e(unsub)}" style="color:#FBB321;">{e(unsub_label)}</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
 Questions? Write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
 </td></tr></table></td></tr></table></body></html>"""
     return subject, body, text

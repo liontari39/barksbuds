@@ -35,8 +35,12 @@ TEMPERAMENT = ["Friendly with big dogs", "Friendly with small dogs", "Loves peop
                "Smart", "Loyal", "Speedy", "Snuggler", "Food motivated"]
 PLAY_STYLES = ["Chaser", "Wrestler", "Fetcher", "Tug-of-war fan", "Explorer and sniffer",
                "Social butterfly", "Gentle player", "Watcher (likes to observe)", "Zoomies", "Toy lover"]
-SIZES = [("small", "Small (under 20 lb)"), ("medium", "Medium (20–50 lb)"),
-         ("large", "Large (50–90 lb)"), ("giant", "Giant (90+ lb)")]
+SIZES = [("toy", "Toy (under 10 lb)"), ("small", "Small (10–20 lb)"), ("medium", "Medium (20–50 lb)"),
+         ("large", "Large (50–90 lb)"), ("giant", "XL (90+ lb)")]  # "giant" is the stored key for XL (older profiles)
+SIZE_SHORT = {"toy": "Toy", "small": "Small", "medium": "Medium", "large": "Large", "giant": "XL"}
+ENERGY = [("low", "Low energy"), ("medium", "Medium energy"), ("high", "High energy")]
+COMPAT = [("puppies", "Good with puppies"), ("small_dogs", "Good with small dogs"), ("big_dogs", "Good with big dogs"),
+          ("rough", "Plays rough"), ("shy", "Shy / needs a slow intro")]
 SEXES = [("female", "Girl"), ("male", "Boy")]
 RESERVED_SLUGS = {"new", "edit", "me", "admin", "api", "browse", "search", "all", "report", "photos"}
 
@@ -116,8 +120,9 @@ def init_schema(store):
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
     if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
-    import coowners, meetups, messages, packs, portraits
+    import community, coowners, meetups, messages, packs, portraits
     coowners.init_schema(store)
+    community.init_schema(store)  # also adds dogs.energy/compat/gotcha_day and users email/privacy columns
     messages.init_schema(store)
     meetups.init_schema(store)
     packs.init_schema(store)
@@ -246,7 +251,8 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import meetups, messages, packs
+    import community, meetups, messages, packs
+    community.purge_user(user_id)  # check-ins, follows, alerts, recommendations, reminder logs
     messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
     meetups.purge_user(user_id)
@@ -260,14 +266,15 @@ def delete_user(user_id):
 
 # ---------------------------------------------------------------- dogs
 DOG_COLS = ("id,user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,"
-            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev,pixel_photo_id,pixel_primary")
+            "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev,pixel_photo_id,pixel_primary,"
+            "energy,compat,gotcha_day")
 
 
 def _dog(r):
     if not r:
         return None
     d = dict(zip(DOG_COLS.split(","), r))
-    for k in ("temperament", "play_style", "fav_runs"):
+    for k in ("temperament", "play_style", "fav_runs", "compat"):
         try:
             d[k] = json.loads(d[k] or "[]")
         except ValueError:
@@ -316,7 +323,7 @@ def owned_dog_count(user_id):
     return one("SELECT COUNT(*) FROM dogs WHERE user_id=:u", u=user_id)[0]
 
 
-def browse_dogs(areas=None, limit=60):
+def browse_dogs(areas=None, limit=60, match=None):
     rows = q(f"""SELECT {', '.join('d.' + c for c in DOG_COLS.split(','))}, u.display_name, u.area, u.town
                  FROM dogs d JOIN users u ON u.id=d.user_id WHERE d.hidden=0 ORDER BY d.created_at DESC, d.id DESC""")
     out = []
@@ -324,6 +331,8 @@ def browse_dogs(areas=None, limit=60):
         d = _dog(r[:len(DOG_COLS.split(","))])
         d["owner_name"], d["area"], d["town"] = r[-3], r[-2], r[-1]
         if areas and d["area"] not in areas:
+            continue
+        if match and not match(d):
             continue
         out.append(d)
         if len(out) >= limit:
@@ -341,15 +350,17 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
     t = now()
     vals = dict(n=f["name"], b=f["breed"], bd=f["birthday"], by=f["birth_year"], sx=f["sex"], sz=f["size"],
                 tm=json.dumps(f["temperament"]), ps=json.dumps(f["play_style"]), v=1 if f["vaccinated"] else 0,
-                fr=json.dumps(f["fav_runs"]), bio=f["bio"], w=f.get("website", ""), t=t)
+                fr=json.dumps(f["fav_runs"]), bio=f["bio"], w=f.get("website", ""), t=t,
+                en=f.get("energy", ""), cp=json.dumps(f.get("compat", [])), gd=f.get("gotcha_day", ""))
     if dog_id:
         q("""UPDATE dogs SET name=:n,breed=:b,birthday=:bd,birth_year=:by,sex=:sx,size=:sz,temperament=:tm,play_style=:ps,
-             vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,updated_at=:t WHERE id=:i""", i=dog_id, **vals)  # caller checked owner/co-owner
+             vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,energy=:en,compat=:cp,gotcha_day=:gd,updated_at=:t WHERE id=:i""", i=dog_id, **vals)  # caller checked owner/co-owner
         return dog_id
     for attempt in range(3):
         try:
             r = one("""INSERT INTO dogs(user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,
-                       fav_runs,bio,website,seed_key,created_at,updated_at) VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:sk,:t,:t)
+                       fav_runs,bio,website,energy,compat,gotcha_day,seed_key,created_at,updated_at)
+                       VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:en,:cp,:gd,:sk,:t,:t)
                        RETURNING id""", u=user_id, s=unique_slug(f["name"]), sk=seed_key, **vals)
             import coowners
             coowners.add_owner_row(r[0], user_id)
@@ -362,6 +373,8 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
 def delete_dog(dog_id):
     import coowners
     coowners.purge_dog(dog_id)
+    import community
+    community.purge_dog(dog_id)  # private care dates, celebration log, check-ins
     q("DELETE FROM photos WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM reports WHERE dog_id=:d", d=dog_id)
     q("DELETE FROM portrait_request_photos WHERE request_id IN (SELECT id FROM portrait_requests WHERE dog_id=:d)", d=dog_id)
