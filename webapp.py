@@ -92,7 +92,8 @@ MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if
 
 def mobile_menu_html(user, active=""):
     """Hamburger menu shown at 920px and below (styles: .mmenu in app.css, index.html and runs.html)."""
-    li = "".join(f'<li><a href="{h}"{" aria-current=page" if active and h == "/" + active else ""}>{t}</a></li>' for h, t in MENU_LINKS)
+    import search
+    li = search.mobile_search_html() + "".join(f'<li><a href="{h}"{" aria-current=page" if active and h == "/" + active else ""}>{t}</a></li>' for h, t in MENU_LINKS)
     n = unread_count(user)
     li += (f'<li class="mm-acct"><a href="/messages"{" aria-current=page" if active == "messages" else ""}>Messages'
            + (f' <span class="mm-badge">{n if n < 100 else "99+"}<span class="sr-only"> unread</span></span>' if n else "") + '</a></li>'
@@ -129,10 +130,11 @@ def nav_msgs_html(user, active=""):
 
 
 def nav_account_html(user, active=""):
+    import search  # lazy: search imports webapp
     if user:
-        return (nav_msgs_html(user, active) + '<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
+        return (search.nav_search_html(active) + nav_msgs_html(user, active) + '<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
                 + mobile_menu_html(user, active))
-    return ('<a class="nav-signin" href="/signin">Sign in</a>'
+    return (search.nav_search_html(active) + '<a class="nav-signin" href="/signin">Sign in</a>'
             '<a class="btn" href="/signin">Join<span class="hide-xs"> BarksBuds</span></a>' + mobile_menu_html(user, active))
 
 
@@ -337,7 +339,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=17">
+<link rel="stylesheet" href="/app.css?v=17"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>

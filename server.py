@@ -36,6 +36,7 @@ import pixelweb
 import runpageweb
 import runsugg
 import runsweb
+import search
 import tipsweb
 import trailsweb
 import webapp
@@ -271,7 +272,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
+class H(search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -419,7 +420,7 @@ class H(webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.msg_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.search_get(u.path, q) or self.msg_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
