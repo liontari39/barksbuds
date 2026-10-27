@@ -83,7 +83,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips"), ("/community", "Community")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -166,6 +166,11 @@ class Form:
 
     def getlist(self, k):
         return self.fields.get(k, [])
+
+
+def C_is_today(iso, today):
+    import community
+    return community.is_today(iso, today)
 
 
 class AppRoutes:
@@ -295,7 +300,7 @@ class AppRoutes:
         u = self.user()
         base = self._base()
         links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
-                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/#story", "Our story", "")]
+                 ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/community", "Community", "community")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
         meta = [f'<meta name="robots" content="{"index,follow" if index else "noindex"}">']
@@ -332,7 +337,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=14">
+<link rel="stylesheet" href="/app.css?v=17">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -344,7 +349,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -554,7 +559,8 @@ It comes from hello@barksbuds.app.</div>
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
             co = ' <span class="badge">Co-owner</span>' if d["user_id"] != u["id"] else ""
             cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}{co}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
-<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div></div></article>""")
+<div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div>
+<p class="small" style="margin:10px 0 0"><a href="/me/dogs/{d["id"]}/care"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg> Care reminders</a></p></div></article>""")
         if owned < A.MAX_DOGS:
             hint = ""
             wl = A.waitlist_dog_name(u.get("waitlist_id"))
@@ -581,7 +587,7 @@ It comes from hello@barksbuds.app.</div>
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
-{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}
+{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}{self.community_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
 </div>{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
@@ -724,11 +730,16 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.<
                   for k, lab in options]
             return "".join(r)
 
+        def compat_ticks(chosen):
+            return "".join(f'<label class="tick"><input type="checkbox" name="compat" value="{k}"{" checked" if k in chosen else ""}>'
+                           f'<span>{e(lab)}</span></label>' for k, lab in A.COMPAT)
+
         is_new = d is None
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
-        photos_html = "" if is_new else self.photo_manager(d, q.get("pe", [""])[0]) + self.portrait_panel(d, q) + self.coowner_panel(d, q)
+        photos_html = "" if is_new else (self.photo_manager(d, q.get("pe", [""])[0]) + self.portrait_panel(d, q) + self.coowner_panel(d, q)
+                                         + self.care_panel(d))
         title = "Add a dog" if is_new else f"Edit {d['name']}"
         dn = e(d["name"]) if d else ""
         lead = ("Tell the pack about your dog. You can add photos on the next step." if is_new else
@@ -745,8 +756,11 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.<
 <div class="field"><label for="breed">Breed <span class="opt">(optional)</span></label><input id="breed" name="breed" type="text" maxlength="60" value="{e(get("breed"))}" placeholder="e.g. Standard Poodle mix"></div></div>
 <div class="row2"><div class="field"><label for="birthday">Birthday <span class="opt">(optional)</span></label><input id="birthday" name="birthday" type="date" value="{e(get("birthday"))}" max="{date.today().isoformat()}"{inv("birthday")}>{err("birthday")}</div>
 <div class="field"><label for="age">Or age in years <span class="opt">(optional)</span></label><input id="age" name="age" type="number" min="0" max="30" inputmode="numeric" value="{e(str(age_val))}"{inv("age")}>{err("age")}<span class="help">Used when you don't know the exact birthday.</span></div></div>
+<div class="field"><label for="gotcha_day">Gotcha day <span class="opt">(optional: the day they came home)</span></label><input id="gotcha_day" name="gotcha_day" type="date" value="{e(get("gotcha_day"))}" max="{date.today().isoformat()}"{inv("gotcha_day")}>{err("gotcha_day")}<span class="help">We'll celebrate {dn or 'your dog'} on the homepage on their birthday and gotcha day.</span></div>
 <div class="field"><fieldset class="checks-grid"><legend>Sex</legend>{radios("sex", A.SEXES, get("sex"), "Not saying")}</fieldset></div>
 <div class="field"><fieldset class="checks-grid"><legend>Size</legend>{radios("size", A.SIZES, get("size"), "Not saying")}</fieldset></div>
+<div class="field"><fieldset class="checks-grid"><legend>Energy</legend>{radios("energy", A.ENERGY, get("energy"), "Not saying")}</fieldset></div>
+<div class="field"><fieldset class="checks-grid"><legend>Around other dogs <span class="opt">(helps others plan a good first meeting)</span></legend>{compat_ticks(get("compat", []) or [])}</fieldset></div>
 <div class="field"><fieldset class="checks-grid"><legend>Personality <span class="opt">(pick up to 6)</span></legend>{ticks("temperament", A.TEMPERAMENT, get("temperament", []) or [])}</fieldset>{err("temperament")}</div>
 <div class="field"><fieldset class="checks-grid"><legend>Play style <span class="opt">(pick up to 3)</span></legend>{ticks("play_style", A.PLAY_STYLES, get("play_style", []) or [])}</fieldset>{err("play_style")}</div>
 <div class="field"><label class="switch"><input type="checkbox" name="vaccinated" value="1"{" checked" if get("vaccinated") else ""}><span><b>Vaccinations are up to date</b><br><span class="small muted">Self-reported by you. Shown as a badge on the public page.</span></span></label></div>
@@ -818,7 +832,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                  temperament=[t for t in A.TEMPERAMENT if t in f.getlist("temperament")],
                  play_style=[t for t in A.PLAY_STYLES if t in f.getlist("play_style")],
                  vaccinated=f.get("vaccinated") == "1", bio=clean(f.get("bio"), 600, multiline=True),
-                 website=f.get("website").strip()[:300])
+                 website=f.get("website").strip()[:300], energy=f.get("energy"),
+                 compat=[k for k, _ in A.COMPAT if k in f.getlist("compat")], gotcha_day=f.get("gotcha_day").strip()[:10])
         runs = run_index()
         picked = []
         for r in f.getlist("runs"):
@@ -849,6 +864,17 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                 errs["age"] = "Age should be a number from 0 to 30."
             else:
                 v["birth_year"] = date.today().year - int(v["age"])
+        if v["gotcha_day"]:
+            gd = None
+            if DATE_RE.match(v["gotcha_day"]):
+                try:
+                    gd = date.fromisoformat(v["gotcha_day"])
+                except ValueError:
+                    gd = None
+            if not gd or gd > date.today() or gd.year < date.today().year - 30:
+                errs["gotcha_day"] = "Please enter a real date (or leave it blank)."
+        if v["energy"] not in ("", *[k for k, _ in A.ENERGY]):
+            v["energy"] = ""
         if v["sex"] not in ("", *[k for k, _ in A.SEXES]):
             v["sex"] = ""
         if v["size"] not in ("", *[k for k, _ in A.SIZES]):
@@ -970,7 +996,17 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             areas, label, canon = [area], area_label(area), "/dogs?area=" + quote(area)
         elif region in A.REGIONS:
             (label, areas), canon = A.REGIONS[region], "/dogs?region=" + region
-        dogs = A.browse_dogs(areas)
+        fsize = q.get("size", [""])[0]
+        fsize = fsize if fsize in dict(A.SIZES) else ""
+        fen = q.get("energy", [""])[0]
+        fen = fen if fen in dict(A.ENERGY) else ""
+        fcp = [k for k, _ in A.COMPAT if k in q.get("compat", []) and k not in ("rough", "shy")]
+        filtered = bool(fsize or fen or fcp)
+
+        def match(d):
+            return ((not fsize or d.get("size") == fsize) and (not fen or d.get("energy") == fen)
+                    and all(k in (d.get("compat") or []) for k in fcp))
+        dogs = A.browse_dogs(areas, match=match if filtered else None)
         firsts = A.first_photos([d["id"] for d in dogs])
         cards = [self.dog_card(d, d.get("avatar_photo_id") or firsts.get(d["id"])) for d in dogs]  # main picture first
         cur = lambda on: ' aria-current="page"' if on else ""
@@ -982,11 +1018,32 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         grid = (f'<div class="dgrid">{"".join(cards)}</div>' if cards else
                 f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><h2>No dogs in {e(label)} yet</h2>'
                 f'<p class="muted">Be the first! Create a profile for your dog and invite your dog run friends.</p><a class="btn" href="{add}">Add your dog</a></div>')
+        if filtered and not cards:
+            grid = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><h2>No matches yet</h2>'
+                    f'<p class="muted">No dogs in {e(label)} match those filters. Try fewer filters.</p>'
+                    f'<a class="btn btn-ghost" href="{e(canon)}">Clear filters</a></div>')
+        opt = lambda items, cur, none: f'<option value="">{none}</option>' + "".join(
+            f'<option value="{k}"{" selected" if k == cur else ""}>{e(v)}</option>' for k, v in items)
+        keep = (f'<input type="hidden" name="area" value="{e(area)}">' if area in A.AREA_NAMES else
+                f'<input type="hidden" name="region" value="{e(region)}">' if region in A.REGIONS else "")
+        cticks = "".join(f'<label class="tick"><input type="checkbox" name="compat" value="{k}"{" checked" if k in fcp else ""}><span>{e(v)}</span></label>'
+                         for k, v in A.COMPAT if k not in ("rough", "shy"))
+        filt = (f'<form class="dfilt" method="get" action="/dogs" aria-label="Filter dogs">{keep}'
+                f'<div class="field"><label for="fsize">Size</label><select id="fsize" name="size">{opt(A.SIZES, fsize, "Any size")}</select></div>'
+                f'<div class="field"><label for="fen">Energy</label><select id="fen" name="energy">{opt(A.ENERGY, fen, "Any energy")}</select></div>'
+                f'<fieldset class="checks-grid" style="border:0;padding:0;margin:0"><legend class="sr-only">Good with</legend>{cticks}</fieldset>'
+                f'<button class="btn btn-sm" type="submit">Filter</button>'
+                + (f'<a class="small" href="{e(canon)}">Clear</a>' if filtered else "") + '</form>')
+        try:
+            import communityweb
+            celeb = communityweb.celebrating_html(areas)
+        except Exception:
+            celeb = ""
         n = len(dogs)
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">meet the pack</span><h1>Dogs on BarksBuds</h1>
 <p class="lead">Say hi to the dogs of NYC, Long Island and Westchester. Add your own pup and pick their favorite runs.</p></div></section>
-<section class="section"><div class="wrap"><nav aria-label="Filter by area"><ul class="filters">{''.join(chips)}</ul></nav>{grid}
-<p class="small muted" style="margin-top:28px">{n} dog{'s' if n != 1 else ''} in {e(label)}. <a href="{add}">Add your dog</a></p>
+<section class="section"><div class="wrap"><nav aria-label="Filter by area"><ul class="filters">{''.join(chips)}</ul></nav>{filt}{celeb}{grid}
+<p class="small muted" style="margin-top:28px">{n} dog{'s' if n != 1 else ''}{' matching' if filtered else ''} in {e(label)}. <a href="{add}">Add your dog</a></p>
 </div></section>"""
         title = "Dogs" + (f" in {label}" if areas else " near you")
         return self.page(title, body, index=True, active="dogs", canonical=canon,
@@ -1051,6 +1108,29 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                            f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy"></div>{dl}</div>')
         if is_owner:  # "Get a pixel portrait" / its status; only the owner sees it
             side.insert(0, self.portrait_panel(d, compact=True))
+        chips = []
+        if d.get("size"):
+            chips.append(f'<li class="sz">{e(A.SIZE_SHORT.get(d["size"], ""))}</li>')
+        if d.get("energy"):
+            chips.append(f'<li class="en">{e(dict(A.ENERGY).get(d["energy"], ""))}</li>')
+        for k, lab in A.COMPAT:
+            if k in (d.get("compat") or []):
+                chips.append(f'<li{" class=warn" if k in ("rough", "shy") else ""}>{e(lab)}</li>')
+        if chips:
+            side.insert(0, f'<div class="panel" id="compat"><h2>Meeting other dogs</h2><ul class="chips">{"".join(chips)}</ul>'
+                           f'<p class="small muted" style="margin:12px 0 0">Shared by {e(d["name"])}\'s human to help plan a good first hello.</p></div>')
+        today = date.today()
+        for kind, when in (("birthday", d.get("birthday")), ("gotcha", d.get("gotcha_day"))):
+            if when and C_is_today(when, today):
+                lab = "birthday" if kind == "birthday" else "gotcha day"
+                main.insert(0, f'<div class="panel celebnote"><h2><svg class="ico" aria-hidden="true"><use href="#i-cake"/></svg> '
+                               f'It\'s {e(d["name"])}\'s {lab} today!</h2><p style="margin:0"><a class="btn btn-gold btn-sm" '
+                               f'href="/celebrate/{e(d["slug"])}{"?k=gotcha" if kind == "gotcha" else ""}">See the celebration card</a></p></div>')
+        if d.get("gotcha_day"):
+            try:
+                facts.append(fact("i-heart", "Gotcha day " + e(date.fromisoformat(d["gotcha_day"]).strftime("%b %-d"))))
+            except ValueError:
+                pass
         if d["play_style"]:
             side.append('<div class="panel"><h2>Play style</h2><ul class="taglist dark">' + "".join(f"<li>{e(t)}</li>" for t in d["play_style"]) + "</ul></div>")
         if d["bio"]:

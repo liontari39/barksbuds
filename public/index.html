@@ -223,6 +223,23 @@ footer .bottom p{margin:0}
 .mmenu .mm-acct{border-top:1.5px solid var(--line);margin-top:6px;padding-top:6px}
 @media (max-width:920px){.mmenu{display:block}}
 @media (max-width:640px){.nav-signin{display:none}.nav-signin+.btn{margin-left:auto!important}}
+/* community: lost and found banner + homepage entry points */
+.lfbanner{background:var(--red);color:#fff}.lfbanner.k-found{background:var(--black)}
+.lfbanner .wrap{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}
+.lfbanner .ico{width:22px;height:22px;flex:none}.lfbanner p{margin:0;flex:1;min-width:200px}.lfbanner a{color:#fff;font-weight:800}
+.lfbanner .btn{background:#fff;color:var(--red);box-shadow:none;padding:8px 16px 6px;font-size:.92rem}
+section.commhome{padding:8px 0 40px}
+.commlinks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.commlink{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);background:#fff;border:2px solid var(--black);border-radius:18px;padding:14px 16px;box-shadow:4px 4px 0 var(--gold)}
+.commlink:hover{transform:translateY(-1px)}.commlink .ico{width:28px;height:28px;color:var(--red);flex:none}
+.commlink b{display:block;font-family:"Baloo 2",system-ui,sans-serif;font-size:1.1rem}.commlink small{display:block;color:var(--muted);font-size:.88rem}
+.celeb{background:#fff;border:2px solid var(--black);border-radius:var(--r);box-shadow:6px 6px 0 var(--gold);padding:18px 22px 12px;margin-bottom:20px}
+.celeb h2{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:1.3rem}.celeb h2 .ico{color:var(--red);width:24px;height:24px}
+.mdogs{display:flex;flex-wrap:wrap;gap:14px;list-style:none;margin:0 0 6px;padding:0}.mdogs li{width:86px;text-align:center}
+.mdogs a{text-decoration:none;color:var(--black);font-weight:800;font-size:.9rem;line-height:1.2;display:block}
+.mdogs img,.mdogs .noph{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 6px;border:3px solid #fff;box-shadow:0 0 0 2px var(--black);display:block}
+.celeb .mdogs small{display:block;font-weight:700;color:var(--muted);font-size:.75rem}
+@media (max-width:760px){.commlinks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -235,6 +252,9 @@ footer .bottom p{margin:0}
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-fence" viewBox="0 0 24 24"><path d="M5 21V7l2-3 2 3v14M15 21V7l2-3 2 3v14M3 11h18M3 17h18"/></symbol>
   <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9-9.2C2 7.6 4.2 5 7 5c2 0 3.3 1.1 5 3 1.7-1.9 3-3 5-3 2.8 0 5 2.6 4 5.8-1.5 4.6-9 9.2-9 9.2z"/></symbol>
+  <symbol id="i-cake" viewBox="0 0 24 24"><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 16c2.3 1.3 4.7 1.3 7 0s4.7-1.3 7 0M12 12V8M12 5.5v.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.01M10.3 3.9L2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
 </svg>
 <a class="skip" href="#join">Skip to sign up</a>
@@ -250,13 +270,14 @@ footer .bottom p{margin:0}
       <li><a href="/dogs">Dogs</a></li>
       <li><a href="/pixel-pals">Pixel Pals</a></li>
       <li><a href="/tips">Tips</a></li>
-      <li><a href="#story">Our story</a></li>
+      <li><a href="/community">Community</a></li>
     </ul></nav>
     {{NAV_ACCOUNT}}
   </div>
 </header>
 
 <main id="top">
+{{LOST_BANNER}}
 <section class="hero" aria-labelledby="hero-title">
   <svg class="paw" style="top:36px;left:47%;width:84px;height:84px" aria-hidden="true"><use href="#i-paw"/></svg>
   <svg class="paw" style="bottom:28px;left:4%;width:70px;height:70px" aria-hidden="true"><use href="#i-paw"/></svg>
@@ -290,6 +311,7 @@ footer .bottom p{margin:0}
 </section>
 
 {{PIXEL_PALS}}
+{{COMMUNITY}}
 
 <section class="runs" id="dog-runs" aria-labelledby="runs-title">
   <div class="wrap">
@@ -370,7 +392,7 @@ footer .bottom p{margin:0}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="/signin">Join BarksBuds</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="/signin">Join BarksBuds</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join we store your email, your name and what you add about your dogs. We use them to run BarksBuds and send the emails you choose. We never sell or share them, and you can delete your account any time. Read the full <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>, or write to <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a>.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>
