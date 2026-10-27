@@ -93,15 +93,44 @@ MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if
 def mobile_menu_html(user, active=""):
     """Hamburger menu shown at 920px and below (styles: .mmenu in app.css, index.html and runs.html)."""
     li = "".join(f'<li><a href="{h}"{" aria-current=page" if active and h == "/" + active else ""}>{t}</a></li>' for h, t in MENU_LINKS)
-    li += ('<li class="mm-acct"><a href="/me">My dogs</a></li>' if user else
+    n = unread_count(user)
+    li += (f'<li class="mm-acct"><a href="/messages"{" aria-current=page" if active == "messages" else ""}>Messages'
+           + (f' <span class="mm-badge">{n if n < 100 else "99+"}<span class="sr-only"> unread</span></span>' if n else "") + '</a></li>'
+           '<li><a href="/me">My dogs</a></li>' if user else
            '<li class="mm-acct"><a href="/signin">Sign in</a></li><li><a href="/signin">Join BarksBuds</a></li>')
     return (f'<details class="mmenu"><summary aria-label="Menu" aria-controls="mmenu-list"><span class="mm-bars" aria-hidden="true"><i></i><i></i><i></i></span></summary>'
             f'<nav aria-label="Menu" id="mmenu-list"><ul>{li}</ul></nav></details>{MENU_JS}')
 
 
+def unread_count(user):
+    """Unread direct messages for the nav badge (0 when signed out or if the lookup fails)."""
+    if not user:
+        return 0
+    if "_unread" not in user:
+        try:
+            import messages
+            user["_unread"] = messages.unread_total(user["id"])
+        except Exception as ex:  # never break a page over the badge
+            print(f"messages: unread count failed: {type(ex).__name__}", flush=True)
+            user["_unread"] = 0
+    return user["_unread"]
+
+
+NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
+                '<path d="M8.5 11h7M8.5 14h4"/></svg>')
+
+
+def nav_msgs_html(user, active=""):
+    n = unread_count(user)
+    lab = f"Messages, {n} unread" if n else "Messages"
+    badge = f'<span class="nbadge" aria-hidden="true">{n if n < 100 else "99+"}</span>' if n else ""
+    return (f'<a class="navmsg" href="/messages" aria-label="{lab}" title="Messages"'
+            f'{" aria-current=page" if active == "messages" else ""}>{NAV_CHAT_SVG}{badge}</a>')
+
+
 def nav_account_html(user, active=""):
     if user:
-        return ('<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
+        return (nav_msgs_html(user, active) + '<a class="btn btn-gold" href="/me"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>My dogs</a>'
                 + mobile_menu_html(user, active))
     return ('<a class="nav-signin" href="/signin">Sign in</a>'
             '<a class="btn" href="/signin">Join<span class="hide-xs"> BarksBuds</span></a>' + mobile_menu_html(user, active))
@@ -303,7 +332,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=13">
+<link rel="stylesheet" href="/app.css?v=14">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -552,7 +581,7 @@ It comes from hello@barksbuds.app.</div>
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
-{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}
+{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
 </div>{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
@@ -1044,6 +1073,12 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                       f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
         edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
                 if is_owner else "")
+        if not is_owner:  # Message the owner (and any co-owners); signed-out visitors are sent to sign in first
+            humans = [(d["user_id"], owner["display_name"])] + [(c["user_id"], c["name"]) for c in CO.coowners(d["id"])]
+            btns = [self.message_button(uid, f"Message {nm}" if nm else f"Message {d['name']}'s human") for uid, nm in humans]
+            btns = [b for b in btns if b]
+            if btns:
+                edit = f'<p class="ownacts msgacts">{"".join(btns)}</p>'
         hidden_note = ('<div class="wrap" style="padding-top:20px"><p class="formerr">This profile is hidden from the public while our team reviews a report.</p></div>'
                        if d["hidden"] else "")
         reasons = "".join(f'<option>{e(r)}</option>' for r in A.REPORT_REASONS)

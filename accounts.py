@@ -116,8 +116,9 @@ def init_schema(store):
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
     if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
-    import coowners, meetups, packs, portraits
+    import coowners, meetups, messages, packs, portraits
     coowners.init_schema(store)
+    messages.init_schema(store)
     meetups.init_schema(store)
     packs.init_schema(store)
     portraits.init_schema(store)
@@ -245,7 +246,8 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import meetups, packs
+    import meetups, messages, packs
+    messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
     meetups.purge_user(user_id)
     import coowners

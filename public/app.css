@@ -402,3 +402,67 @@ img.pxav{object-fit:contain!important;background:var(--gold-l)}
 .colist li>span:first-child{flex:1 1 180px;min-width:0;overflow-wrap:anywhere}
 .colist form{margin:0}
 .coinv-row{display:flex;gap:10px;flex-wrap:wrap}.coinv-row input{flex:1 1 220px}
+/* direct messages */
+.navmsg{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;border-radius:12px;color:var(--black);text-decoration:none}
+.navmsg .ico{width:26px;height:26px}
+.navmsg:hover,.navmsg[aria-current]{color:var(--red);background:#fff}
+.nbadge{position:absolute;top:1px;right:-2px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font:800 .72rem/17px Nunito,system-ui,sans-serif;text-align:center;border:2px solid var(--cream)}
+.mm-badge{display:inline-block;min-width:22px;padding:0 7px;margin-left:6px;border-radius:999px;background:var(--red);color:#fff;font-size:.8rem;line-height:1.6;text-align:center}
+.mback{display:inline-block;margin-bottom:12px;font-weight:800;text-decoration:none}
+.msec{padding-top:6px}
+.inbox{list-style:none;margin:0;padding:0;background:#fff;border:2px solid var(--black);border-radius:var(--r);overflow:hidden;box-shadow:6px 6px 0 var(--gold)}
+.inbox li+li{border-top:1.5px solid var(--line)}
+.inbox a{display:flex;align-items:center;gap:14px;padding:16px 20px;text-decoration:none;color:var(--ink)}
+.inbox a:hover{background:var(--cream)}
+.inbox li.unread a{background:#FFFBF0}
+.mav{flex:none;width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--black);display:flex;align-items:center;justify-content:center;font:800 1.3rem/1 "Baloo 2",system-ui,sans-serif;border:2px solid var(--black)}
+.mav.lg{width:62px;height:62px;font-size:1.7rem}
+.mrow{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mtop strong{font:800 1.12rem/1.3 "Baloo 2",system-ui,sans-serif;color:var(--black);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtop time{flex:none;font-size:.82rem;color:var(--muted)}
+.mpv{color:var(--muted);font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inbox li.unread .mpv{color:var(--ink);font-weight:800}
+.ubadge{flex:none;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--red);color:#fff;font:800 .82rem/26px Nunito,system-ui,sans-serif;text-align:center}
+.mempty{text-align:center}.mempty .formfoot{justify-content:center}
+.mnote{display:flex;gap:8px;align-items:flex-start;margin:18px 2px 0}.mnote .ico{margin-top:3px;flex:none}
+.mwho{display:flex;gap:16px;align-items:center}.mwho h1{margin:0}
+.mdogsline{margin:2px 0 0;color:var(--muted);font-weight:700}
+.mhead{padding-bottom:22px}
+.mconv{padding:22px 22px 20px}
+.thread{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-direction:column;gap:4px}
+.msg{display:flex;flex-direction:column;max-width:78%}
+.msg.mine{align-self:flex-end;align-items:flex-end}
+.msg.theirs{align-self:flex-start;align-items:flex-start}
+.bubble{padding:10px 15px;border-radius:20px;background:var(--cream);border:1.5px solid var(--line);color:var(--ink)}
+.bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.mine .bubble{background:var(--black);border-color:var(--black);color:#fff;border-bottom-right-radius:6px}
+.theirs .bubble{border-bottom-left-radius:6px}
+.msg.new .bubble{background:var(--gold-l);border-color:var(--gold-d)}
+.mmeta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-start;font-size:.78rem;color:var(--muted);margin:3px 8px 8px}
+.mine .mmeta{justify-content:flex-end}
+.mrep summary{cursor:pointer;text-decoration:underline;text-underline-offset:2px;list-style:none}
+.mrep summary::-webkit-details-marker{display:none}
+.mrep form{display:grid;gap:8px;margin-top:8px;width:min(320px,72vw);font-size:.95rem}
+.mrep textarea{min-height:64px}
+.mday{align-self:center;margin:12px 0 6px;font-size:.76rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.mreply{border-top:1.5px dashed var(--line);padding-top:16px}
+.mreply textarea{min-height:88px;background:#fff;border-color:var(--black)}
+.mreplyfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.mstop{background:var(--cream);border-radius:14px;padding:12px 16px;font-weight:700;margin:0 0 12px}
+.msafety,.mblocked{margin-top:18px}
+.msafety summary,.mblocked summary{cursor:pointer;font-weight:800;color:var(--muted)}
+.msafety p,.mblocked p{margin:8px 0}
+.mblocked ul{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.mblocked li{display:flex;gap:12px;align-items:center}.mblocked form{display:inline}
+.msgacts .btn .ico{width:1.1em;height:1.1em}
+.msglink{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:1px 9px;border:1.5px solid currentColor;border-radius:999px;font-size:.8rem;font-weight:800;line-height:1.5;text-decoration:none;vertical-align:middle;white-space:nowrap;color:var(--red)}
+.msglink:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.msglink .ico{width:13px;height:13px}
+.mperson{white-space:nowrap}
+@media (max-width:640px){
+ .navmsg{width:40px;height:40px}.navmsg .ico{width:24px;height:24px}
+ .mconv{padding:16px 14px}.msg{max-width:88%}.inbox a{padding:14px 14px;gap:12px}.mav{width:42px;height:42px;font-size:1.15rem}
+ .mav.lg{width:52px;height:52px;font-size:1.45rem}.mreplyfoot .btn{flex:1}
+}
+@media (max-width:400px){.nav .wrap{gap:8px}.brand{font-size:1.15rem}}

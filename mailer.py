@@ -372,6 +372,9 @@ MEETUP_ALLOW = {a.strip().lower() for a in os.environ.get("MEETUP_EMAIL_ALLOWLIS
 PACK_ALLOW = {a.strip().lower() for a in os.environ.get("PACK_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or MEETUP_ALLOW
 # Run-suggestion notices (to the site owner) use RUNS_EMAIL_ALLOWLIST when set, otherwise the pack/meetup allowlist.
 RUNS_ALLOW = {a.strip().lower() for a in os.environ.get("RUNS_EMAIL_ALLOWLIST", "").split(",") if a.strip()} or PACK_ALLOW
+# Direct-message notifications are not gated by the soft-launch allowlists (any member can message any member).
+# MESSAGE_EMAIL_ALLOWLIST, only when set, limits them to those addresses (for a quiet rollout).
+MESSAGE_ALLOW = {a.strip().lower() for a in os.environ.get("MESSAGE_EMAIL_ALLOWLIST", "").split(",") if a.strip()}
 
 
 def and_list(xs):
@@ -395,6 +398,9 @@ def send_async(to, subject, body, text, unsub, tag):
     # "portrait-request" heads-up goes to the team's own inbox and isn't gated
     if tag.startswith("portrait-") and tag != "portrait-request" and MEETUP_ALLOW and to.strip().lower() not in MEETUP_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on MEETUP_EMAIL_ALLOWLIST)", flush=True)
+        return False
+    if tag.startswith("message") and MESSAGE_ALLOW and to.strip().lower() not in MESSAGE_ALLOW:
+        print(f"email: {tag} for {_mask(to)} not sent (not on MESSAGE_EMAIL_ALLOWLIST)", flush=True)
         return False
     if tag.startswith("pack") and PACK_ALLOW and to.strip().lower() not in PACK_ALLOW:
         print(f"email: {tag} for {_mask(to)} not sent (not on the pack email allowlist)", flush=True)
@@ -580,5 +586,53 @@ def build_pack(base, kind, p, name="", who="", who_dogs=None, message="", meetup
 You're getting this because {e(why)}. We never sell or share your info.<br>
 {f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off pack emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
 Questions? Just reply, or write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
+</td></tr></table></td></tr></table></body></html>"""
+    return subject, body, text
+
+
+def build_message(base, name, sender, snippet, url, unsub=""):
+    """Return (subject, html, text) for a new direct message notice. Only a short preview of the message is included
+    (never the full text) and never anyone's email address."""
+    e = html.escape
+    sender = sender or "A BarksBuds member"
+    subject = f"You have a new message from {sender} on BarksBuds"
+    hi = f"Hi {name}," if name else "Hi there,"
+    eyebrow, heading = "new message", f"{sender} sent you a message"
+    intro = f"{sender} messaged you on BarksBuds. Open the conversation to read it and reply."
+    text = (f"{hi}\n\n{heading}.\n\n" + (f"\"{snippet}\"\n\n" if snippet else "") + f"Read and reply: {url}\n\n"
+            "Replies happen on BarksBuds, so your email address stays private.\n\nSee you at the dog run!\nThe BarksBuds team\n\n"
+            "You're getting this because a member messaged you on BarksBuds. We send at most one email per conversation every 30 minutes.\n"
+            + (f"Turn off message emails: {unsub}\n" if unsub else "") + f"Email preferences: {base}/me#emails\nPrivacy: {base}/privacy\n")
+    btn = ("display:inline-block;background:#C8201E;color:#ffffff;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;"
+           "font-size:17px;text-decoration:none;padding:14px 26px;border-radius:999px;border-bottom:4px solid #9E1714")
+    quote_html = (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;"><tr>'
+                  f'<td style="background:#FFF8EA;border:1px solid #EADBB9;border-left:5px solid #FBB321;border-radius:14px;padding:14px 18px;'
+                  f'font-size:16px;line-height:1.55;color:#2a2622;"><b style="display:block;font-size:13px;color:#625a50;margin-bottom:4px;">{e(sender)}</b>'
+                  f'{e(snippet)}</td></tr></table>') if snippet else ""
+    body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>{e(subject)}</title>
+<style>@media (max-width:620px){{.wrap{{padding:0 !important}} .card{{border-radius:0 !important}} .pad{{padding:24px 22px !important}} h1{{font-size:27px !important}}}}</style>
+</head><body style="margin:0;padding:0;background:#FFF8EA;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">{e(snippet or intro)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF8EA;"><tr><td class="wrap" align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #EADBB9;">
+<tr><td style="background:#141414;padding:20px 32px;" class="pad"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="vertical-align:middle;"><img src="{base}/img/icon-180.png?v=jack3" width="48" height="48" alt="" style="display:block;border-radius:13px;border:3px solid #FBB321;"></td>
+<td style="vertical-align:middle;padding-left:14px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:25px;color:#ffffff;">BarksBuds</td></tr></table></td></tr>
+<tr><td class="pad" style="padding:32px 36px 8px;font-family:Nunito,Arial,sans-serif;color:#2a2622;">
+<p style="margin:0 0 4px;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">{e(eyebrow)}</p>
+<h1 style="margin:0 0 12px;font-family:'Baloo 2',Arial,sans-serif;font-weight:800;font-size:31px;line-height:1.1;color:#141414;">{e(heading)}</h1>
+<p style="margin:0 0 6px;font-size:16px;line-height:1.6;">{e(hi)}</p>
+<p style="margin:0 0 18px;font-size:16px;line-height:1.6;">{e(intro)}</p>
+{quote_html}
+<p style="margin:0 0 18px;"><a href="{e(url)}" style="{btn}">Read and reply &rarr;</a></p>
+<p style="margin:0 0 26px;font-size:14px;line-height:1.6;color:#625a50;">Replies happen on BarksBuds, so your email address stays private.</p>
+<p style="margin:0;font-family:'Caveat Brush',cursive;font-size:23px;color:#C8201E;">See you at the dog run!</p>
+<p style="margin:2px 0 26px;font-size:15px;color:#625a50;">The BarksBuds team</p></td></tr>
+<tr><td class="pad" style="background:#141414;padding:18px 36px;font-family:Nunito,Arial,sans-serif;font-size:13px;line-height:1.6;color:#C9BFAF;">
+You're getting this because a member messaged you on BarksBuds. We send at most one email per conversation every 30 minutes, and never share your email.<br>
+{f'<a href="{e(unsub)}" style="color:#FBB321;">Turn off message emails</a> &middot; ' if unsub else ''}<a href="{base}/me#emails" style="color:#FBB321;">Email preferences</a> &middot; <a href="{base}/privacy" style="color:#FBB321;">Privacy</a><br>
+Questions? Write to <a href="mailto:hello@barksbuds.app" style="color:#FBB321;">hello@barksbuds.app</a>. BarksBuds &middot; Manhasset, NY
 </td></tr></table></td></tr></table></body></html>"""
     return subject, body, text

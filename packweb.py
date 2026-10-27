@@ -636,7 +636,8 @@ class PackRoutes:
         for x in members:
             role = P.ROLE_LABEL.get(x["role"], "Member")
             mem_groups.append(f'<li><b>{e(x["name"])}</b>' + (f' <span class="badge">{e(role)}</span>' if x["role"] != "member" else "")
-                              + (f' <span class="small muted">with {e(", ".join(d["name"] for d in x["dogs"]))}</span>' if x["dogs"] else "") + '</li>')
+                              + (f' <span class="small muted">with {e(", ".join(d["name"] for d in x["dogs"]))}</span>' if x["dogs"] else "")
+                              + self.message_link(x["user_id"], x["name"]) + '</li>')
         reasons = "".join(f"<option>{e(x)}</option>" for x in A.REPORT_REASONS)
         report = (f'<details class="report"><summary>Report this pack</summary><form method="post" action="/packs/{pid}/report">{self.csrf_field()}'
                   f'<div class="field"><label for="reason">What\'s wrong?</label><select id="reason" name="reason">{reasons}</select></div>'
@@ -687,7 +688,7 @@ class PackRoutes:
         for x in P.members(pid, "pending"):
             dogs = ", ".join(d["name"] for d in x["dogs"]) or "no dogs listed"
             note = f'<p class="small" style="margin:6px 0 0">“{e(x["message"])}”</p>' if x["message"] else ""
-            pend.append(f'<li class="preq"><div><b>{e(x["name"])}</b> <span class="small muted">with {e(dogs)} · {e(ago(x["created_at"]))}</span>{note}'
+            pend.append(f'<li class="preq"><div><b>{e(x["name"])}</b> <span class="small muted">with {e(dogs)} · {e(ago(x["created_at"]))}</span>{self.message_link(x["user_id"], x["name"])}{note}'
                         f'{f"<ul class=mdogs style=margin-top:10px>{dog_tiles(x["dogs"], 56)}</ul>" if x["dogs"] else ""}</div>'
                         f'<div class="formfoot" style="margin:0">{btn(x["user_id"], "approve", "Approve", "btn btn-sm")}{btn(x["user_id"], "deny", "Decline")}</div></li>')
         rows = []
@@ -703,6 +704,7 @@ class PackRoutes:
                 if is_owner or x["role"] == "member":
                     acts.append(btn(x["user_id"], "remove", "Remove", "btn btn-danger btn-sm", conf="Remove this member from the pack?"))
             dogs = ", ".join(d["name"] for d in x["dogs"])
+            acts.insert(0, self.message_button(x["user_id"]))
             rows.append(f'<tr><td><b>{e(x["name"])}</b></td><td>{e(P.ROLE_LABEL.get(x["role"], "Member"))}</td><td>{e(dogs) or "—"}</td>'
                         f'<td><div class="formfoot" style="margin:0">{"".join(acts)}</div></td></tr>')
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">organizer tools</span><h1>{e(p["name"])}: members</h1>

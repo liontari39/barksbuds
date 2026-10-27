@@ -824,6 +824,9 @@ class MeetupRoutes:
                 f'<button class="btn btn-sm" type="submit">{"Update RSVP" if mine else "RSVP"}</button></form>{cancel}')
 
     def who_html(self, att):
+        def people_html(rows):
+            # names with a small Message link each (not for yourself; signed-out visitors are sent to sign in)
+            return ", ".join(f'<span class="mperson">{e(x["name"])}{self.message_link(x["user_id"], x["name"])}</span>' for x in rows)
         def tiles(rows):
             out = []
             for x in rows:
@@ -837,9 +840,8 @@ class MeetupRoutes:
             if not rows:
                 continue
             nd = sum(x["ndogs"] for x in rows)
-            people = ", ".join(x["name"] for x in rows)
             groups.append(f'<h3 class="mgh">{lab} <span>{nd} dog{"s" if nd != 1 else ""} · {len(rows)} member{"s" if len(rows) != 1 else ""}</span></h3>'
-                          f'<ul class="mdogs">{tiles(rows)}</ul><p class="small muted" style="margin:-4px 0 14px">With {e(people)}</p>')
+                          f'<ul class="mdogs">{tiles(rows)}</ul><p class="small muted mwith" style="margin:-4px 0 14px">With {people_html(rows)}</p>')
         return "".join(groups) or '<p class="muted" style="margin:0">No RSVPs yet. Be the first!</p>'
 
     def comments_html(self, m, u, is_host, mine):
