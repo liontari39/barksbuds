@@ -104,6 +104,7 @@
       '<div><h2><button type="button" class="nm" aria-controls="more-' + esc(r.id) + '">' + esc(r.name) + '</button></h2><p class="where">' + where + "</p></div>" +
       (d != null ? '<span class="dist">' + (d < 10 ? d.toFixed(1) : Math.round(d)) + " mi</span>" : "") + "</div>" +
       '<ul class="tags" aria-label="Highlights">' + tags(r) + "</ul>" +
+      '<div class="live-slot">' + live(r) + "</div>" +
       '<div class="mu-slot">' + meetups(r) + "</div>" +
       '<details class="more" id="more-' + esc(r.id) + '"><summary><svg class="ico chev" aria-hidden="true"><use href="#i-chev"/></svg>Details, hours &amp; directions</summary><div class="body">' +
       (r.photo && /^\/runs\/photo\/\d+\.jpg$/.test(r.photo) ? '<img class="ph" src="' + esc(r.photo) + '" alt="Photo of ' + esc(r.name) + '" loading="lazy">' : "") +
@@ -137,6 +138,25 @@
     }
     return out + '<a class="mu-host" href="/meetups/new?run=' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Host a meetup here</a>';
   }
+  // Live check-ins + official park news (from /api/runs/live), and a link to the run's own page.
+  var LIVE = { here: {}, news: {} };
+  function live(r) {
+    var n = LIVE.here[r.id] || 0, a = LIVE.news[r.id] || 0, out = '<p class="live">';
+    if (n) out += '<span class="hereb"><span class="livedot" aria-hidden="true"></span>' + n + " dog" + (n === 1 ? "" : "s") + " here now</span>";
+    if (a) out += '<a class="newsb" href="/runs/' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>Official news</a>';
+    return out + '<a class="runpg" href="/runs/' + encodeURIComponent(r.id) + '">Run page, check-ins &amp; news<span class="sr-only"> for ' + esc(r.name) + "</span></a></p>";
+  }
+  function getLive() {
+    return fetch("/api/runs/live", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d) return;
+      LIVE = { here: d.here || {}, news: d.news || {} };
+      $$(".card[data-id]").forEach(function (li) {
+        var r = runs.filter(function (x) { return x.id === li.getAttribute("data-id"); })[0], slot = li.querySelector(".live-slot");
+        if (r && slot) slot.innerHTML = live(r);
+      });
+      Object.keys(markers).forEach(function (k) { var x = runs.filter(function (y) { return y.id === k; })[0]; if (x) markers[k].setIcon(pinIcon(x, k === state.sel)); });
+    }).catch(function () {});
+  }
   var PACKS = {};
   function getRuns(url) { return fetch(url, { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : { runs: {} }; }).catch(function () { return { runs: {} }; }); }
   Promise.all([getRuns("/api/meetups"), getRuns("/api/packs")]).then(function (res) {
@@ -153,7 +173,8 @@
     var c = isOff(r) ? "#C98A0C" : "#C8201E", w = SMALL ? 24 : 30, h = SMALL ? 32 : 40;
     return L.divIcon({
       className: "pinx" + (sel ? " sel" : ""), iconSize: [w, h], iconAnchor: [w / 2, h], popupAnchor: [0, -h + 4],
-      html: '<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 1C7.3 1 1 7.1 1 14.7 1 25 15 39 15 39s14-14 14-24.3C29 7.1 22.7 1 15 1z" fill="' + c + '" stroke="#141414" stroke-width="2"/><circle cx="15" cy="14.5" r="5.5" fill="#FFF8EA"/></svg>'
+      html: '<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 1C7.3 1 1 7.1 1 14.7 1 25 15 39 15 39s14-14 14-24.3C29 7.1 22.7 1 15 1z" fill="' + c + '" stroke="#141414" stroke-width="2"/><circle cx="15" cy="14.5" r="5.5" fill="#FFF8EA"/></svg>' +
+        (LIVE.here[r.id] ? '<span class="pinn" title="Dogs here now">' + LIVE.here[r.id] + "</span>" : "")
     });
   }
 
@@ -330,6 +351,7 @@
     Object.keys(REGION).forEach(function (k) { if (k.toLowerCase() === c || (c === "the bronx" && k === "Bronx")) { state.county = k; areaEl.value = k; setRegion(REGION[k]); } });
     initMap(); setCtl();
     update(true);
+    getLive();
     document.body.setAttribute("data-ready", "1");
   }).catch(function () {
     countEl.textContent = "Sorry, we couldn't load the dog runs. Please refresh to try again.";
