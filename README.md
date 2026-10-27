@@ -138,3 +138,40 @@ There's no in-browser maker. Members request a pixel-art portrait and the team m
 - **Helper:** `python3 scripts/portraits.py [--url URL] list | fetch <id> | complete <id> <image.png> | reject <id> <note> | reset <id>`. It reads `.admin_key` without printing it. `fetch` saves `photo-1.jpg`…`photo-N.jpg`, `photo.jpg` (a copy of photo 1) and `request.json` to `/workspace/barksbuds-assets/portrait-requests/<id>/`.
 - **Showcase:** `/pixel-pals` and the homepage section list done portraits. Lily's and Maggie's seeded AI portraits are marked done automatically (`mark_seeded_done`).
 - The old 48 px maker sprites (`kind='pixel'`) stay stored and served at `/px/...`, but they aren't shown (`accounts.SHOW_OLD_SPRITES = False`). Old maker URLs redirect to the edit panel.
+
+## Community (run check-ins, park news, lost and found, recommendations, care reminders, celebrations)
+
+Hub: `/community`. Code: `community.py` (data), `communityweb.py` (pages, emails, daily job), `runpageweb.py` (run pages).
+
+- **Run pages and check-ins**: every run has a page at `/runs/<id>-<slug>` (`/runs/<id>` redirects). Members tap
+  "We're here" with their dogs; check-ins expire after 2 hours or when they tap "Leaving". The map and list on `/runs`
+  show "N dogs here now" from `GET /api/runs/live` (no-cache). Check-ins are rate limited (12 per hour). Members can
+  check in privately (counted, no names or photos) per check-in, or by default from the "Check-in privacy" switch on `/me`.
+- **Park announcements**: verified park accounts are assigned by the admin at `/admin/parks?key=...` (member email,
+  comma-separated run ids, organization name). They post closures, maintenance, rule changes and events from the run page
+  (10 per day); posts show an "Official" badge and drop off after their optional end date. Members follow a run and get
+  an email per announcement (opt-out, one-click unsubscribe). Per-run news page `/runs/<id>/news` and RSS `/runs/<id>/feed.xml`.
+- **Lost and found**: `/lost-found`, `/lost-found/new`, `/lost-found/<id>` (share page with an OG image at `/og.png`).
+  Contact is only through BarksBuds messages. 1 alert per member per day (plus 3 per IP per day), 14-day expiry, the poster
+  can mark Reunited or remove it, the admin removes at `/admin/lost?key=...`. Live alerts show in a homepage banner and on
+  nearby run pages, and are emailed to followers of runs within 3 miles and to members in nearby towns (max 200 recipients,
+  3 alert emails per member per day).
+- **Compatibility**: size (toy to XL), energy, and good with puppies / small dogs / big dogs, plays rough, shy. Chips on
+  the dog page, filters on `/dogs`.
+- **Care reminders (private)**: `/me/dogs/<id>/care`, owners and co-owners only: rabies, town license, other vaccines.
+  Emails 30 and 7 days before the due date.
+- **Recommendations**: `/recommendations?area=&cat=` for vets, groomers, walkers, sitters, trainers, daycare and pet stores.
+  Members add businesses they use (website or phone required, customer checkbox), one per member per business, "I use
+  them too", and report listings. Moderation at `/admin/recs?key=...`. Nothing is seeded.
+- **Birthdays and gotcha days**: optional gotcha day on the dog form. "Celebrating today" on the homepage and `/dogs`
+  area pages, a card at `/celebrate/<slug>` (`?k=gotcha`) with an OG image, and an email to owners on the day (opt-out).
+
+**Emails** use the tags `community-announce`, `community-lost`, `community-care`, `community-celebrate`. Members turn
+each kind off on `/me` (Community emails) or from the link in each email. `COMMUNITY_EMAIL_ALLOWLIST` (comma-separated)
+limits them to those addresses for a quiet rollout; when unset it falls back to the pack/meetup allowlists, and when those
+are unset too, every member can receive them.
+
+**Daily job** (care reminders, celebration emails, cleanup): runs automatically once a day after 8 AM Eastern on the first
+page load (turn off with `COMMUNITY_AUTO_JOBS=0`), and can be triggered by any scheduler (it's safe to run more than once a day):
+
+    curl -fsS -X POST -H "X-Admin-Key: $ADMIN_KEY" https://barksbuds.app/admin/jobs/daily
