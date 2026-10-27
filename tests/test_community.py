@@ -432,6 +432,34 @@ class CelebrationTests(unittest.TestCase):
         time.sleep(0.3)
         self.assertEqual(mark() - since, set())
 
+    def test_admin_rec_add_as_member(self):
+        c, email, uid, (lid,) = member("Mike", dogs=[lily(name=f"Lily{RUN}")])
+        adm, H = Client("10.77.243.10"), {"X-Admin-Key": KEY}
+        name = f"Spaw Pet Salon {RUN}"
+        data = {"user_id": str(uid), "category": "groomer", "name": name, "town": "Westbury", "area": "Nassau",
+                "contact": "spawpetsalon.com", "note": "Lily's groomer."}
+        self.assertEqual(adm.post("/admin/recs/add", data, csrf=False).status, 404)
+        self.assertEqual(adm.post("/admin/recs/add", dict(data, user_id="999999"), csrf=False, headers=H).status, 404)
+        self.assertEqual(adm.post("/admin/recs/add", dict(data, category="nope"), csrf=False, headers=H).status, 400)
+        self.assertEqual(adm.post("/admin/recs/add", dict(data, contact="not a site"), csrf=False, headers=H).status, 400)
+        since = mark()
+        r = adm.post("/admin/recs/add", dict(data, dry_run="1"), csrf=False, headers=H)
+        self.assertEqual(r.status, 200)
+        j = json.loads(r.text)
+        self.assertTrue(j["dry_run"]); self.assertIn(A.dog_by_id(lid)["slug"], j["plan"]["dogs"])
+        self.assertNotIn("@", r.text)
+        self.assertIsNone(C.find_rec("groomer", name, "Westbury"))
+        r = adm.post("/admin/recs/add", data, csrf=False, headers=H)
+        j = json.loads(r.text)
+        self.assertTrue(j["created"]); self.assertTrue(j["voted"])
+        rec = C.find_rec("groomer", name, "Westbury")
+        self.assertEqual(rec["created_by"], uid)
+        self.assertIn("Lily&#x27;s groomer.", Client("10.77.243.1").get("/recommendations?area=Nassau&cat=groomer").text)
+        again = json.loads(adm.post("/admin/recs/add", data, csrf=False, headers=H).text)
+        self.assertFalse(again["created"]); self.assertFalse(again["voted"])
+        time.sleep(0.3)
+        self.assertEqual(mark() - since, set())
+
     def test_gotcha_day_validation_and_card(self):
         t = C.today_et()
         try:

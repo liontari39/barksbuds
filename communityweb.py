@@ -22,6 +22,8 @@ Routes:
   POST /admin/jobs/daily                       daily job (X-Admin-Key header or key field): care reminders, celebration emails
   POST /admin/dogs/birthday                    admin fix-up (X-Admin-Key header): slug=, birthday=YYYY-MM-DD [, dry_run=1];
                                                sets ONLY that dog's birthday column, never sends email
+  POST /admin/recs/add                         admin (X-Admin-Key header): user_id=, category=, name=, town=, area=, contact=,
+                                               note= [, dry_run=1]; adds a recommendation as that member, never sends email
 Emails go through mailer.send_async with tags starting "community-" (gated by COMMUNITY_EMAIL_ALLOWLIST).
 """
 import html, io, json, os, re, threading, time
@@ -377,7 +379,8 @@ class CommunityRoutes:
                   (r"/recommendations/(\d+)/(vote|unvote|report)", self.post_rec_action), (r"/admin/recs", self.post_admin_recs),
                   (r"/me/dogs/(\d+)/care", self.post_care), (r"/me/community-emails", self.post_community_prefs),
                   (r"/emails/community", self.post_community_unsub), (r"/admin/jobs/daily", self.post_daily_job),
-                  (r"/admin/dogs/birthday", self.post_admin_dog_birthday)]
+                  (r"/admin/dogs/birthday", self.post_admin_dog_birthday),
+                  (r"/admin/recs/add", self.post_admin_rec_add)]
         return self._cdispatch(routes, path, q)
 
     def _cdispatch(self, routes, path, q):
@@ -1055,6 +1058,45 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
         after = A.one("SELECT birthday, birth_year, gotcha_day FROM dogs WHERE id=:i", i=row[0])
         out(200, {"ok": True, "dry_run": dry, "slug": slug, "before": before,
                   "after": dict(birthday=after[0], birth_year=after[1], gotcha_day=after[2])})
+
+    def post_admin_rec_add(self, q):
+        """Add a recommendation on behalf of one member (owner-requested), exactly like the member form would."""
+        f = self.read_form()
+        if not self._admin_key_ok(self.headers.get("X-Admin-Key", "")):
+            return self._emit(404, b"Not found", "text/plain")
+        f = f or {}
+        g = lambda k: (f.get(k) or "").strip()
+
+        def out(code, obj):
+            self._emit(code, json.dumps(obj).encode(), "application/json", headers={"Cache-Control": "no-store"})
+        uid = int(g("user_id")) if g("user_id").isdigit() else 0
+        urow = A.one("SELECT id, display_name FROM users WHERE id=:i", i=uid) if uid else None
+        if not urow:
+            return out(404, {"ok": False, "error": "no member with that user_id"})
+        dogs = [r[0] for r in A.q("SELECT slug FROM dogs WHERE user_id=:u ORDER BY id", u=uid)]
+        cat, name, town, area = g("category"), clean(g("name"), 80), clean(g("town"), 60), g("area")
+        contact, note = clean_contact(g("contact")), clean(g("note"), 300, multiline=True)
+        errs = []
+        if cat not in C.REC_ONE:
+            errs.append("category")
+        if len(name) < 2:
+            errs.append("name")
+        if len(town) < 2:
+            errs.append("town")
+        if area not in A.AREA_NAMES:
+            errs.append("area")
+        if contact is None:
+            errs.append("contact")
+        if errs:
+            return out(400, {"ok": False, "error": "invalid " + ", ".join(errs)})
+        ex = C.find_rec(cat, name, town)
+        plan = dict(user_id=uid, member=urow[1], dogs=dogs, category=cat, name=name, town=town, area=area,
+                    contact=contact, note=note, existing_rec_id=ex["id"] if ex else None)
+        if g("dry_run") == "1":
+            return out(200, {"ok": True, "dry_run": True, "plan": plan})
+        rid, created, voted = C.add_rec(uid, cat, name, town, area, contact, note)
+        print(f"recs: admin {'new' if created else 'vote'} rec {rid}", flush=True)
+        out(200, {"ok": True, "dry_run": False, "plan": plan, "rec_id": rid, "created": created, "voted": voted})
 
 
 def notify_alert(a, base):
