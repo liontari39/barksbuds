@@ -149,6 +149,12 @@ class RunPageRoutes:
                          '<p class="small" style="margin:12px 0 0"><a href="/lost-found">All lost and found alerts</a></p></div>')
         # at the run now
         tiles, anon_dogs = [], 0
+        import privacy as PV
+        hid_users = PV.checkin_hidden_users([x["user_id"] for x in here])
+        for x in here:  # "don't show my dogs at check-ins" applies to every check-in; others' dogs follow profile visibility
+            if x["user_id"] in hid_users:
+                x["anon"] = True
+        PV.filter_people([x for x in here if not x["anon"]], self.pv())
         for x in here:
             if x["anon"]:
                 anon_dogs += x["ndogs"]
@@ -230,10 +236,12 @@ class RunPageRoutes:
         hidden = C.checkins_hidden(u["id"])
         return (f'<form class="checkin" method="post" action="/runs/{rid}/checkin">{self.csrf_field()}{elsewhere}'
                 f'<fieldset class="checks-grid" style="margin-bottom:10px"><legend>Who\'s with you?</legend>{ticks}</fieldset>'
-                f'<label class="switch small" style="margin-bottom:12px"><input type="checkbox" name="anon" value="1"{" checked" if hidden else ""}>'
-                f'<span>Count us, but don\'t show our dogs</span></label>'
+                + ('<p class="small muted" style="margin:0 0 12px">Your privacy settings keep your dogs\' names and photos off check-ins; we only count them.</p>'
+                   '<input type="hidden" name="anon" value="1">' if hidden else
+                   '<label class="switch small" style="margin-bottom:12px"><input type="checkbox" name="anon" value="1">'
+                   '<span>Count us, but don\'t show our dogs</span></label>') +
                 f'<button class="btn btn-sm" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>We\'re here</button>'
-                f'<p class="small muted" style="margin:8px 0 0">Check-ins end on their own after 2 hours. <a href="/me#privacy">Privacy settings</a></p></form>')
+                f'<p class="small muted" style="margin:8px 0 0">Check-ins end on their own after 2 hours. <a href="/me/privacy#details">Privacy settings</a></p></form>')
 
     def _park_tools(self, r, org):
         rid = r["id"]

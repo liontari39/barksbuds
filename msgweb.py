@@ -92,6 +92,11 @@ class MessageRoutes:
         u = self.user()
         if not uid or (u and u["id"] == uid):
             return ""
+        import privacy as PV
+        if u and (MS.either_blocked(u["id"], uid) or not PV.can_message(u["id"], uid, self.pv())):
+            return ""  # blocked, or this member only takes messages from pack-mates / no one
+        if not u and PV.settings(uid)["priv_msg"] == "none":
+            return ""
         href = f"/messages/to/{int(uid)}"
         if not u:
             href = self.signin_href(href)
@@ -171,7 +176,10 @@ Your email address is never shared. Turn message emails on or off on <a href="/m
         if c and c["last_message_id"] and not err:
             return self.redirect(conv_path(c["id"]) + "#reply")
         name = MS.name_of(oid)
-        form = self.reply_form(f"/messages/to/{oid}", name, text, err, MS.blocked(u["id"], oid), oid)
+        import privacy as PV
+        closed = not MS.either_blocked(u["id"], oid) and not PV.can_message(u["id"], oid, self.pv())
+        form = (f'<p class="mstop">{e(PV.MSG_CLOSED)}</p>' if closed and not err else
+                self.reply_form(f"/messages/to/{oid}", name, text, err, MS.blocked(u["id"], oid), oid))
         body = f"""<section class="phead"><div class="wrap narrow"><a class="mback" href="/messages">&larr; Messages</a>
 <span class="eyebrow">new message</span><h1>Message {e(name)}</h1>{self.dogs_line(oid, name)}</div></section>
 <section class="section msec"><div class="wrap narrow"><div class="panel">{form}</div>
@@ -180,7 +188,10 @@ your email address stays private. Be kind, and keep plans for meeting up in publ
         return self.page(f"Message {name}", body, code=code, active="messages")
 
     def dogs_line(self, oid, name):
-        dogs = MS.other_dogs(oid)
+        import privacy as PV
+        rows = MS.other_dogs_ids(oid)
+        ok = PV.visible_ids([i for i, _, _ in rows], self.pv())
+        dogs = [(s, n) for i, s, n in rows if i in ok]
         if not dogs:
             return ""
         links = W_and([f'<a href="/dogs/{e(s)}">{e(n)}</a>' for s, n in dogs])
@@ -249,7 +260,11 @@ your email address stays private. Be kind, and keep plans for meeting up in publ
         older = '<li class="mday"><span>Older messages aren\'t shown</span></li>' if more else ""
         thread = (f'<ol class="thread" aria-label="Messages with {e(name)}">{older}{"".join(items)}</ol>' if items else
                   '<p class="muted">No messages yet.</p>')
-        form = self.reply_form(conv_path(cid), name, text, err, i_blocked, oid, can_send)
+        import privacy as PV
+        if can_send and not i_blocked and not PV.can_message(u["id"], oid, self.pv()):
+            form = f'<p class="mstop">{e(PV.MSG_CLOSED)} You can still read this conversation.</p>'
+        else:
+            form = self.reply_form(conv_path(cid), name, text, err, i_blocked, oid, can_send)
         safety = (f'<details class="msafety"><summary>Block {e(name)}</summary><p class="small">{e(name)} won\'t be able to message you, '
                   f'and this conversation is hidden from your inbox. They aren\'t told.</p><form method="post" action="{conv_path(cid)}/block">'
                   f'{self.csrf_field()}<button class="btn btn-danger btn-sm" type="submit">Block {e(name)}</button></form></details>'
@@ -271,6 +286,9 @@ Never share passwords or payment details. Something wrong? Report a message or b
         """'' if this member may send now, else the error to show (and the HTTP status)."""
         if MS.either_blocked(u["id"], oid):
             return GENERIC_BLOCK, 403
+        import privacy as PV
+        if not PV.can_message(u["id"], oid, self.pv()):
+            return PV.MSG_CLOSED, 403
         if new_conv and (MS.started_today(u["id"]) >= MS.NEW_PER_DAY or not A.LIMITER.allow(f"msg-new:{u['id']}", MS.NEW_PER_DAY, 86400)):
             return f"You've started {MS.NEW_PER_DAY} new conversations today. Try again tomorrow, or reply in an existing one.", 429
         if not A.LIMITER.allow(f"msg-send:{u['id']}", MS.SEND_PER_HOUR, 3600):

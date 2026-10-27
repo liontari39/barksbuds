@@ -29,6 +29,8 @@ import accounts
 import communityweb
 import coownweb
 import msgweb
+import privacy
+import privacyweb
 import mailer
 import meetweb
 import packweb
@@ -272,7 +274,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
+class H(privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -403,7 +405,7 @@ class H(search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, run
                    + "".join(f'<url><loc>{base}{runpageweb.run_path(r)}</loc></url>' for r in webapp.RUNS())
                    + "".join(f'<url><loc>{base}/lost-found/{a["id"]}</loc></url>' for a in communityweb.C.live_alerts(200))
                    + f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
-                   + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in accounts.browse_dogs(limit=5000))
+                   + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in privacy.sitemap_dogs(limit=5000))
                    + '</urlset>\n')
             return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=600"})
         if u.path == "/api/config":

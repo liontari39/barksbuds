@@ -13,6 +13,7 @@ import accounts as A
 import mailer
 import meetups as M
 import packs as P
+import privacy as PV
 import webapp as W
 from webapp import clean, area_label, where_text
 
@@ -840,8 +841,10 @@ class MeetupRoutes:
             if not rows:
                 continue
             nd = sum(x["ndogs"] for x in rows)
+            hid = nd - sum(len(x["dogs"]) for x in rows)
+            priv = (f'<p class="small muted" style="margin:-4px 0 8px">{hid} dog{"s" if hid != 1 else ""} with a private profile.</p>' if hid > 0 else "")
             groups.append(f'<h3 class="mgh">{lab} <span>{nd} dog{"s" if nd != 1 else ""} · {len(rows)} member{"s" if len(rows) != 1 else ""}</span></h3>'
-                          f'<ul class="mdogs">{tiles(rows)}</ul><p class="small muted mwith" style="margin:-4px 0 14px">With {people_html(rows)}</p>')
+                          f'<ul class="mdogs">{tiles(rows)}</ul>{priv}<p class="small muted mwith" style="margin:-4px 0 14px">With {people_html(rows)}</p>')
         return "".join(groups) or '<p class="muted" style="margin:0">No RSVPs yet. Be the first!</p>'
 
     def comments_html(self, m, u, is_host, mine):
@@ -885,8 +888,10 @@ class MeetupRoutes:
         is_host = bool(u and u["id"] == m["host_user_id"])
         r = run_of(m)
         att = M.attendees(mid)
+        for k in ("going", "maybe", "waitlist"):  # dog names/photos only where this viewer may see the profile; counts stay
+            PV.filter_people(att.get(k) or [], self.pv())
         mine = M.rsvp_of(mid, u["id"]) if u else None
-        going_dogs = [d for x in att["going"] for d in x["dogs"]]
+        going_dogs = [d for x in att["going"] for d in x["dogs"] if PV.public_dog(d["id"])]
         ngoing = sum(x["ndogs"] for x in att["going"])
         fact = lambda ico, txt: f'<li><svg class="ico" aria-hidden="true"><use href="#{ico}"/></svg>{txt}</li>'
         facts = [fact("i-cal", e(M.when_text(m["starts_at"], m["duration_min"]))), fact("i-clock", e(M.duration_text(m["duration_min"]))),

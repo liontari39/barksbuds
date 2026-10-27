@@ -80,9 +80,16 @@ def _top(items, limit):
 
 
 # ---------------------------------------------------------------- per-type searches
+class Blocked(set):
+    """Blocked member ids, plus the searching member's id (for privacy checks)."""
+    uid = None
+
+
 def s_dogs(terms, blocked, limit):
+    import privacy as PV
     out = []
-    for d in A.browse_dogs(limit=100000):
+    # only dogs this searcher may open, whose owners allow search; hidden towns are blanked (and so not searchable)
+    for d in PV.directory(PV.Viewer(getattr(blocked, "uid", None)), limit=10 ** 6):
         if d["user_id"] in blocked:
             continue
         sc = score(terms, d["name"], " ".join([d.get("breed") or "", d.get("town") or "", d.get("area") or "", _area(d.get("area"))]))
@@ -230,7 +237,8 @@ def run_search(raw, uid=None, only=None, limit=None):
     q, terms = parse_query(raw)
     if not terms:
         return q, {}
-    blocked = blocked_ids(uid)
+    blocked = Blocked(blocked_ids(uid))
+    blocked.uid = uid
     out = {}
     for k in TYPE_KEYS:
         try:

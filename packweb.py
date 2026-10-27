@@ -12,6 +12,7 @@ import accounts as A
 import mailer
 import meetups as M
 import packs as P
+import privacy as PV
 import webapp as W
 from webapp import clean, area_label, where_text
 
@@ -586,12 +587,15 @@ class PackRoutes:
         is_org = bool(mem and mem["status"] == "active" and mem["role"] in ("owner", "organizer"))
         is_mem = bool(mem and mem["status"] == "active")
         members = P.members(pid)
+        ndogs = sum(len(x["dogs"]) for x in members)  # counts include dogs with private profiles
+        PV.filter_people(members, self.pv())          # names and photos only for dogs this viewer may see
         dogs = [d for x in members for d in x["dogs"]]
+        more = ndogs - len(dogs)
         r = run_of(p)
         owner = next((x for x in members if x["role"] == "owner"), None)
         fact = lambda ico, txt: f'<li><svg class="ico" aria-hidden="true"><use href="#{ico}"/></svg>{txt}</li>'
         facts = [fact("i-pin", e(where_line(p))),
-                 fact("i-users", f'{len(members)} member{"s" if len(members) != 1 else ""} · {len(dogs)} dog{"s" if len(dogs) != 1 else ""}'),
+                 fact("i-users", f'{len(members)} member{"s" if len(members) != 1 else ""} · {ndogs} dog{"s" if ndogs != 1 else ""}'),
                  fact("i-lock" if p["visibility"] == "request" else "i-heart", "Request to join" if p["visibility"] == "request" else "Open to everyone")]
         if p["fit"]:
             facts.append(fact(FIT_ICON.get(p["fit"], "i-paw"), e(P.FIT_LABEL[p["fit"]])))
@@ -651,8 +655,9 @@ class PackRoutes:
 <div class="pcover-lg">{cover}</div></div></section>
 <section class="section" style="padding-top:36px"><div class="wrap">{errhtml}<div class="dgrid2"><div>
 <div class="panel"><h2>About the pack</h2><p class="bio">{e(p["description"])}</p></div>
-<div class="panel"><h2>Member dogs <span class="small muted" style="font-weight:600">{len(dogs)}</span></h2>
-{f'<ul class="mdogs">{dog_tiles(dogs)}</ul>' if dogs else '<p class="muted" style="margin:0">No dogs listed yet.</p>'}
+<div class="panel"><h2>Member dogs <span class="small muted" style="font-weight:600">{ndogs}</span></h2>
+{f'<ul class="mdogs">{dog_tiles(dogs)}</ul>' if dogs else ('' if more else '<p class="muted" style="margin:0">No dogs listed yet.</p>')}
+{f'<p class="small muted" style="margin:10px 0 0">{"Plus " if dogs else ""}{more} dog{"s" if more != 1 else ""} with a private profile.</p>' if more else ''}
 <details class="pmembers"><summary>{len(members)} member{"s" if len(members) != 1 else ""}</summary><ul class="plist">{"".join(mem_groups)}</ul></details></div>
 <div class="panel" id="board"><h2>Pack board</h2>{self.board_html(p, u, mem, is_org)}</div>
 </div>
@@ -685,14 +690,14 @@ class PackRoutes:
             return (f'<form method="post" action="/packs/{pid}/{base}/{uid}/{act}" style="display:inline">{self.csrf_field()}'
                     f'<button class="{cls}" type="submit"{c}>{label}</button></form>')
         pend = []
-        for x in P.members(pid, "pending"):
+        for x in PV.filter_people(P.members(pid, "pending"), self.pv()):
             dogs = ", ".join(d["name"] for d in x["dogs"]) or "no dogs listed"
             note = f'<p class="small" style="margin:6px 0 0">“{e(x["message"])}”</p>' if x["message"] else ""
             pend.append(f'<li class="preq"><div><b>{e(x["name"])}</b> <span class="small muted">with {e(dogs)} · {e(ago(x["created_at"]))}</span>{self.message_link(x["user_id"], x["name"])}{note}'
                         f'{f"<ul class=mdogs style=margin-top:10px>{dog_tiles(x["dogs"], 56)}</ul>" if x["dogs"] else ""}</div>'
                         f'<div class="formfoot" style="margin:0">{btn(x["user_id"], "approve", "Approve", "btn btn-sm")}{btn(x["user_id"], "deny", "Decline")}</div></li>')
         rows = []
-        for x in P.members(pid):
+        for x in PV.filter_people(P.members(pid), self.pv()):
             acts = []
             if x["role"] != "owner" and x["user_id"] != u["id"]:
                 if is_owner:

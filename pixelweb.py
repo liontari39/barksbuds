@@ -28,6 +28,7 @@ from urllib.parse import quote
 import accounts as A
 import mailer
 import portraits as P
+import privacy as PV
 
 e = html.escape
 OG_CACHE = {}  # photo id -> png (sprites never change in place)
@@ -54,10 +55,16 @@ def iso(ts):
     return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if ts else None
 
 
+def _listable(done, viewer):
+    """Portrait showcases only include dogs the viewer may see and whose owners allow them in listings."""
+    ok = PV.visible_ids([d["id"] for d, _ in done], viewer, "list")
+    return [(d, pid) for d, pid in done if d["id"] in ok]
+
+
 def landing_html():
     """'Pixel Pals' section for the landing page (index.html {{PIXEL_PALS}}): the finished portraits of Lily and Maggie."""
     try:
-        done = P.done_portraits(limit=2)
+        done = _listable(P.done_portraits(limit=8), None)[:2]
     except Exception as ex:  # never break the homepage
         print(f"pixel pals: landing section skipped ({ex.__class__.__name__})", flush=True)
         return ""
@@ -90,7 +97,7 @@ def hero_html():
     """Pixel-portrait highlight inside the homepage hero (index.html {{PIXEL_HERO}}), so the finished portraits (Lily and
     Maggie) show above the fold on desktop and phones. The full Pixel Pals section ({{PIXEL_PALS}}) follows the hero."""
     try:
-        done = P.done_portraits(limit=2)
+        done = _listable(P.done_portraits(limit=8), None)[:2]
     except Exception as ex:  # never break the homepage
         print(f"pixel pals: hero highlight skipped ({ex.__class__.__name__})", flush=True)
         return ""
@@ -167,7 +174,7 @@ class PixelRoutes:
         u = self.user()
         cta_href = "/pixel-pals/start"
         cta = "Request one for your dog" if u else "Sign up and request one for your dog"
-        done = P.done_portraits()
+        done = _listable(P.done_portraits(limit=200), self.pv())[:24]
         cards = "".join(f'<a class="pp-card" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])} as pixel art" '
                         f'width="300" height="300" loading="lazy"><b>{e(d["name"])}</b><small>{e(d["breed"] or "")}</small></a>' for d, pid in done)
         body = f"""<section class="phead pps-head"><div class="wrap"><span class="eyebrow">pixel pals</span>
@@ -338,7 +345,7 @@ class PixelRoutes:
                     photo_ids=ids, photo_count=len(ids),
                     photo_urls=[f"{base}/admin/portraits/{r['id']}/photo/{n}.jpg" for n in range(1, len(ids) + 1)],
                     portrait_photo_id=r["result_photo_id"],
-                    portrait_url=f"{base}/p/{r['result_photo_id']}.jpg" if r["result_photo_id"] else None)
+                    portrait_url=PV.signed_photo(r['result_photo_id'], "jpg", base) if r["result_photo_id"] else None)
 
     def admin_portraits_pending(self, q):
         if not self._admin_portrait_key(q):
@@ -413,7 +420,7 @@ class PixelRoutes:
             sent = " ".join(f'<a href="/admin/portraits/{r["id"]}/photo/{n}.jpg?key={quote(key)}"><img src="/admin/portraits/{r["id"]}/photo/{n}.jpg?key={quote(key)}" '
                             f'alt="Photo {n}" width="90" height="90" style="object-fit:cover;border-radius:8px"></a>'
                             for n in range(1, j["photo_count"] + 1))
-            made = (f'<img src="/p/{r["result_photo_id"]}.webp" alt="" width="90" height="90" style="border-radius:8px">'
+            made = (f'<img src="{PV.signed_photo(r["result_photo_id"])}" alt="" width="90" height="90" style="border-radius:8px">'
                     if r["result_photo_id"] else "")
             rows.append(f'<tr><td>#{r["id"]}<br><span class="small muted">{e(when)}</span></td>'
                         f'<td><a href="/dogs/{e(d["slug"] or "")}"><b>{e(d["name"] or "?")}</b></a><br><span class="small">{e(" · ".join(x for x in (d["breed"], d["age"], d["sex"]) if x))}</span>'
@@ -438,6 +445,11 @@ class PixelRoutes:
                 self.send_header(k, v)
             self.end_headers()
             return
+        did = PV.photo_dog(pid)
+        if did and not PV.public_dog(did) and not PV.can_view(did, self.pv()):  # old sprites follow the dog's privacy too
+            return self._emit(404, b"Not found", "text/plain", {"Cache-Control": "no-store"})
+        if did and not PV.public_dog(did):
+            hdr = {"Cache-Control": "private, max-age=600", "ETag": etag, "Vary": "Cookie"}
         got = A.pixel_blob(pid, "native" if variant in ("-1x", "-og") else "big")
         if got is None:
             return self._emit(404, b"Not found", "text/plain", {"Cache-Control": "no-store"})

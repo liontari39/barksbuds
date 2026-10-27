@@ -130,7 +130,7 @@ def sign_in(client, email):
 def new_dog(client, name="Biscuit", **extra):
     data = {"name": name, "breed": "Beagle", "age": "4", "size": "medium", "sex": "female",
             "temperament": ["Gentle", "Loves people"], "play_style": ["Chaser"], "vaccinated": "1",
-            "runs": ["q-001"], "bio": "Loves the run."}
+            "runs": ["q-001"], "bio": "Loves the run.", "visibility": "public"}  # most tests look at a public profile
     data.update(extra)
     r = client.post("/me/dogs/new", data)
     assert r.status == 303, (r.status, r.text[:500])

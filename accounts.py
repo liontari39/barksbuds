@@ -123,6 +123,8 @@ def init_schema(store):
     import community, coowners, meetups, messages, packs, portraits
     coowners.init_schema(store)
     community.init_schema(store)  # also adds dogs.energy/compat/gotcha_day and users email/privacy columns
+    import privacy
+    privacy.init_schema(store)    # dogs.visibility + users.priv_* (legacy defaults keep existing profiles unchanged)
     messages.init_schema(store)
     meetups.init_schema(store)
     packs.init_schema(store)
@@ -203,8 +205,10 @@ def get_or_create_user(email):
         return u[0], False
     wl = one("SELECT id, first_name FROM signups WHERE lower(email)=:e", e=email)
     try:
-        r = one("INSERT INTO users(email,display_name,waitlist_id,created_at,last_login_at) VALUES(:e,:n,:w,:t,:t) RETURNING id",
-                e=email, n=(wl[1][:40] if wl else ""), w=(wl[0] if wl else None), t=now())
+        import privacy
+        pc, pv, pk = privacy.new_user_sql()  # new accounts start with the privacy-friendly defaults
+        r = one(f"INSERT INTO users(email,display_name,waitlist_id,created_at,last_login_at,{pc}) VALUES(:e,:n,:w,:t,:t,{pv}) RETURNING id",
+                e=email, n=(wl[1][:40] if wl else ""), w=(wl[0] if wl else None), t=now(), **pk)
         return r[0], True
     except Exception:  # lost a race with a parallel sign-in
         u = one("SELECT id FROM users WHERE email=:e", e=email)
@@ -267,7 +271,7 @@ def delete_user(user_id):
 # ---------------------------------------------------------------- dogs
 DOG_COLS = ("id,user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,"
             "fav_runs,bio,avatar_photo_id,hidden,created_at,updated_at,website,seed_rev,pixel_photo_id,pixel_primary,"
-            "energy,compat,gotcha_day")
+            "energy,compat,gotcha_day,visibility")
 
 
 def _dog(r):
@@ -352,16 +356,22 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
                 tm=json.dumps(f["temperament"]), ps=json.dumps(f["play_style"]), v=1 if f["vaccinated"] else 0,
                 fr=json.dumps(f["fav_runs"]), bio=f["bio"], w=f.get("website", ""), t=t,
                 en=f.get("energy", ""), cp=json.dumps(f.get("compat", [])), gd=f.get("gotcha_day", ""))
+    import privacy
+    vis = f.get("visibility")
     if dog_id:
+        if vis in privacy.VIS_KEYS:
+            privacy.set_visibility(dog_id, vis)
         q("""UPDATE dogs SET name=:n,breed=:b,birthday=:bd,birth_year=:by,sex=:sx,size=:sz,temperament=:tm,play_style=:ps,
              vaccinated=:v,fav_runs=:fr,bio=:bio,website=:w,energy=:en,compat=:cp,gotcha_day=:gd,updated_at=:t WHERE id=:i""", i=dog_id, **vals)  # caller checked owner/co-owner
         return dog_id
+    if vis not in privacy.VIS_KEYS:
+        vis = privacy.default_vis(user_id)
     for attempt in range(3):
         try:
             r = one("""INSERT INTO dogs(user_id,slug,name,breed,birthday,birth_year,sex,size,temperament,play_style,vaccinated,
-                       fav_runs,bio,website,energy,compat,gotcha_day,seed_key,created_at,updated_at)
-                       VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:en,:cp,:gd,:sk,:t,:t)
-                       RETURNING id""", u=user_id, s=unique_slug(f["name"]), sk=seed_key, **vals)
+                       fav_runs,bio,website,energy,compat,gotcha_day,seed_key,visibility,created_at,updated_at)
+                       VALUES(:u,:s,:n,:b,:bd,:by,:sx,:sz,:tm,:ps,:v,:fr,:bio,:w,:en,:cp,:gd,:sk,:vis,:t,:t)
+                       RETURNING id""", u=user_id, s=unique_slug(f["name"]), sk=seed_key, vis=vis, **vals)
             import coowners
             coowners.add_owner_row(r[0], user_id)
             return r[0]

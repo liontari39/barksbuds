@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, quote, urlsplit
 
 import accounts as A
 import coowners as CO
+import privacy as PV
 import mailer
 
 e = html.escape
@@ -386,6 +387,8 @@ class AppRoutes:
             self.dashboard(q); return True
         if path == "/me/profile":
             self.profile_page(); return True
+        if path == "/me/privacy":
+            self.privacy_settings_page(q); return True
         if path == "/me/delete":
             self.delete_account_page(); return True
         if path == "/me/dogs/new":
@@ -406,7 +409,7 @@ class AppRoutes:
             self.dog_page(m.group(1), q); return True
         m = re.fullmatch(r"/p/(\d+)\.(jpg|webp)", path)
         if m:
-            self.photo(int(m.group(1)), m.group(2)); return True
+            self.photo(int(m.group(1)), m.group(2), q); return True
         if path == "/admin/reports":
             self.admin_reports(q); return True
         return False
@@ -416,7 +419,7 @@ class AppRoutes:
         if self.coown_post(path, q):
             return True
         routes = [(r"/signin", self.post_signin), (r"/auth", self.post_auth), (r"/signout", self.post_signout),
-                  (r"/me/profile", self.post_profile), (r"/me/delete", self.post_delete_account),
+                  (r"/me/profile", self.post_profile), (r"/me/privacy", self.post_privacy_settings), (r"/me/delete", self.post_delete_account),
                   (r"/me/dogs/new", self.post_dog), (r"/me/dogs/(\d+)/edit", self.post_dog),
                   (r"/me/dogs/(\d+)/delete", self.post_delete_dog), (r"/me/dogs/(\d+)/photos", self.post_photos),
                   (r"/me/dogs/(\d+)/photos/(\d+)/(delete|avatar)", self.post_photo_action),
@@ -560,7 +563,10 @@ It comes from hello@barksbuds.app.</div>
             meta = " · ".join(x for x in (d["breed"], A.age_text(d)) if x)
             hidden = '<p class="err">Hidden by our team while we review a report.</p>' if d["hidden"] else ""
             co = ' <span class="badge">Co-owner</span>' if d["user_id"] != u["id"] else ""
-            cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}{co}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{hidden}
+            vis = PV.VIS_LABEL.get(d.get("visibility") or "public", "Public")
+            visl = (f'<p class="small" style="margin:2px 0 8px"><a href="/me/privacy#profiles" title="Who can see this profile">'
+                    f'<svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> {e(vis)}</a></p>')
+            cards.append(f"""<article class="dcard">{ph}<div class="bd"><h3>{e(d["name"])}{co}</h3><p class="meta">{e(meta) or "&nbsp;"}</p>{visl}{hidden}
 <div class="acts"><a class="btn btn-sm" href="/me/dogs/{d["id"]}/edit">Edit profile</a><a class="btn btn-ghost btn-sm" href="/dogs/{e(d["slug"])}">View page</a></div>
 <p class="small" style="margin:10px 0 0"><a href="/me/dogs/{d["id"]}/care"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg> Care reminders</a></p></div></article>""")
         if owned < A.MAX_DOGS:
@@ -585,7 +591,9 @@ It comes from hello@barksbuds.app.</div>
 <div class="panel"><h2>Your profile</h2>
 <dl class="kv"><dt>Name</dt><dd>{e(u["display_name"]) or "Not set"}</dd><dt>Area</dt><dd>{e(wh) or "Not set"}</dd>
 <dt>About</dt><dd>{e(u["bio"]) or "Not set"}</dd></dl>
-<a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a></div>
+<a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a>
+<div class="emailpref" id="privacy-settings"><p class="small" style="margin:0;flex:1 1 220px"><b>Privacy</b>: who can see your dogs, how findable they are,
+what details show and who can message you.</p><a class="btn btn-sm" href="/me/privacy">Privacy settings</a></div></div>
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
@@ -737,6 +745,9 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.<
                            f'<span>{e(lab)}</span></label>' for k, lab in A.COMPAT)
 
         is_new = d is None
+        _u = self.user()
+        cur_vis = get("visibility") or (d.get("visibility") if d else None) or (PV.default_vis(_u["id"]) if _u else "members")
+        vis_opts = "".join(f'<option value="{k}"{" selected" if k == cur_vis else ""}>{e(lab)}: {e(desc)}</option>' for k, lab, desc in PV.VIS)
         action = "/me/dogs/new" if is_new else f"/me/dogs/{d['id']}/edit"
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if errs.get(k) else ""
@@ -771,6 +782,8 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.<
 <div class="rp-chosen" aria-live="polite"></div><div class="rp-list">{self.run_picker(set(get("fav_runs", []) or []))}</div></div>{err("runs")}</div>
 <div class="field"><label for="website">Website or social link <span class="opt">(optional)</span></label><input id="website" name="website" type="url" inputmode="url" maxlength="200" placeholder="https://instagram.com/yourdog" value="{e(get("website"))}"{inv("website")}>{err("website")}<span class="help">Shown on {dn or 'your dog'}'s public page. Must start with http:// or https://.</span></div>
 <div class="field"><label for="bio">Bio <span class="opt">(optional)</span></label><textarea id="bio" name="bio" maxlength="600" rows="4" placeholder="Favorite toy, best trick, what makes them happiest at the run…">{e(get("bio"))}</textarea></div>
+<div class="field"><label for="visibility">Who can see {dn or 'your dog'}'s profile</label><select id="visibility" name="visibility" style="max-width:340px">{vis_opts}</select>
+<span class="help">More choices, like search and messages, are in <a href="/me/privacy">privacy settings</a>.</span></div>
 <div class="formfoot"><button class="btn" type="submit">{'Create profile' if is_new else 'Save changes'}</button><a href="/me">Cancel</a><span class="spacer"></span>{delete_link}</div>
 </form></div></section>"""
         js = """<script>
@@ -836,6 +849,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                  vaccinated=f.get("vaccinated") == "1", bio=clean(f.get("bio"), 600, multiline=True),
                  website=f.get("website").strip()[:300], energy=f.get("energy"),
                  compat=[k for k, _ in A.COMPAT if k in f.getlist("compat")], gotcha_day=f.get("gotcha_day").strip()[:10])
+        if f.get("visibility") in PV.VIS_KEYS:
+            v["visibility"] = f.get("visibility")
         runs = run_index()
         picked = []
         for r in f.getlist("runs"):
@@ -1008,7 +1023,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         def match(d):
             return ((not fsize or d.get("size") == fsize) and (not fen or d.get("energy") == fen)
                     and all(k in (d.get("compat") or []) for k in fcp))
-        dogs = A.browse_dogs(areas, match=match if filtered else None)
+        dogs = PV.directory(self.pv(), areas, match=match if filtered else None)
         firsts = A.first_photos([d["id"] for d in dogs])
         cards = [self.dog_card(d, d.get("avatar_photo_id") or firsts.get(d["id"])) for d in dogs]  # main picture first
         cur = lambda on: ' aria-current="page"' if on else ""
@@ -1038,7 +1053,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                 + (f'<a class="small" href="{e(canon)}">Clear</a>' if filtered else "") + '</form>')
         try:
             import communityweb
-            celeb = communityweb.celebrating_html(areas)
+            celeb = communityweb.celebrating_html(areas, self.pv())
         except Exception:
             celeb = ""
         n = len(dogs)
@@ -1059,7 +1074,16 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         if not d or (d["hidden"] and not is_owner):
             return self.msg_page("We couldn't find that dog", '<p class="sub">This profile may have been removed.</p>'
                                  '<p><a class="btn" href="/dogs">Meet the dogs</a></p>', code=404)
+        if not is_owner and not PV.can_view(d, self.pv()):
+            return self.private_dog_page()
+        pst = PV.settings(d["user_id"])  # the primary owner's privacy choices
         owner = A.owner_public(d["user_id"])
+        if not is_owner:
+            d = PV.redact(d, self.pv(), pst)  # hidden birthday / gotcha day / favorite runs
+            if not pst["priv_town"]:
+                owner.update(town="", area="")
+            if not pst["priv_owner_name"]:
+                owner["display_name"] = ""
         photos = A.gallery(d["id"])
         cover, avatar = A.cover_and_avatar(d, photos)
         age = A.age_text(d)
@@ -1123,7 +1147,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                            f'<p class="small muted" style="margin:12px 0 0">Shared by {e(d["name"])}\'s human to help plan a good first hello.</p></div>')
         today = date.today()
         for kind, when in (("birthday", d.get("birthday")), ("gotcha", d.get("gotcha_day"))):
-            if when and C_is_today(when, today):
+            if when and C_is_today(when, today) and (is_owner or pst["priv_celebrate"]):
                 lab = "birthday" if kind == "birthday" else "gotcha day"
                 main.insert(0, f'<div class="panel celebnote"><h2><svg class="ico" aria-hidden="true"><use href="#i-cake"/></svg> '
                                f'It\'s {e(d["name"])}\'s {lab} today!</h2><p style="margin:0"><a class="btn btn-gold btn-sm" '
@@ -1158,10 +1182,16 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                          f'<a href="{e(d["website"])}" rel="nofollow noopener noreferrer ugc" target="_blank">{e(host)}</a></p>')
         owner_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-user"/></svg>'
                       f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
+        vis = d.get("visibility") or "public"
         edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
+                f'<p class="small" style="margin:8px 0 0"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> '
+                f'Who can see this page: <b>{e(PV.VIS_LABEL.get(vis, "Public"))}</b> · <a href="/me/privacy#profiles">Privacy settings</a></p>'
                 if is_owner else "")
         if not is_owner:  # Message the owner (and any co-owners); signed-out visitors are sent to sign in first
-            humans = [(d["user_id"], owner["display_name"])] + [(c["user_id"], c["name"]) for c in CO.coowners(d["id"])]
+            cos = CO.coowners(d["id"])
+            cst = PV.settings_map([c["user_id"] for c in cos])
+            humans = [(d["user_id"], owner["display_name"])] + [
+                (c["user_id"], c["name"] if (cst.get(c["user_id"]) or PV.LEGACY)["priv_owner_name"] else "") for c in cos]
             btns = [self.message_button(uid, f"Message {nm}" if nm else f"Message {d['name']}'s human") for uid, nm in humans]
             btns = [b for b in btns if b]
             if btns:
@@ -1200,7 +1230,7 @@ sw.querySelectorAll('img.av').forEach(function(i){i.hidden=i.dataset.v!==b.datas
 (function(){var dl=document.querySelector('dialog.lb');if(!dl||!dl.showModal)return;var im=dl.querySelector('img');
 document.querySelectorAll('.gallery a').forEach(function(a){a.addEventListener('click',function(ev){ev.preventDefault();im.src=a.dataset.full;im.alt=a.querySelector('img').alt;dl.showModal()})});
 dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.contains('x'))dl.close()})})();</script>"""
-        return self.page(og_title, body, index=not d["hidden"], canonical=f"/dogs/{d['slug']}", desc=desc, og=og,
+        return self.page(og_title, body, index=not d["hidden"] and PV.indexable(d, pst), canonical=f"/dogs/{d['slug']}", desc=desc, og=og,
                          scripts=js, active="dogs", flash=self.flash_from(q))
 
     def post_report(self, slug):
@@ -1217,9 +1247,18 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             print(f"reports: new report on dog {d['id']}", flush=True)
         return self.redirect(f"/dogs/{d['slug']}?m=reported")
 
-    def photo(self, pid, ext):
+    def photo(self, pid, ext, q=None):
+        """Dog photos. Photos of Public dogs are cached publicly; others need a viewer allowed to see the dog (or a
+        signed ?k= link from an email or admin tool) and are only cached privately."""
+        q = q or {}
+        did = PV.photo_dog(pid)
+        signed = PV.photo_sig_ok(pid, q.get("k", [""])[0])
+        public = bool(did) and PV.public_dog(did)
+        if did and not public and not signed and not PV.can_view(did, self.pv()):
+            return self._emit(404, b"Not found", "text/plain", {"Cache-Control": "no-store"})
         etag = '"p%d%s"' % (pid, ext)
-        hdr = {"Cache-Control": "public, max-age=31536000, immutable", "ETag": etag}
+        hdr = ({"Cache-Control": "public, max-age=31536000, immutable", "ETag": etag} if public else
+               {"Cache-Control": "private, max-age=600", "ETag": etag, "Vary": "Cookie"})
         if etag in (self.headers.get("If-None-Match") or ""):
             self.send_response(304)
             for k, v in hdr.items():

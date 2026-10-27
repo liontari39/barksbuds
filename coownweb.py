@@ -6,6 +6,7 @@ import time
 
 import accounts as A
 import coowners as CO
+import privacy as PV
 import mailer
 
 e = lambda s: html.escape(str(s if s is not None else ""), quote=True)
@@ -200,7 +201,7 @@ class CoownerRoutes:
               f'<p class="small muted">This signs you in as <b>{e(inv["email"])}</b> and creates your free account if you don\'t have one. No password needed.</p>'
         photos = A.gallery(d["id"])
         _, av = A.cover_and_avatar(d, photos)
-        img = f'<p><img class="av" src="/p/{av}.webp" alt="" width="92" height="92" style="display:block;margin:0 auto;border-radius:50%"></p>' if av else ""
+        img = f'<p><img class="av" src="{PV.signed_photo(av)}" alt="" width="92" height="92" style="display:block;margin:0 auto;border-radius:50%"></p>' if av else ""
         return self.msg_page(f"Co-own {d['name']} on BarksBuds", f"""{img}<p class="sub">{e(inviter)} invited you to be a co-owner of
 <a href="/dogs/{e(d["slug"])}">{e(d["name"])}</a>. You'll be able to edit {e(d["name"])}'s profile and photos and bring {e(d["name"])} to meetups and packs.</p>
 <form method="post" action="/invite/{e(raw)}">{self.csrf_field()}<button class="btn" type="submit">Accept and co-own {e(d["name"])}</button></form>

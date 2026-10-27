@@ -154,7 +154,8 @@ class CheckinTests(unittest.TestCase):
         c.post("/me/community-emails", {"checkins_hidden": "1", "follow": "1", "alert": "1", "celebrate": "1", "care": "1"})
         self.assertTrue(C.checkins_hidden(uid))
         page = follow_redirect(c, f"/runs/{RUN_ID}").text
-        self.assertRegex(page, r'name="anon" value="1" checked')
+        self.assertIn('<input type="hidden" name="anon" value="1">', page)  # privacy setting forces anonymous check-ins
+        self.assertIn('/me/privacy#details', page)
         c.post(f"/runs/{RUN_ID}/leave", {})
 
 

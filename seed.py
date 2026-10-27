@@ -102,6 +102,9 @@ def run(load, log=print):
     u = A.one("SELECT display_name, area, town, bio FROM users WHERE id=:i", i=uid)
     A.update_profile(uid, u[0] or OWNER["display_name"], u[1] or OWNER["area"], u[2] or OWNER["town"], u[3] or OWNER["bio"])
     log(f"owner: user {uid} ({'created' if created else 'existing'})")
+    if created:  # the site's own showcase account (Lily and Maggie) is fully public, as it always was
+        import privacy
+        privacy.set_legacy_defaults(uid)
     for spec in DOGS:
         row = A.one("SELECT id FROM dogs WHERE seed_key=:k", k=spec["seed_key"])
         if row:
@@ -109,7 +112,7 @@ def run(load, log=print):
             log(f"{spec['name']}: exists (dog {dog_id}), leaving profile as is")
         else:
             f = dict(name=spec["name"], breed=spec["breed"], birthday="", birth_year=date.today().year - spec["age"],
-                     sex="", size=spec["size"], temperament=[], play_style=[], vaccinated=False, fav_runs=[], bio=spec["bio"])
+                     sex="", size=spec["size"], temperament=[], play_style=[], vaccinated=False, fav_runs=[], bio=spec["bio"], visibility="public")
             dog_id = A.save_dog(uid, f, seed_key=spec["seed_key"])
             log(f"{spec['name']}: created dog {dog_id}")
         if A.photo_count(dog_id) == 0:

@@ -32,6 +32,7 @@ from urllib.parse import quote, urlencode
 
 import accounts as A
 import community as C
+import privacy as PV
 import mailer
 import webapp as W
 from webapp import clean
@@ -106,8 +107,8 @@ def alert_photo_id(a):
         return f"/lost-found/{a['id']}/photo.webp", f"/lost-found/{a['id']}/photo.jpg"
     if a["dog_id"]:
         t = C.dog_tiles([a["dog_id"]])
-        if t and t[0]["photo"]:
-            return f"/p/{t[0]['photo']}.webp", f"/p/{t[0]['photo']}.jpg"
+        if t and t[0]["photo"]:  # the owner chose to share this photo in a public alert, so the link is signed
+            return PV.signed_photo(t[0]['photo'], "webp"), PV.signed_photo(t[0]['photo'], "jpg")
     return None, None
 
 
@@ -137,8 +138,9 @@ def celeb_label(x):
     return f"{ordinal(x['years'])} birthday" if x["years"] >= 1 else "Birthday"
 
 
-def celebrating_html(areas=None, title="Celebrating today", compact=False):
-    xs = C.celebrating(areas=areas)
+def celebrating_html(areas=None, viewer=None, title="Celebrating today", compact=False):
+    """viewer: privacy.Viewer (None = signed out). Only dogs the viewer may see whose owners allow shout-outs."""
+    xs = PV.filter_celebrations(C.celebrating(areas=areas, limit=500), viewer, areas=areas)[:24]
     if not xs:
         return ""
     tiles = "".join(f'<li><a href="{e(celeb_path(x))}">{A.tile_img(x, 72)}<span>{e(x["name"])}</span><small>{e(celeb_label(x))}</small></a></li>' for x in xs)
@@ -319,7 +321,7 @@ def send_celebrations(base, today=None):
                 continue
             un = unsub_url(base, uid, "celebrate")
             what = celeb_label(x).lower()
-            img = f"{base}/p/{x['photo']}.webp" if x.get("photo") else ""
+            img = PV.signed_photo(x['photo'], "webp", base) if x.get("photo") else ""
             subject, body, text = mailer.build_community(
                 base, subject=f"Happy {what}, {x['name']}!", eyebrow="it's a big day", heading=f"Happy {what}, {x['name']}!",
                 name=m["name"], image=img,
@@ -417,7 +419,7 @@ class CommunityRoutes:
             f'<li><a href="/recommendations?{urlencode({"area": r["area"], "cat": r["category"]})}#r{r["id"]}"><b>{e(r["name"])}</b>'
             f'<span class="small muted">{e(C.REC_ONE.get(r["category"], ""))} · {e(r["town"])} · {r["votes"]} member{"s" if r["votes"] != 1 else ""}</span></a></li>' for r in recs) + "</ul>"
             if recs else '<p class="muted" style="margin:0 0 12px">No recommendations here yet. Who do you trust with your dog?</p>')
-        cel = celebrating_html(areas)
+        cel = celebrating_html(areas, self.pv())
         where = f" in {e(W.area_label(areas[0]))}" if areas else ""
         rq = "?area=" + quote(areas[0]) if areas else ""
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">community</span><h1>Your local dog community</h1>
@@ -905,6 +907,8 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
         d = A.dog_by_slug(slug)
         if not d or d["hidden"]:
             return None, None
+        if not PV.is_owner(d, self.pv()) and not PV.can_celebrate(d, self.pv(), None):
+            return None, None  # private profile, or the owner turned shout-outs (or dates) off
         want = "gotcha" if q.get("k", [""])[0] == "gotcha" else "birthday"
         dates = {"birthday": d.get("birthday") or "", "gotcha": d.get("gotcha_day") or ""}
         kind = want if C._md(dates[want]) else next((k for k in ("birthday", "gotcha") if C._md(dates[k])), None)

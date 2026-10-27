@@ -243,6 +243,13 @@ def other_dogs(uid):
            (SELECT dog_id FROM dog_owners WHERE user_id=:u)) ORDER BY d.id LIMIT 6""", u=uid)]
 
 
+def other_dogs_ids(uid):
+    """[(id, slug, name)] like other_dogs, so callers can apply privacy.visible_ids."""
+    return [(r[0], r[1], r[2]) for r in q(
+        """SELECT d.id, d.slug, d.name FROM dogs d WHERE d.hidden=0 AND (d.user_id=:u OR d.id IN
+           (SELECT dog_id FROM dog_owners WHERE user_id=:u)) ORDER BY d.id LIMIT 6""", u=uid)]
+
+
 # ---------------------------------------------------------------- notification emails
 def claim_email_slot(cid, uid):
     """True (and records the send time) if no notification went to this recipient for this conversation in the last
