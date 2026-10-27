@@ -20,6 +20,8 @@ Routes:
   POST /me/community-emails                    email preferences + check-in privacy
   GET/POST /emails/community?u=&k=&t=          one-click unsubscribe (k = follow | alert | celebrate | care)
   POST /admin/jobs/daily                       daily job (X-Admin-Key header or key field): care reminders, celebration emails
+  POST /admin/dogs/birthday                    admin fix-up (X-Admin-Key header): slug=, birthday=YYYY-MM-DD [, dry_run=1];
+                                               sets ONLY that dog's birthday column, never sends email
 Emails go through mailer.send_async with tags starting "community-" (gated by COMMUNITY_EMAIL_ALLOWLIST).
 """
 import html, io, json, os, re, threading, time
@@ -374,7 +376,8 @@ class CommunityRoutes:
                   (r"/admin/lost", self.post_admin_lost), (r"/recommendations/new", self.post_rec),
                   (r"/recommendations/(\d+)/(vote|unvote|report)", self.post_rec_action), (r"/admin/recs", self.post_admin_recs),
                   (r"/me/dogs/(\d+)/care", self.post_care), (r"/me/community-emails", self.post_community_prefs),
-                  (r"/emails/community", self.post_community_unsub), (r"/admin/jobs/daily", self.post_daily_job)]
+                  (r"/emails/community", self.post_community_unsub), (r"/admin/jobs/daily", self.post_daily_job),
+                  (r"/admin/dogs/birthday", self.post_admin_dog_birthday)]
         return self._cdispatch(routes, path, q)
 
     def _cdispatch(self, routes, path, q):
@@ -1025,6 +1028,33 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
             return self._emit(404, b"Not found", "text/plain")
         out = run_daily(self._base())
         self._emit(200, json.dumps(out).encode(), "application/json", headers={"Cache-Control": "no-store"})
+
+    def post_admin_dog_birthday(self, q):
+        """Set one dog's birthday (only that column) by slug, for owner-requested fixes on the live site."""
+        f = self.read_form()
+        if not self._admin_key_ok(self.headers.get("X-Admin-Key", "")):
+            return self._emit(404, b"Not found", "text/plain")
+        f = f or {}
+        slug, bd = (f.get("slug") or "").strip(), (f.get("birthday") or "").strip()
+        dry = (f.get("dry_run") or "") == "1"
+
+        def out(code, obj):
+            self._emit(code, json.dumps(obj).encode(), "application/json", headers={"Cache-Control": "no-store"})
+        row = A.one("SELECT id, name, birthday, birth_year, gotcha_day FROM dogs WHERE slug=:s", s=slug) if slug else None
+        if not row:
+            return out(404, {"ok": False, "error": "no dog with that slug"})
+        try:
+            day = date.fromisoformat(bd) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", bd) else None
+        except ValueError:
+            day = None
+        if not day or day > C.today_et() or day.year < C.today_et().year - 30:
+            return out(400, {"ok": False, "error": "birthday must be a real past date YYYY-MM-DD"})
+        before = dict(id=row[0], name=row[1], birthday=row[2], birth_year=row[3], gotcha_day=row[4])
+        if not dry:
+            A.q("UPDATE dogs SET birthday=:b WHERE id=:i", b=day.isoformat(), i=row[0])
+        after = A.one("SELECT birthday, birth_year, gotcha_day FROM dogs WHERE id=:i", i=row[0])
+        out(200, {"ok": True, "dry_run": dry, "slug": slug, "before": before,
+                  "after": dict(birthday=after[0], birth_year=after[1], gotcha_day=after[2])})
 
 
 def notify_alert(a, base):

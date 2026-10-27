@@ -1126,6 +1126,11 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                 main.insert(0, f'<div class="panel celebnote"><h2><svg class="ico" aria-hidden="true"><use href="#i-cake"/></svg> '
                                f'It\'s {e(d["name"])}\'s {lab} today!</h2><p style="margin:0"><a class="btn btn-gold btn-sm" '
                                f'href="/celebrate/{e(d["slug"])}{"?k=gotcha" if kind == "gotcha" else ""}">See the celebration card</a></p></div>')
+        if d.get("birthday"):
+            try:
+                facts.insert(1 if age else 0, fact("i-cake", "Birthday " + e(date.fromisoformat(d["birthday"]).strftime("%b %-d"))))
+            except ValueError:
+                pass
         if d.get("gotcha_day"):
             try:
                 facts.append(fact("i-heart", "Gotcha day " + e(date.fromisoformat(d["gotcha_day"]).strftime("%b %-d"))))

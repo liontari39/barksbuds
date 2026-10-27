@@ -402,6 +402,36 @@ class CelebrationTests(unittest.TestCase):
         c.post("/me/community-emails", {"follow": "1", "alert": "1", "care": "1"})
         self.assertFalse(C.emails_on(uid, "celebrate"))
 
+    def test_admin_dog_birthday_sets_only_birthday(self):
+        c, email, uid, (lid,) = member("Mike", dogs=[maggie(name=f"Maggie{RUN}")])
+        d0 = A.dog_by_id(lid)
+        slug = d0["slug"]
+        adm = Client("10.77.243.9")
+        self.assertEqual(adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2023-08-02"}, csrf=False).status, 404)
+        self.assertEqual(adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2023-08-02"}, csrf=False,
+                                  headers={"X-Admin-Key": "wrong"}).status, 404)
+        H = {"X-Admin-Key": KEY}
+        self.assertEqual(adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2099-01-01"}, csrf=False, headers=H).status, 400)
+        self.assertEqual(adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2023-02-30"}, csrf=False, headers=H).status, 400)
+        self.assertEqual(adm.post("/admin/dogs/birthday", {"slug": "no-such-dog-x", "birthday": "2023-08-02"}, csrf=False, headers=H).status, 404)
+        r = adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2023-08-02", "dry_run": "1"}, csrf=False, headers=H)
+        self.assertEqual(r.status, 200)
+        self.assertEqual(A.dog_by_id(lid)["birthday"], d0["birthday"])
+        since = mark()
+        r = adm.post("/admin/dogs/birthday", {"slug": slug, "birthday": "2023-08-02"}, csrf=False, headers=H)
+        self.assertEqual(r.status, 200)
+        self.assertEqual(json.loads(r.text)["after"]["birthday"], "2023-08-02")
+        d1 = A.dog_by_id(lid)
+        self.assertEqual(d1["birthday"], "2023-08-02")
+        for k in d0:
+            if k != "birthday":
+                self.assertEqual(d0[k], d1[k], k)
+        pg = Client("10.77.243.1").get(f"/dogs/{slug}").text
+        self.assertIn("Birthday Aug 2", pg)
+        self.assertIn("3 years old", pg)
+        time.sleep(0.3)
+        self.assertEqual(mark() - since, set())
+
     def test_gotcha_day_validation_and_card(self):
         t = C.today_et()
         try:
