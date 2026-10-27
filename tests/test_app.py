@@ -12,6 +12,8 @@ os.environ.update(DATA_DIR=TMP, EMAIL_PROVIDER="file", EMAIL_FROM="hello@barksbu
                   SITE_URL="", DATABASE_URL=os.environ.get("TEST_DATABASE_URL", ""))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import server  # noqa: E402
+import communityweb  # noqa: E402
+communityweb.AUTO_JOBS = False  # the daily community job is exercised explicitly through /admin/jobs/daily
 import accounts as A  # noqa: E402
 from PIL import Image  # noqa: E402
 
@@ -22,7 +24,8 @@ def setUpModule():
     global PORT, HTTPD
     st = server.init_app()
     if os.environ.get("TEST_DATABASE_URL"):  # clean slate for a reused test database
-        for t in ("message_reports", "user_blocks", "messages", "conversation_state", "conversations", "run_suggestions", "member_runs", "pack_comments", "pack_posts", "pack_photos", "pack_members", "packs", "meetup_comments", "rsvps", "meetups", "reports", "photos", "dogs", "sessions", "login_tokens", "users"):
+        for t in ("job_runs", "celebrate_sent", "care_sent", "dog_care", "rec_reports", "rec_votes", "recs", "alert_mail", "lost_alerts",
+                  "announcements", "park_roles", "run_follows", "checkins", "message_reports", "user_blocks", "messages", "conversation_state", "conversations", "run_suggestions", "member_runs", "pack_comments", "pack_posts", "pack_photos", "pack_members", "packs", "meetup_comments", "rsvps", "meetups", "reports", "photos", "dogs", "sessions", "login_tokens", "users"):
             st.q(f"DELETE FROM {t}")
     HTTPD = server.ThreadingHTTPServer(("127.0.0.1", 0), server.H)
     PORT = HTTPD.server_address[1]
