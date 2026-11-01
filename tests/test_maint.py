@@ -48,6 +48,13 @@ class MaintTests(unittest.TestCase):
         self.assertFalse(d["dry_run"]); self.assertEqual(d["after"]["sessions_expired"], 0)
         self.assertEqual(int(A.STORE.q("SELECT COUNT(*) FROM sessions WHERE expires_at>=:t", t=A.now())[0][0]), live)
 
+    def test_pixel_pals_canonical_not_doubled(self):
+        import re
+        t = Client("10.13.0.3").get("/pixel-pals").text
+        m = re.search(r'<link rel="canonical" href="([^"]+)"', t)
+        self.assertTrue(m and m.group(1).endswith("/pixel-pals"))
+        self.assertEqual(m.group(1).count("://"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

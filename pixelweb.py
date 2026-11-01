@@ -188,7 +188,7 @@ class PixelRoutes:
 <li><b>Send us up to 3 photos.</b> Pick from their photos or upload new ones. {e(TIP)}</li>
 <li><b>We make the portrait.</b> Usually within a day, and it shows up as their profile picture.</li></ol>
 <p><a class="btn btn-gold" href="{cta_href}">{cta}</a></p></div></div></section>"""
-        return self.page("Pixel Pals: your dog as pixel art", body, index=True, active="pixel-pals", canonical=self._base() + "/pixel-pals",
+        return self.page("Pixel Pals: your dog as pixel art", body, index=True, active="pixel-pals", canonical="/pixel-pals",
                          desc="Get a hand-made pixel-art portrait of your dog for their BarksBuds profile. One per dog, free for members.",
                          og={"title": "Pixel Pals on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630})
 
