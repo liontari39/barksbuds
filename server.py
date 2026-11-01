@@ -30,6 +30,7 @@ import communityweb
 import coownweb
 import msgweb
 import privacy
+import maintweb
 import privacyweb
 import mailer
 import meetweb
@@ -274,7 +275,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
+class H(maintweb.MaintRoutes, privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -422,7 +423,7 @@ class H(privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communi
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.search_get(u.path, q) or self.msg_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.maint_get(u.path, q) or self.search_get(u.path, q) or self.msg_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -441,7 +442,7 @@ class H(privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communi
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.msg_post(u.path, q) or self.runpage_post(u.path, q) or self.community_post(u.path, q) or self.tips_post(u.path, q) or self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
+        if self.maint_post(u.path, q) or self.msg_post(u.path, q) or self.runpage_post(u.path, q) or self.community_post(u.path, q) or self.tips_post(u.path, q) or self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):
