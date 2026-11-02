@@ -147,6 +147,8 @@ class RunPageRoutes:
             lost_html = ('<div class="panel lfpanel"><h2><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>Lost and found nearby</h2>'
                          f'<div class="lfmini">{"".join(communityweb.alert_mini(a) for a in lost)}</div>'
                          '<p class="small" style="margin:12px 0 0"><a href="/lost-found">All lost and found alerts</a></p></div>')
+        import photoweb
+        photos_html = photoweb.run_strip(rid, self.pv())
         # at the run now
         tiles, anon_dogs = [], 0
         import privacy as PV
@@ -199,7 +201,7 @@ class RunPageRoutes:
 <section class="section"><div class="wrap">{ann_html}
 <div class="dgrid2"><div>
 <div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}</div>
-{lost_html}
+{photos_html}{lost_html}
 <div class="panel"><h2>About this run</h2><dl class="amen">{dl}</dl><dl class="facts">{dl2}</dl>
 <p class="small muted" style="margin:14px 0 0">Know this run? <a href="/runs/suggest?edit={quote(rid)}">Suggest an edit</a></p></div>
 </div><div>{park_html}

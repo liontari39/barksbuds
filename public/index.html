@@ -240,6 +240,13 @@ section.commhome{padding:8px 0 40px}
 .mdogs img,.mdogs .noph{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 6px;border:3px solid #fff;box-shadow:0 0 0 2px var(--black);display:block}
 .celeb .mdogs small{display:block;font-weight:700;color:var(--muted);font-size:.75rem}
 @media (max-width:760px){.commlinks{grid-template-columns:1fr}}
+/* photo feed strip (only rendered once there are a few public posts) */
+section.homephotos{padding:8px 0 44px}
+.hp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}.hp-head h2{margin:0;font-size:clamp(1.7rem,3.4vw,2.3rem)}
+.hp-strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.hp-strip a{display:block;aspect-ratio:1;border:2px solid var(--black);border-radius:18px;overflow:hidden;box-shadow:4px 4px 0 var(--gold);background:var(--gold-l);transition:transform .12s,box-shadow .12s}
+.hp-strip a:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--red)}.hp-strip img{width:100%;height:100%;object-fit:cover;display:block}
+@media (max-width:760px){.hp-strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
 </style>
 <link rel="stylesheet" href="/search.css?v=2">
 </head>
@@ -269,6 +276,7 @@ section.commhome{padding:8px 0 40px}
       <li><a href="/meetups">Meetups</a></li>
       <li><a href="/packs">Packs</a></li>
       <li><a href="/dogs">Dogs</a></li>
+      <li><a href="/photos">Photos</a></li>
       <li><a href="/pixel-pals">Pixel Pals</a></li>
       <li><a href="/tips">Tips</a></li>
       <li><a href="/community">Community</a></li>
@@ -313,6 +321,7 @@ section.commhome{padding:8px 0 40px}
 
 {{PIXEL_PALS}}
 {{COMMUNITY}}
+{{PHOTOS}}
 
 <section class="runs" id="dog-runs" aria-labelledby="runs-title">
   <div class="wrap">
@@ -393,7 +402,7 @@ section.commhome{padding:8px 0 40px}
   <div class="wrap">
     <div class="top">
       <div><a class="brand" href="#top"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="/signin">Join BarksBuds</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
+      <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="#features">Features</a></li><li><a href="#story">Our story</a></li><li><a href="/signin">Join BarksBuds</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="mailto:hello@barksbuds.app">Contact</a></li></ul></nav>
     </div>
     <p id="privacy-note"><strong>Privacy note:</strong> When you join we store your email, your name and what you add about your dogs. We use them to run BarksBuds and send the emails you choose. We never sell or share them, and you can delete your account any time. Read the full <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>, or write to <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a>.</p>
     <div class="bottom"><p>Made with love in Manhasset, NY</p><p>&copy; <span id="yr">2026</span> BarksBuds</p></div>

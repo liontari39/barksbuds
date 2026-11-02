@@ -87,6 +87,19 @@ Packs are regular groups of dogs and their people (`packs.py` data layer, `packw
 - Admin (`?key=` ADMIN_KEY): `/admin/packs` hides or deletes packs and removes all sample packs and meetups at launch. `POST /admin/packs/test-email` (`id`, `kind`=request|approved|meetup) sends a "[Test]" email to the pack owner.
 - Sign-in keeps a safe, same-site `next` path. For example, "Host a meetup here" returns the member to the host form with the run preselected.
 
+## Photo feed
+
+A shared feed of dog photos from members (`feed.py` data layer, `photoweb.py` routes, tests in `tests/test_photos.py`).
+
+- `/photos` shows posts newest first, 10 per page, with "Load more" (`?before=<id>`; the `X-Partial` header returns just the cards). You can filter with `?dog=<slug>` or `?run=<run id>`. The empty state is the Jack loader with "No photos yet, be the first!". `/photos` is noindex because it mixes posts with different indexing settings.
+- `/photos/new` requires sign-in. A post has 1 to 4 photos (JPEG, PNG, WebP or GIF, up to 12 MB each), an optional caption of up to 300 characters, at least one of the poster's own or co-owned dogs, and an optional dog run. Photos are re-encoded with EXIF and GPS stripped, stored in the database (`feed_photos`: 1600px JPEG plus 640px WebP) and served from `/fp/<id>.jpg|webp`. Posting is limited to 5 per 10 minutes and 30 per day.
+- `/photos/<id>` is the post page, with OG tags (`og:image` is the first photo), a lightbox, comments and owner tools. The poster can edit the caption and visibility (`/photos/<id>/edit`) or delete the post.
+- Likes: a toggleable heart with a count (`POST /photos/<id>/like`, JSON when `Accept: application/json`). Comments of up to 500 characters are limited to 8 per 10 minutes and 60 per day. A comment can be deleted by its author or by the post's owner.
+- Reports on posts and comments appear in `/admin/reports` with hide and unhide actions. Hidden posts are visible only to the poster, with a "Hidden by our team" badge.
+- Privacy follows `/me/privacy`. A post is visible only to people who can see every tagged dog (dog visibility: public, members, pack or private). The per-post setting can only be the same as the dog's or stricter (members, pack or only me). Signed-out visitors see Public posts only, and blocks hide posts, likes and comments in both directions. Posts appear in lists (the feed, the homepage strip and the run strip) only when the owners' "show in search and lists" setting is *everyone*. Post pages and photo files are indexable only when public and every owner involved allows indexing. The poster's name follows the "show my name" setting, and emails are never shown.
+- Where photos show up: an "In the photo feed" strip on the dog profile (with a share button for owners), "Photos from this run" on run pages, and a homepage strip once there are at least 3 public posts. Public, indexable posts are in the sitemap.
+- Deleting an account removes that member's posts, likes and comments. Deleting a dog untags it and removes posts left with no dogs.
+
 ## Suggest a run
 
 Members help grow the dog run map (`runsugg.py` data layer, `runsweb.py` routes, `public/suggest.js`).

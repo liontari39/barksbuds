@@ -128,6 +128,8 @@ def init_schema(store):
     messages.init_schema(store)
     meetups.init_schema(store)
     packs.init_schema(store)
+    import feed
+    feed.init_schema(store)  # photo feed (photo_posts, feed_photos, likes, comments; reports.photo_*)
     portraits.init_schema(store)
 
 
@@ -255,7 +257,8 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import community, meetups, messages, packs
+    import community, feed, meetups, messages, packs
+    feed.purge_user(user_id)  # their photo posts, comments and likes
     community.purge_user(user_id)  # check-ins, follows, alerts, recommendations, reminder logs
     messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
@@ -383,6 +386,8 @@ def save_dog(user_id, f, dog_id=None, seed_key=None):
 def delete_dog(dog_id):
     import coowners
     coowners.purge_dog(dog_id)
+    import feed
+    feed.purge_dog(dog_id)  # untag; posts with no dogs left go too
     import community
     community.purge_dog(dog_id)  # private care dates, celebration log, check-ins
     q("DELETE FROM photos WHERE dog_id=:d", d=dog_id)
@@ -675,13 +680,16 @@ def add_report(dog_id, user_id, reason, details, ip):
 def list_reports():
     """Rows: id, ts, reason, details, status, dog slug, dog name, dog hidden, dog id,
     meetup id, meetup title, meetup slug, meetup hidden, comment id, comment body, comment hidden,
-    pack id, pack name, pack slug, pack hidden, post id, post body, post hidden, pack comment id, pack comment body, pack comment hidden."""
+    pack id, pack name, pack slug, pack hidden, post id, post body, post hidden, pack comment id, pack comment body, pack comment hidden,
+    photo post id, photo post caption, photo post hidden, photo comment id, photo comment body, photo comment hidden, photo comment post id."""
     return q("""SELECT r.id, r.created_at, r.reason, r.details, r.status, d.slug, d.name, d.hidden, d.id,
                        m.id, m.title, m.slug, m.hidden, c.id, c.body, c.hidden,
-                       p.id, p.name, p.slug, p.hidden, po.id, po.body, po.hidden, pc.id, pc.body, pc.hidden
+                       p.id, p.name, p.slug, p.hidden, po.id, po.body, po.hidden, pc.id, pc.body, pc.hidden,
+                       fp.id, fp.caption, fp.hidden, fc.id, fc.body, fc.hidden, fc.post_id
                 FROM reports r LEFT JOIN dogs d ON d.id=r.dog_id LEFT JOIN meetups m ON m.id=r.meetup_id
                 LEFT JOIN meetup_comments c ON c.id=r.comment_id LEFT JOIN packs p ON p.id=r.pack_id
                 LEFT JOIN pack_posts po ON po.id=r.post_id LEFT JOIN pack_comments pc ON pc.id=r.pack_comment_id
+                LEFT JOIN photo_posts fp ON fp.id=r.photo_post_id LEFT JOIN photo_comments fc ON fc.id=r.photo_comment_id
                 ORDER BY r.status='open' DESC, r.id DESC LIMIT 300""")
 
 

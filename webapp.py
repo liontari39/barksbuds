@@ -84,7 +84,7 @@ def where_text(town, area):
     return town or area_label(area)
 
 
-MENU_LINKS = [("/dogs", "Dogs"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips"), ("/community", "Community")]
+MENU_LINKS = [("/dogs", "Dogs"), ("/photos", "Photos"), ("/meetups", "Meetups"), ("/packs", "Packs"), ("/runs", "Dog runs"), ("/trails", "Trails"), ("/pixel-pals", "Pixel Pals"), ("/tips", "Tips"), ("/community", "Community")]
 MENU_JS = ("<script>(function(){var d=document.querySelector('details.mmenu');if(!d)return;var s=d.querySelector('summary');"
            "function sync(){s.setAttribute('aria-expanded',d.open?'true':'false')}d.addEventListener('toggle',sync);sync();"
            "document.addEventListener('click',function(ev){if(d.open&&!d.contains(ev.target))d.open=false});"
@@ -302,7 +302,7 @@ class AppRoutes:
     def page(self, title, body, *, code=200, desc="", canonical="", og=None, index=False, active="", scripts="", flash=""):
         u = self.user()
         base = self._base()
-        links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"),
+        links = [("/runs", "Dog run map", "runs"), ("/trails", "Trails", "trails"), ("/meetups", "Meetups", "meetups"), ("/packs", "Packs", "packs"), ("/dogs", "Dogs", "dogs"), ("/photos", "Photos", "photos"),
                  ("/pixel-pals", "Pixel Pals", "pixel-pals"), ("/tips", "Tips", "tips"), ("/community", "Community", "community")]
         nav = "".join(f'<li><a href="{h}"{" aria-current=page" if a and a == active else ""}>{t}</a></li>'
                       for h, t, a in links)
@@ -340,7 +340,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=17"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=19"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -352,7 +352,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -1172,6 +1172,10 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             main.append('<div class="panel"><h2>Photos</h2><div class="gallery">' + "".join(
                 f'<a href="/p/{p["id"]}.jpg" data-full="/p/{p["id"]}.jpg"><img src="/p/{p["id"]}.webp" alt="{e(d["name"])}, photo {i + 1}" loading="lazy"></a>'
                 for i, p in enumerate(photos)) + "</div></div>")
+        import photoweb
+        fstrip = photoweb.dog_strip(d, self.pv(), is_owner)
+        if fstrip:
+            main.append(fstrip)
         if not main:
             main.append(f'<div class="panel"><p class="muted" style="margin:0">{e(d["name"])}\'s profile is just getting started.</p></div>')
         site_line = ""
@@ -1284,11 +1288,16 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
         ndogs = A.one("SELECT COUNT(*) FROM dogs")[0]
         tr = []
         for (rid, ts, reason, details, status, slug, name, hidden, dog_id, mid, mtitle, mslug, mhidden, cid, cbody, chidden,
-             pid, pname, pslug, phidden, poid, pobody, pohidden, pcid, pcbody, pchidden) in rows:
+             pid, pname, pslug, phidden, poid, pobody, pohidden, pcid, pcbody, pchidden,
+             fpid, fpcap, fphidden, fcid, fcbody, fchidden, fcpost) in rows:
             when = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             acts = []
             pairs = [("resolve", "Mark resolved") if status == "open" else ("reopen", "Reopen")]
-            if pcid:
+            if fcid:
+                pairs.append(("unhide_fcomment", "Unhide comment") if fchidden else ("hide_fcomment", "Hide comment"))
+            elif fpid:
+                pairs.append(("unhide_fpost", "Unhide photo post") if fphidden else ("hide_fpost", "Hide photo post"))
+            elif pcid:
                 pairs.append(("unhide_pcomment", "Unhide comment") if pchidden else ("hide_pcomment", "Hide comment"))
             elif poid:
                 pairs.append(("unhide_post", "Unhide post") if pohidden else ("hide_post", "Hide post"))
@@ -1306,8 +1315,15 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                             f'<input type="hidden" name="meetup" value="{mid or ""}"><input type="hidden" name="comment" value="{cid or ""}">'
                             f'<input type="hidden" name="pack" value="{pid or ""}"><input type="hidden" name="post" value="{poid or ""}">'
                             f'<input type="hidden" name="pcomment" value="{pcid or ""}">'
+                            f'<input type="hidden" name="fpost" value="{fpid or ""}"><input type="hidden" name="fcomment" value="{fcid or ""}">'
                             f'<input type="hidden" name="action" value="{act}"><button class="linkbtn" type="submit">{lab}</button></form>')
-            if pid or poid or pcid:
+            if fcid or fpid:
+                fplink = f'<a href="/photos/{fpid or fcpost}">photo post #{fpid or fcpost}</a>' if (fpid or fcpost) else "(deleted photo post)"
+                if fcid:
+                    what = f'Comment on {fplink}: <q>{e((fcbody or "")[:160])}</q>' + (" <b>(hidden)</b>" if fchidden else "")
+                else:
+                    what = f'Photo post {fplink}' + (f': <q>{e((fpcap or "")[:160])}</q>' if fpcap else "") + (" <b>(hidden)</b>" if fphidden else "")
+            elif pid or poid or pcid:
                 plink = f'<a href="/packs/{pid}-{e(pslug or "")}">{e(pname or "")}</a>' if pname else "(deleted pack)"
                 if pcid:
                     what = f'Comment in pack {plink}: <q>{e((pcbody or "")[:160])}</q>' + (" <b>(hidden)</b>" if pchidden else "")
@@ -1352,6 +1368,12 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             val = f.get(fld)
             if val.isdigit():
                 {"pack": packs.set_hidden, "post": packs.set_post_hidden, "pcomment": packs.set_comment_hidden}[fld](int(val), act.startswith("hide"))
+        elif act in ("hide_fpost", "unhide_fpost", "hide_fcomment", "unhide_fcomment"):
+            import feed
+            fld = act.split("_", 1)[1]
+            val = f.get(fld)
+            if val.isdigit():
+                (feed.set_hidden if fld == "fpost" else feed.set_comment_hidden)(int(val), act.startswith("hide"))
         print(f"admin: report action {act}", flush=True)
         return self.redirect("/admin/reports?key=" + quote(f.get("key")))
 
