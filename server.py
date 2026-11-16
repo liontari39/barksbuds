@@ -57,6 +57,10 @@ ZIP_RE = re.compile(r"^\d{5}(-\d{4})?$")
 COLUMNS = ["id", "first_name", "email", "dog_name", "zip", "created_at"]
 
 
+ALIASES = {p: "/signin" for p in ("/signup", "/sign-up", "/join", "/register", "/login", "/log-in", "/sign-in", "/account")}
+ALIASES.update({p: "/runs" for p in ("/parks", "/dog-runs", "/dogruns", "/dog-parks", "/dogparks", "/map")})
+
+
 class DuplicateEmail(Exception):
     pass
 
@@ -354,6 +358,20 @@ class H(maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, se
     def do_HEAD(self):
         self.do_GET()
 
+    def send_error(self, code, message=None, explain=None):
+        """Friendly branded 404 page instead of the bare Python 'Error response' page."""
+        if code == 404:
+            try:
+                self._app_reset()
+                return self.msg_page("We couldn't find that page", (
+                    '<p class="sub">This page may have moved, or the link has a typo. Let\'s get you and your pup back on track.</p>'
+                    '<p><a class="btn" href="/">BarksBuds home</a></p>'
+                    '<p class="small"><a href="/runs">Dog run map</a> &middot; <a href="/meetups">Meetups</a> &middot; '
+                    '<a href="/search">Search</a> &middot; <a href="/signin">Join BarksBuds</a></p>'), code=404, icon="i-paw")
+            except Exception as ex:
+                print("404 page error:", type(ex).__name__, flush=True)
+        return super().send_error(code, message, explain)
+
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
@@ -364,6 +382,9 @@ class H(maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, se
                 STORE.ping(); return self._json(200, {"ok": True, "store": STORE.kind})
             except Exception:
                 return self._json(503, {"ok": False})
+        alias = ALIASES.get(u.path.rstrip("/").lower()) or (("/dogs/" + u.path[5:]) if u.path.startswith("/dog/") and len(u.path) > 5 else None)
+        if alias:  # common guesses (/signup, /login, /parks...) land on the real page instead of a 404
+            return self._send(301, b"", "text/plain", {"Location": alias + ("?" + u.query if u.query else ""), "Cache-Control": "public, max-age=3600"})
         if u.path in ("/", "/index.html"):
             self._app_reset()
             body = (render_index(self._host_url()).replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(self.user(), "home").encode())
