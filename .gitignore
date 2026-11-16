@@ -23,3 +23,6 @@ gh_login.log
 *.tmp
 icon-source.jpg
 formtest.py
+
+# local DB backups contain member data; never commit
+backups/
