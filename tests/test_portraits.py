@@ -269,7 +269,7 @@ class PortraitTests(unittest.TestCase):
         self.assertEqual([r for r in P.recent() if r["dog_id"] == did], [])
 
     def test_showcase_excludes_seeded_maggie(self):
-        """A dog with seed_key mike-maggie stays in the database and /dogs, but is not featured on marketing pages."""
+        """A dog with seed_key mike-maggie stays in the database, but is unlisted and not featured."""
         c, _, _, did, ph = with_photo("shw")
         created_maggie, mid = False, None
         try:
@@ -297,9 +297,18 @@ class PortraitTests(unittest.TestCase):
             self.assertIn(mid, all_ids)
             home, pals, dogs = Client().get("/").text, Client().get("/pixel-pals").text, Client().get("/dogs").text
             self.assertIn(f"/p/{pid}.webp", pals)
-            self.assertNotIn(f'/dogs/{mag["slug"]}', home)
-            self.assertNotIn(f'/dogs/{mag["slug"]}', pals)
-            self.assertIn(f'/dogs/{mag["slug"]}', dogs)
+            self.assertNotIn('href="/dogs/%s"' % mag["slug"], home)
+            self.assertNotIn('href="/dogs/%s"' % mag["slug"], pals)
+            self.assertNotIn('href="/dogs/%s"' % mag["slug"], dogs)
+            dest = (mag.get("website") or "").strip() or A.EXTERNAL_PROFILES["mike-maggie"]
+            r = Client().get("/dogs/" + mag["slug"])
+            self.assertEqual(r.status, 301)
+            self.assertEqual(r.headers["Location"], dest)
+            self.assertNotIn('href="/dogs/%s"' % mag["slug"], Client().get("/search?q=" + mag["name"]).text)
+            self.assertNotIn("/dogs/%s</loc>" % mag["slug"], Client().get("/sitemap.xml").text)
+            if mag.get("avatar_photo_id"):
+                self.assertEqual(Client().get("/p/%s.webp" % mag["avatar_photo_id"]).status, 404)
+            self.assertIsNotNone(A.dog_by_id(mid))
         finally:
             A.delete_dog(did)
             if created_maggie and mid:

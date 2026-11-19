@@ -296,6 +296,9 @@ class PhotoRoutes:
         dog, run, filt = None, None, ""
         if dslug:
             dog = A.dog_by_slug(dslug)
+            dest = PV.external_url(dog)
+            if dest:
+                return self.redirect(dest, 301)
             if not dog or not (PV.can_view(dog, V)):
                 return self.msg_page("We couldn't find that dog", '<p class="sub">This profile may be private or removed.</p>'
                                      '<p><a class="btn" href="/photos">See the photo feed</a></p>', code=404)

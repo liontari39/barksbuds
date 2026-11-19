@@ -14,9 +14,8 @@ import accounts as A
 STATUSES = ("pending", "done", "rejected")
 MAX_PHOTOS = 3
 SEEDED_DONE = ("mike-lily", "mike-maggie")   # portraits made before the queue existed
-# Maggie (mike-maggie) is Mike's real merle Frenchie and has her own site (Maggie the Merle).
-# Keep her member profile and done portrait in the database, but do not feature her on marketing showcases.
-SHOWCASE_EXCLUDE_SEEDS = frozenset({"mike-maggie"})
+# Marketing showcases omit dogs whose public profile lives elsewhere (see A.EXTERNAL_PROFILES).
+SHOWCASE_EXCLUDE_SEEDS = frozenset(A.EXTERNAL_PROFILES)
 COLS = ("id", "dog_id", "user_id", "photo_id", "status", "owner_note", "note", "avatar_at_request",
         "result_photo_id", "created_at", "completed_at")
 

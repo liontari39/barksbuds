@@ -1,7 +1,7 @@
 """Seed the first BarksBuds dog profiles (Lily as the example digital pet, plus Maggie on Mike's account), one sample meetup and one sample pack. Safe to run more than once.
 
 Maggie is Mike's merle Frenchie and has her own site (Maggie the Merle). The seed still creates or updates her member
-profile if it is missing, and never deletes it, but she is not featured on marketing showcases (see portraits.SHOWCASE_EXCLUDE_SEEDS).
+profile if it is missing, and never deletes it. Her public profile is unlisted and /dogs/maggie redirects to Maggie the Merle (see accounts.EXTERNAL_PROFILES).
 
 Usage:  DATABASE_URL=... python3 seed.py [--assets /path/to/barksbuds-assets]
         (without DATABASE_URL it seeds the local SQLite database in DATA_DIR)

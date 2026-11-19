@@ -20,6 +20,14 @@ MAX_DOGS = 6                       # dogs per owner
 MAX_PHOTOS = 8                     # gallery photos per dog
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024  # per original file
 MAX_FAV_RUNS = 5
+
+# Seed keys whose public BarksBuds profile lives on its own site. The member row, photos and portraits
+# are kept; listings, search, the sitemap and feeds omit them, and /dogs/<slug> 301-redirects to this URL
+# (or to the dog's website field, if set). Code-level so it survives reseeding. This is not dogs.hidden
+# (that flag is for admin-hidden reported profiles).
+EXTERNAL_PROFILES = {
+    "mike-maggie": "https://maggiethemerle.com/",
+}
 FULL_PX, THUMB_PX = 1600, 640
 
 AREAS = [("Manhattan", "New York City"), ("Brooklyn", "New York City"), ("Queens", "New York City"),

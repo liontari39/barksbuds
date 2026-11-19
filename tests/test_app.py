@@ -422,9 +422,8 @@ class SiteTests(unittest.TestCase):
         self.assertEqual((maggie["sex"], maggie["size"], maggie["birth_year"]), ("female", "medium", 2023))
         self.assertEqual(len(A.gallery(maggie["id"])), 5)  # 2 originals + 2 from the site + the grey-bed photo, not duplicated on re-run
         self.assertEqual(maggie["seed_rev"], 5)
-        mp = Client().get("/dogs/" + maggie["slug"]).text
-        self.assertIn('href="https://maggiethemerle.com/" rel="nofollow noopener noreferrer ugc"', mp)
-        self.assertIn("couch monster", mp)
+        self.assertEqual(maggie["website"], "https://maggiethemerle.com/")
+        self.assertIn("couch monster", maggie["bio"])
         page = Client().get("/dogs/" + lily["slug"]).text
         self.assertIn("6 years old", page)
         self.assertIn("Manhasset", page)
@@ -480,19 +479,38 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(A.dog_by_id(maggie["id"])["pixel_primary"], 0)
         self.assertEqual(asha(maggie), A.sha(rd("sprites/maggie-sprite.jpg")))
         self.assertEqual(len(A.gallery(maggie["id"])), 5)
-        # marketing pages feature Lily only; Maggie's member profile stays listed in the dog directory
+        # marketing pages and the public directory feature Lily only; Maggie's row is kept but unlisted
         home, pals, dogs = Client().get("/").text, Client().get("/pixel-pals").text, Client().get("/dogs").text
         self.assertIn("/dogs/lily", home)
         self.assertIn("Meet Lily, our example pixel pal.", home)
         self.assertIn("pp-one", home)
         self.assertIn("pxh-one", home)
-        self.assertNotIn("/dogs/maggie", home)
+        self.assertNotIn('href="/dogs/maggie"', home)
         self.assertNotIn("Maggie", home)
         self.assertIn("/dogs/lily", pals)
-        self.assertNotIn("/dogs/maggie", pals)
+        self.assertNotIn('href="/dogs/maggie"', pals)
         self.assertIn("pp-one", pals)
-        self.assertIn("/dogs/maggie", dogs)
+        self.assertNotIn('href="/dogs/maggie"', dogs)
         self.assertIn("/dogs/lily", dogs)
+        dest = (maggie.get("website") or "").strip() or A.EXTERNAL_PROFILES["mike-maggie"]
+        r = Client().get("/dogs/maggie")
+        self.assertEqual(r.status, 301)
+        self.assertEqual(r.headers["Location"], dest)
+        alias = Client().get("/dog/maggie")
+        self.assertEqual(alias.status, 301)
+        self.assertEqual(alias.headers["Location"], "/dogs/maggie")
+        self.assertEqual(Client().get("/dogs/lily").status, 200)
+        self.assertNotIn('href="/dogs/maggie"', Client().get("/search?q=maggie").text)
+        self.assertNotIn("/dogs/maggie</loc>", Client().get("/sitemap.xml").text)
+        self.assertIn("/dogs/lily", Client().get("/sitemap.xml").text)
+        self.assertEqual(len(A.gallery(maggie["id"])), 5)  # nothing deleted
+        # Mike still sees Maggie in /me
+        c = Client("10.2.0.80")
+        sign_in(c, "mike.karachalios@gmail.com")
+        me = c.get("/me").text
+        self.assertIn("Maggie", me)
+        self.assertIn(f'/me/dogs/{maggie["id"]}/edit', me)
+        self.assertIn("Lily", me)
 
     def test_admin_seed_endpoint_requires_key(self):
         c = Client()

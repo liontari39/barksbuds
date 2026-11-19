@@ -905,7 +905,7 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
     # ------------------------------------------------------------ celebrations
     def _celebrant(self, slug, q):
         d = A.dog_by_slug(slug)
-        if not d or d["hidden"]:
+        if not d or d["hidden"] or PV.is_external(d):
             return None, None
         if not PV.is_owner(d, self.pv()) and not PV.can_celebrate(d, self.pv(), None):
             return None, None  # private profile, or the owner turned shout-outs (or dates) off

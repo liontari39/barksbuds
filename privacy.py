@@ -189,14 +189,19 @@ def _meta(ids):
     import coowners as CO
     own = CO.owners_map(ids)
     out = {}
-    for did, uid, vis, hidden in A.q(f"SELECT id, user_id, visibility, hidden FROM dogs WHERE id IN ({','.join(map(str, ids))})"):
+    for did, uid, vis, hidden, seed_key in A.q(f"SELECT id, user_id, visibility, hidden, seed_key FROM dogs WHERE id IN ({','.join(map(str, ids))})"):
         owners = {o["user_id"] if isinstance(o, dict) else o for o in (own.get(did) or [])} | {uid}
-        out[did] = dict(id=did, user_id=uid, visibility=vis if vis in VIS_KEYS else "public", hidden=int(hidden or 0), owners=owners)
+        out[did] = dict(id=did, user_id=uid, visibility=vis if vis in VIS_KEYS else "public", hidden=int(hidden or 0),
+                        seed_key=seed_key or "", external=(seed_key or "") in A.EXTERNAL_PROFILES, owners=owners)
     return out
 
 
 def _allowed(m, V):
     if m["hidden"]:
+        return False
+    # External profiles (A.EXTERNAL_PROFILES) are not publicly viewable. Owners and co-owners
+    # can still open photos and manage the dog in /me; the public /dogs/<slug> URL redirects.
+    if m.get("external") and not (V.uid and V.uid in m["owners"]):
         return False
     if V.uid and V.uid in m["owners"]:
         return True
@@ -210,6 +215,39 @@ def _allowed(m, V):
     if vis == "pack":
         return V.signed_in and bool(m["owners"] & V.packmates())
     return False
+
+
+def is_external(d):
+    """True when dog d (a dict or id) has a seed_key in A.EXTERNAL_PROFILES."""
+    if not d:
+        return False
+    did = d if isinstance(d, int) else d.get("id")
+    if not did:
+        return False
+    m = _meta([did]).get(did)
+    return bool(m and m.get("external"))
+
+
+def external_url(d):
+    """Absolute URL to send public visitors to, or None for a normal BarksBuds profile.
+
+    Prefers the dog's website field; falls back to A.EXTERNAL_PROFILES[seed_key].
+    """
+    if not d:
+        return None
+    did = d if isinstance(d, int) else d.get("id")
+    if not did:
+        return None
+    m = _meta([did]).get(did)
+    if not m or not m.get("external"):
+        return None
+    site = ""
+    if isinstance(d, dict):
+        site = (d.get("website") or "").strip()
+    if not site:
+        row = A.one("SELECT website FROM dogs WHERE id=:i", i=did)
+        site = (row[0] or "").strip() if row else ""
+    return site or A.EXTERNAL_PROFILES.get(m.get("seed_key") or "", "").strip() or None
 
 
 def is_owner(d, V):
@@ -234,6 +272,9 @@ def visible_ids(ids, V, purpose="view"):
     V = viewer(V)
     meta = _meta(ids)
     ok = {i for i, m in meta.items() if _allowed(m, V)}
+    # Never list external profiles in search, /dogs, galleries, shout-outs or similar, even to the owner.
+    if purpose in ("list", "celebrate"):
+        ok = {i for i in ok if not meta[i].get("external")}
     if purpose in ("list", "celebrate") and ok:
         st = settings_map([meta[i]["user_id"] for i in ok])
         keep = set()
@@ -316,6 +357,8 @@ def directory(V, areas=None, match=None, limit=60):
 
 def indexable(d, st=None):
     """Should search engines index this dog page (and list it in the sitemap)?"""
+    if is_external(d):
+        return False
     st = st or settings(d["user_id"])
     return (not d.get("hidden") and (d.get("visibility") or "public") == "public"
             and bool(st["priv_index"]) and st["priv_search"] == "everyone")
@@ -380,7 +423,7 @@ def signed_photo(pid, ext="webp", base=""):
 
 def public_dog(dog_id):
     m = _meta([dog_id]).get(dog_id)
-    return bool(m and not m["hidden"] and m["visibility"] == "public")
+    return bool(m and not m["hidden"] and not m.get("external") and m["visibility"] == "public")
 
 
 # ---------------------------------------------------------------- messaging

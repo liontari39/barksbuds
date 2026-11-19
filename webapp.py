@@ -1069,6 +1069,9 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
 
     def dog_page(self, slug, q):
         d = A.dog_by_slug(slug)
+        dest = PV.external_url(d)
+        if dest:
+            return self.redirect(dest, 301)
         u = self.user()
         is_owner = bool(d and u and CO.can_manage(d, u["id"]))  # owner or co-owner
         if not d or (d["hidden"] and not is_owner):
@@ -1239,6 +1242,9 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
 
     def post_report(self, slug):
         d = A.dog_by_slug(slug)
+        dest = PV.external_url(d)
+        if dest:
+            return self.redirect(dest, 301)
         if not d:
             return self.msg_page("We couldn't find that dog", "", code=404)
         f = self._form_or_fail()
