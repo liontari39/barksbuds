@@ -79,7 +79,7 @@ def new_user_sql():
 
 
 def set_legacy_defaults(uid):
-    """Used by seed.py: the site's own demo account (Lily and Maggie) stays fully public, as before."""
+    """Used by seed.py: the site's own demo account (Lily as the example digital pet) stays fully public, as before."""
     A.q("UPDATE users SET " + ",".join(f"{k}=:{k}" for k in LEGACY) + " WHERE id=:u", u=uid, **LEGACY)
 
 

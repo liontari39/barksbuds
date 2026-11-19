@@ -42,6 +42,7 @@ class TipsPages(unittest.TestCase):
             self.assertEqual(r.text.count("<h1"), 1)
             self.assertEqual("Ask your vet." in r.text, t["vet"], t["slug"])
             self.assertNotIn("Jack", t["body"] + t["title"] + t["desc"])
+            self.assertNotIn("Maggie", t["body"] + t["title"] + t["desc"], t["slug"])
             for href in re.findall(r'href="(/tips/[a-z0-9-]+)"', t["body"]):
                 self.assertIn(href.split("/")[-1], D.BY_SLUG, f"broken internal link {href} in {t['slug']}")
         self.assertEqual(Client().get("/tips/not-a-tip").status, 404)

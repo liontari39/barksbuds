@@ -267,3 +267,40 @@ class PortraitTests(unittest.TestCase):
         finally:
             A.delete_dog(did)
         self.assertEqual([r for r in P.recent() if r["dog_id"] == did], [])
+
+    def test_showcase_excludes_seeded_maggie(self):
+        """A dog with seed_key mike-maggie stays in the database and /dogs, but is not featured on marketing pages."""
+        c, _, _, did, ph = with_photo("shw")
+        created_maggie, mid = False, None
+        try:
+            self.assertEqual(request(c, did, photo_id=str(ph)).status, 303)
+            req = P.latest(did)
+            pid = json.loads(admin_post(f"/admin/portraits/{req['id']}/complete",
+                                       files=[("image", "p.png", png())]).body)["request"]["portrait_photo_id"]
+            row = A.one("SELECT id FROM dogs WHERE seed_key='mike-maggie'")
+            if not row:
+                _mc, _, _, (mid,) = member("shwmag")
+                created_maggie = True
+                mav = A.add_photo(mid, png(color=(30, 80, 160)), kind="avatar")
+                A.set_avatar(mid, mav)
+                A.q("UPDATE dogs SET seed_key='mike-maggie' WHERE id=:d", d=mid)
+                P.mark_seeded_done()
+            else:
+                mid = row[0]
+                if not any(r["dog_id"] == mid and r["status"] == "done" for r in P.recent()):
+                    P.mark_seeded_done()
+            mag = A.dog_by_id(mid)
+            shown_ids = [d["id"] for d, _ in P.done_portraits(limit=200)]
+            all_ids = [d["id"] for d, _ in P.done_portraits(limit=200, for_showcase=False)]
+            self.assertIn(did, shown_ids)
+            self.assertNotIn(mid, shown_ids)
+            self.assertIn(mid, all_ids)
+            home, pals, dogs = Client().get("/").text, Client().get("/pixel-pals").text, Client().get("/dogs").text
+            self.assertIn(f"/p/{pid}.webp", pals)
+            self.assertNotIn(f'/dogs/{mag["slug"]}', home)
+            self.assertNotIn(f'/dogs/{mag["slug"]}', pals)
+            self.assertIn(f'/dogs/{mag["slug"]}', dogs)
+        finally:
+            A.delete_dog(did)
+            if created_maggie and mid:
+                A.delete_dog(mid)

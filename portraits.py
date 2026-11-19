@@ -13,7 +13,10 @@ import accounts as A
 
 STATUSES = ("pending", "done", "rejected")
 MAX_PHOTOS = 3
-SEEDED_DONE = ("mike-lily", "mike-maggie")   # Lily and Maggie's portraits were made before the queue existed
+SEEDED_DONE = ("mike-lily", "mike-maggie")   # portraits made before the queue existed
+# Maggie (mike-maggie) is Mike's real merle Frenchie and has her own site (Maggie the Merle).
+# Keep her member profile and done portrait in the database, but do not feature her on marketing showcases.
+SHOWCASE_EXCLUDE_SEEDS = frozenset({"mike-maggie"})
 COLS = ("id", "dog_id", "user_id", "photo_id", "status", "owner_note", "note", "avatar_at_request",
         "result_photo_id", "created_at", "completed_at")
 
@@ -87,12 +90,24 @@ def recent(limit=200):
     return _sel("ORDER BY id DESC LIMIT :n", n=int(limit))
 
 
-def done_portraits(limit=24):
-    """[(dog dict, portrait photo id)] for the showcase: done portraits of visible dogs, oldest first."""
+def done_portraits(limit=24, for_showcase=True):
+    """[(dog dict, portrait photo id)] for the showcase: done portraits of visible dogs, oldest first.
+
+    When for_showcase is True (the default, used on the homepage and /pixel-pals), dogs whose seed_key is in
+    SHOWCASE_EXCLUDE_SEEDS are omitted so they are not featured on marketing pages. Their member profile and
+    portrait row are left untouched.
+    """
+    where = "r.status='done' AND d.hidden=0"
+    params = dict(n=int(limit))
+    if for_showcase and SHOWCASE_EXCLUDE_SEEDS:
+        keys = sorted(SHOWCASE_EXCLUDE_SEEDS)
+        ph = ",".join(f":ex{i}" for i in range(len(keys)))
+        where += f" AND (d.seed_key IS NULL OR d.seed_key NOT IN ({ph}))"
+        params.update({f"ex{i}": k for i, k in enumerate(keys)})
     out = []
-    for r in A.q("""SELECT r.dog_id, r.result_photo_id FROM portrait_requests r JOIN dogs d ON d.id=r.dog_id
-                    JOIN photos p ON p.id=r.result_photo_id
-                    WHERE r.status='done' AND d.hidden=0 ORDER BY r.completed_at, r.id LIMIT :n""", n=int(limit)):
+    for r in A.q(f"""SELECT r.dog_id, r.result_photo_id FROM portrait_requests r JOIN dogs d ON d.id=r.dog_id
+                     JOIN photos p ON p.id=r.result_photo_id
+                     WHERE {where} ORDER BY r.completed_at, r.id LIMIT :n""", **params):
         d = A.dog_by_id(r[0])
         if d:
             out.append((d, r[1]))
@@ -186,7 +201,7 @@ def request_photo(rid, n=1):
 
 
 def mark_seeded_done(qf=None):
-    """Idempotent: record Lily and Maggie's existing AI portraits (their main pictures) as done requests, and make those
+    """Idempotent: record the seeded dogs' existing AI portraits (their main pictures) as done requests, and make those
     images kind='portrait' so they're kept when the owner switches the main picture (A.set_avatar drops kind='avatar')."""
     qf = qf or A.q
     for key in SEEDED_DONE:

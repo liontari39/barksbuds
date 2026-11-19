@@ -1,7 +1,7 @@
 """Pixel Pals: hand-made pixel-art portraits of members' dogs (Oct 2026). The in-browser maker is retired; an owner sends
 in 1 to 3 reference photos and the BarksBuds team makes the portrait (data in portraits.py).
 
-  GET  /pixel-pals                       showcase of finished portraits (Lily and Maggie first) + how it works
+  GET  /pixel-pals                       showcase of finished portraits (Lily as the example digital pet) + how it works
   GET  /pixel-pals/start                 CTA: sign in, then the dog's portrait panel (/me/dogs/<id>/edit#portrait-panel)
   POST /me/dogs/<id>/portrait            owner: request a portrait (multipart: up to 3 in total of photo_id and "photo" uploads, note)
   GET  /admin/portraits                  admin page: all requests, with complete / reject / reset forms
@@ -62,7 +62,7 @@ def _listable(done, viewer):
 
 
 def landing_html():
-    """'Pixel Pals' section for the landing page (index.html {{PIXEL_PALS}}): the finished portraits of Lily and Maggie."""
+    """'Pixel Pals' section for the landing page (index.html {{PIXEL_PALS}}): finished portraits, with Lily as the example."""
     try:
         done = _listable(P.done_portraits(limit=8), None)[:2]
     except Exception as ex:  # never break the homepage
@@ -72,6 +72,8 @@ def landing_html():
         return ""
     cards = "".join(f'<a class="pp-card" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])} as pixel art" '
                     f'width="240" height="240" loading="lazy"><b>{e(d["name"])}</b></a>' for d, pid in done)
+    one = " pp-one" if len(done) == 1 else ""
+    lily_note = " Lily, our example pixel pal, shows how it looks." if any(d.get("slug") == "lily" for d, _ in done) else ""
     return f"""<style>
 .pps{{padding:80px 0;background:var(--gold-l);background-image:linear-gradient(rgba(20,20,20,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(20,20,20,.05) 1px,transparent 1px);background-size:24px 24px}}
 .pps .wrap{{display:grid;grid-template-columns:1fr 1.1fr;gap:48px;align-items:center}}
@@ -79,6 +81,7 @@ def landing_html():
 .pps .cta-row{{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin-top:22px}}
 .pps .textlink{{color:var(--black);font-weight:800}}
 .pp-cards{{display:grid;grid-template-columns:1fr 1fr;gap:18px}}
+.pp-cards.pp-one{{grid-template-columns:minmax(0,280px);justify-content:center}}
 .pp-card{{display:grid;gap:8px;justify-items:center;background:#fff;border:3px solid var(--black);border-radius:22px;padding:14px;box-shadow:8px 8px 0 var(--black);text-decoration:none;color:var(--black);transition:transform .12s}}
 .pp-card:hover{{transform:translateY(-2px)}}
 .pp-card img{{width:100%;max-width:240px;aspect-ratio:1;height:auto;object-fit:cover;border-radius:14px}}
@@ -87,15 +90,15 @@ def landing_html():
 </style>
 <section class="pps" id="pixel-pals" aria-labelledby="pp-title"><div class="wrap"><div>
 <span class="eyebrow">pixel pals</span><h2 id="pp-title">Get your dog drawn as a pixel-art pal</h2>
-<p>Send us a few photos of your pup and our team hand-makes a pixel-art portrait for their profile, usually within a day. One per dog, free for members.</p>
+<p>Send us a few photos of your pup and our team hand-makes a pixel-art portrait for their profile, usually within a day. One per dog, free for members.{lily_note}</p>
 <div class="cta-row"><a class="btn" href="/pixel-pals/start">Sign up and request one for your dog</a><a class="textlink" href="/pixel-pals">See the pixel pals &rarr;</a></div></div>
-<div class="pp-cards">{cards}</div></div></section>"""
+<div class="pp-cards{one}">{cards}</div></div></section>"""
 
 
 
 def hero_html():
-    """Pixel-portrait highlight inside the homepage hero (index.html {{PIXEL_HERO}}), so the finished portraits (Lily and
-    Maggie) show above the fold on desktop and phones. The full Pixel Pals section ({{PIXEL_PALS}}) follows the hero."""
+    """Pixel-portrait highlight inside the homepage hero (index.html {{PIXEL_HERO}}), so the example digital pet (Lily)
+    shows above the fold on desktop and phones. The full Pixel Pals section ({{PIXEL_PALS}}) follows the hero."""
     try:
         done = _listable(P.done_portraits(limit=8), None)[:2]
     except Exception as ex:  # never break the homepage
@@ -105,12 +108,15 @@ def hero_html():
         return ""
     dogs = "".join(f'<a class="pxh-dog" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])}\'s hand-made pixel portrait" '
                    f'width="160" height="160" fetchpriority="high"><span>{e(d["name"])}</span></a>' for d, pid in done)
+    one = " pxh-one" if len(done) == 1 else ""
+    intro = "Meet Lily, our example pixel pal." if len(done) == 1 and done[0][0].get("slug") == "lily" else "Every member's dog gets a hand-made pixel portrait."
     return f"""<style>
 .pxhero{{display:grid;grid-template-columns:auto 1fr;gap:18px 20px;align-items:center;margin:0;padding:18px;
  background:var(--gold-l);background-image:linear-gradient(rgba(20,20,20,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(20,20,20,.06) 1px,transparent 1px);background-size:16px 16px;
  border:3px solid var(--black);border-radius:24px;box-shadow:7px 7px 0 var(--black)}}
 .pxh-dogs{{display:flex;gap:12px}}
 .pxh-dog{{position:relative;display:block;width:150px;text-decoration:none;transition:transform .12s}}
+.pxh-dogs.pxh-one .pxh-dog{{width:180px}}
 .pxh-dog:hover{{transform:translateY(-3px) rotate(-1deg)}}
 .pxh-dog img{{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;background:#fff;border:3px solid var(--black);border-radius:16px;image-rendering:pixelated}}
 .pxh-dog span{{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:var(--black);color:#fff;border-radius:999px;padding:2px 12px;font:800 .85rem/1.5 "Baloo 2",sans-serif;white-space:nowrap}}
@@ -121,6 +127,7 @@ def hero_html():
 @media (min-width:921px){{.hero .wrap{{grid-template-rows:auto auto;row-gap:34px}}.hero .wrap>div:first-child{{grid-row:1/3}}
  .pxhero{{grid-column:2;grid-row:1;align-self:end;grid-template-columns:1fr}}.hero .wrap>.signup{{grid-column:2;grid-row:2;align-self:start}}
  .pxh-dogs{{justify-content:center}}.pxh-dog{{flex:1;max-width:190px;width:auto}}
+ .pxh-dogs.pxh-one .pxh-dog{{flex:0 0 auto;width:200px;max-width:200px}}
  .pxh-txt{{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 16px;margin-top:6px}}.pxh-txt .eyebrow{{display:none}}
  .pxh-txt p{{margin:0}}.pxh-txt small{{grid-column:1/-1;margin:0}}}}
 /* phones/tablets: show it right after the headline, before the intro copy */
@@ -128,11 +135,12 @@ def hero_html():
  .hero .logo-card,.hero .kicker{{align-self:flex-start}}.hero .logo-card{{order:1}}.hero .kicker{{order:2}}.hero h1{{order:3}}
  .pxhero{{order:4;margin:4px 0 26px;max-width:600px;align-self:flex-start;width:100%}}.hero .lead{{align-self:flex-start;margin-left:0}}.hero .lead{{order:5}}.hero .pills{{order:6}}.hero .wrap>.signup{{order:7;margin-top:44px}}}}
 @media (max-width:560px){{.pxhero{{grid-template-columns:1fr;gap:18px;padding:14px;margin:2px 0 22px}}
- .pxh-dogs{{gap:10px}}.pxh-dog{{flex:1;width:auto}}.pxh-txt{{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0}}
+ .pxh-dogs{{gap:10px;justify-content:center}}.pxh-dog{{flex:1;width:auto}}.pxh-dogs.pxh-one .pxh-dog{{flex:0 1 auto;width:min(200px,70%);max-width:220px}}
+ .pxh-txt{{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0}}
  .pxh-txt .eyebrow{{display:none}}.pxh-txt p{{margin:0;font-size:1.08rem;flex:1 1 100%}}.pxh-txt small{{display:none}}}}
 </style>
-<div class="pxhero" aria-label="Pixel Pals"><div class="pxh-dogs">{dogs}</div>
-<div class="pxh-txt"><span class="eyebrow">pixel pals</span><p>Every member's dog gets a hand-made pixel portrait.</p>
+<div class="pxhero" aria-label="Pixel Pals"><div class="pxh-dogs{one}">{dogs}</div>
+<div class="pxh-txt"><span class="eyebrow">pixel pals</span><p>{intro}</p>
 <a class="btn btn-sm" href="/pixel-pals/start">Get your dog's portrait</a><small>Free for members, usually ready within a day.</small></div></div>"""
 
 class PixelRoutes:
@@ -177,12 +185,13 @@ class PixelRoutes:
         done = _listable(P.done_portraits(limit=200), self.pv())[:24]
         cards = "".join(f'<a class="pp-card" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])} as pixel art" '
                         f'width="300" height="300" loading="lazy"><b>{e(d["name"])}</b><small>{e(d["breed"] or "")}</small></a>' for d, pid in done)
+        one = " pp-one" if len(done) == 1 else ""
         body = f"""<section class="phead pps-head"><div class="wrap"><span class="eyebrow">pixel pals</span>
 <h1>Your dog, as a pixel-art pal</h1>
 <p class="lead">Our team hand-makes a pixel-art portrait of your pup, usually within a day. It becomes their profile picture on BarksBuds, and you can switch back to a photo any time. One per dog, free for members.</p>
 <p style="margin-top:18px"><a class="btn" href="{cta_href}">{cta}</a></p></div></section>
 <section class="section" style="padding-top:28px"><div class="wrap">
-{f'<div class="pp-cards pp-gallery">{cards}</div>' if cards else ''}
+{f'<div class="pp-cards pp-gallery{one}">{cards}</div>' if cards else ''}
 <div class="panel pp-how"><h2>How it works</h2><ol>
 <li><b>Add your dog.</b> Sign up and give your pup a profile.</li>
 <li><b>Send us up to 3 photos.</b> Pick from their photos or upload new ones. {e(TIP)}</li>

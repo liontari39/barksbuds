@@ -149,7 +149,7 @@ There's no in-browser maker. Members request a pixel-art portrait and the team m
   - `POST /admin/portraits/<id>/reject` field `note`, shown to the owner. This frees the slot.
   - `POST /admin/portraits/<id>/reset` deletes the request and keeps the images.
 - **Helper:** `python3 scripts/portraits.py [--url URL] list | fetch <id> | complete <id> <image.png> | reject <id> <note> | reset <id>`. It reads `.admin_key` without printing it. `fetch` saves `photo-1.jpg`…`photo-N.jpg`, `photo.jpg` (a copy of photo 1) and `request.json` to `/workspace/barksbuds-assets/portrait-requests/<id>/`.
-- **Showcase:** `/pixel-pals` and the homepage section list done portraits. Lily's and Maggie's seeded AI portraits are marked done automatically (`mark_seeded_done`).
+- **Showcase:** `/pixel-pals` and the homepage section list done portraits. Lily is the example digital pet. Seeded AI portraits are marked done automatically (`mark_seeded_done`); Maggie's portrait is kept in the database but is not featured on marketing showcases.
 - The old 48 px maker sprites (`kind='pixel'`) stay stored and served at `/px/...`, but they aren't shown (`accounts.SHOW_OLD_SPRITES = False`). Old maker URLs redirect to the edit panel.
 
 ## Community (run check-ins, park news, lost and found, recommendations, care reminders, celebrations)

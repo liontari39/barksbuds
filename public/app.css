@@ -382,6 +382,7 @@ img.pxav{object-fit:contain!important;background:var(--gold-l)}
 
 /* Pixel Pals: hand-made portraits (showcase page, owner panel) */
 .pp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;margin-bottom:34px}
+.pp-cards.pp-one{grid-template-columns:minmax(0,280px);justify-content:center}
 .pp-card{display:grid;gap:6px;justify-items:center;background:#fff;border:3px solid var(--black);border-radius:22px;padding:14px;box-shadow:8px 8px 0 var(--black);text-decoration:none;color:var(--black);transition:transform .12s}
 .pp-card:hover{transform:translateY(-2px)}
 .pp-card img{width:100%;max-width:300px;aspect-ratio:1;height:auto;object-fit:cover;border-radius:14px}

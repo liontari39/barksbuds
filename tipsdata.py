@@ -77,7 +77,7 @@ TIPS = [
 <li><strong>Loose, bouncy bodies.</strong> Wiggly, curvy movement, not stiff and straight.</li>
 <li><strong>Play bows.</strong> Front end down, back end up: "this is all a game."</li>
 <li><strong>Taking turns.</strong> The chaser becomes the chased; the dog on the bottom gets to be on top.</li>
-<li><strong>Self-handicapping.</strong> A big dog lying down or going gentle so a smaller friend can keep up. Lily, a long-legged poodle mix who runs like a horse, slows right down for smaller dogs like Maggie.</li>
+<li><strong>Self-handicapping.</strong> A big dog lying down or going gentle so a smaller friend can keep up. Lily, a long-legged poodle mix who runs like a horse, slows right down for smaller dogs.</li>
 <li><strong>Little breaks.</strong> Good play has pauses: a sniff, a shake-off, a drink of water, then back to it.</li>
 </ul>
 <h2>Signs a dog is uncomfortable</h2>
@@ -113,7 +113,7 @@ TIPS = [
 <p>Many small-dog areas post a weight limit at the gate, often somewhere around 25 to 30 pounds. If a limit is posted, that's the rule. Our <a href="/runs">dog run map</a> shows which runs have a separate small-dog area.</p>
 <h2>When it's not posted</h2>
 <ul>
-<li><strong>Weight is a starting point, not the whole story.</strong> Maggie, our 26-pound merle Frenchie, is right on the line. She's sturdy and confident, but she's built for the couch, not for sprinting with greyhounds.</li>
+<li><strong>Weight is a starting point, not the whole story.</strong> A sturdy 26-pound French bulldog is right on the line: confident enough for the large side, but built more for the couch than for sprinting with greyhounds.</li>
 <li><strong>Match play style, within the rules.</strong> A shy small dog belongs on the small side. A confident small dog who loves running with bigger friends may enjoy the large side, if the run allows it and you watch closely.</li>
 <li><strong>Puppies of big breeds</strong> grow fast. Move them to the large-dog area once they outgrow the small-dog limit, even if they still act like babies.</li>
 </ul>
@@ -147,7 +147,7 @@ TIPS = [
 <h2>Leave no trace</h2>
 <p>Bag it and carry it out, all the way to a trash can. A bag left by the trail "for later" is still litter, and it's the number one complaint parks hear about dogs.</p>
 <h2>Know your dog's limits</h2>
-<p>Start short and build up. Small and flat-faced dogs, like Maggie the Frenchie, overheat faster than you'd think, so keep summer hikes short, shady and early, and turn around while your dog still has energy to spare. Watch for heavy panting, lagging behind or looking for shade.</p>
+<p>Start short and build up. Small and flat-faced dogs, like French bulldogs, overheat faster than you'd think, so keep summer hikes short, shady and early, and turn around while your dog still has energy to spare. Watch for heavy panting, lagging behind or looking for shade.</p>
 <h2>After the hike</h2>
 <p>Do a full tick check: between toes, inside ears, around the collar and under the legs. Our guide to <a href="/tips/ticks-and-lyme-on-long-island">ticks on Long Island</a> covers what to look for.</p>
 <p class="aside-note">Seasonal rules matter, too. Beaches, nesting areas and hunting seasons can change where dogs may go. Check the official page close to the day you hike.</p>
@@ -167,7 +167,7 @@ TIPS = [
 <li>Booties can help on unavoidable hot stretches, if your dog has practiced wearing them.</li>
 </ul>
 <h2>Know your dog's risk</h2>
-<p>Flat-faced breeds like French bulldogs (hello, Maggie), pugs and boxers have a harder time cooling off. So do seniors, puppies, heavy-coated dogs and dogs carrying extra weight. On hot days, keep their outings short and gentle.</p>
+<p>Flat-faced breeds like French bulldogs, pugs and boxers have a harder time cooling off. So do seniors, puppies, heavy-coated dogs and dogs carrying extra weight. On hot days, keep their outings short and gentle.</p>
 <h2>Cooling tips</h2>
 <ul>
 <li>Bring water and a collapsible bowl, and offer drinks often.</li>

@@ -480,6 +480,19 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(A.dog_by_id(maggie["id"])["pixel_primary"], 0)
         self.assertEqual(asha(maggie), A.sha(rd("sprites/maggie-sprite.jpg")))
         self.assertEqual(len(A.gallery(maggie["id"])), 5)
+        # marketing pages feature Lily only; Maggie's member profile stays listed in the dog directory
+        home, pals, dogs = Client().get("/").text, Client().get("/pixel-pals").text, Client().get("/dogs").text
+        self.assertIn("/dogs/lily", home)
+        self.assertIn("Meet Lily, our example pixel pal.", home)
+        self.assertIn("pp-one", home)
+        self.assertIn("pxh-one", home)
+        self.assertNotIn("/dogs/maggie", home)
+        self.assertNotIn("Maggie", home)
+        self.assertIn("/dogs/lily", pals)
+        self.assertNotIn("/dogs/maggie", pals)
+        self.assertIn("pp-one", pals)
+        self.assertIn("/dogs/maggie", dogs)
+        self.assertIn("/dogs/lily", dogs)
 
     def test_admin_seed_endpoint_requires_key(self):
         c = Client()

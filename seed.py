@@ -1,4 +1,7 @@
-"""Seed the first BarksBuds dog profiles (Lily and Maggie on Mike's account), one sample meetup and one sample pack. Safe to run more than once.
+"""Seed the first BarksBuds dog profiles (Lily as the example digital pet, plus Maggie on Mike's account), one sample meetup and one sample pack. Safe to run more than once.
+
+Maggie is Mike's merle Frenchie and has her own site (Maggie the Merle). The seed still creates or updates her member
+profile if it is missing, and never deletes it, but she is not featured on marketing showcases (see portraits.SHOWCASE_EXCLUDE_SEEDS).
 
 Usage:  DATABASE_URL=... python3 seed.py [--assets /path/to/barksbuds-assets]
         (without DATABASE_URL it seeds the local SQLite database in DATA_DIR)
@@ -62,9 +65,9 @@ DOGS = [
 SAMPLE_MEETUP = dict(
     seed_key="founding-pack-2026", title="Founding Pack Meetup at Christopher Morley Park", date="2026-10-31", time="10:00",
     rev=1,  # rev 1: renamed from "Founding Pack Meetup at Manhasset" (the old URL 301-redirects to the new slug)
-    duration_min=60, run_id="n-006", fit="", capacity=None, rsvp_dogs=["mike-lily", "mike-maggie"],
+    duration_min=60, run_id="n-006", fit="", capacity=None, rsvp_dogs=["mike-lily"],
     description=("Come meet the founding pack! BarksBuds started with a few friends and their dogs around Manhasset, "
-                 "and this is our first get-together. Lily and Maggie will be there.\n\n"
+                 "and this is our first get-together. Lily will be there.\n\n"
                  "We'll meet at the Christopher Morley Park dog run, a short drive from Manhasset. It's fenced, "
                  "with water on site. All friendly dogs are welcome. Bring water, treats and poop bags, and "
                  "please keep dogs leashed outside the run.\n\n"
@@ -74,11 +77,11 @@ SAMPLE_MEETUP = dict(
 # One clearly marked sample pack (is_sample=1: no emails; hideable/deletable from /admin/packs with the other samples).
 SAMPLE_PACK = dict(
     seed_key="north-shore-pack-2026", name="Manhasset & North Shore Pack", area="Nassau", town="Manhasset", run_id="n-006",
-    fit="all", visibility="open", cover="packs/north-shore-pack-cover.jpg", dogs=["mike-lily", "mike-maggie"],
+    fit="all", visibility="open", cover="packs/north-shore-pack-cover.jpg", dogs=["mike-lily"],
     description=("A friendly crew of North Shore dogs and their people. We meet at the Christopher Morley Park dog run, "
                  "a short drive from Manhasset: it's fenced, with water on site, and there's plenty of room to run.\n\n"
                  "All friendly dogs are welcome, big and small. Join with your dogs to see pack meetups, chat on the pack "
-                 "board and get to know the regulars. Lily and Maggie say hi!\n\n"
+                 "board and get to know the regulars. Lily says hi!\n\n"
                  "This is a sample pack to show how BarksBuds packs work."),
 )
 
@@ -102,7 +105,7 @@ def run(load, log=print):
     u = A.one("SELECT display_name, area, town, bio FROM users WHERE id=:i", i=uid)
     A.update_profile(uid, u[0] or OWNER["display_name"], u[1] or OWNER["area"], u[2] or OWNER["town"], u[3] or OWNER["bio"])
     log(f"owner: user {uid} ({'created' if created else 'existing'})")
-    if created:  # the site's own showcase account (Lily and Maggie) is fully public, as it always was
+    if created:  # the site's own showcase account (Lily as the example digital pet) is fully public, as it always was
         import privacy
         privacy.set_legacy_defaults(uid)
     for spec in DOGS:
@@ -177,7 +180,7 @@ def run(load, log=print):
     mid = seed_meetup(uid, log)
     seed_pack(uid, mid, load, log)
     import portraits
-    portraits.mark_seeded_done()   # Lily and Maggie's AI portraits count as their done pixel portraits
+    portraits.mark_seeded_done()   # seeded AI portraits count as done pixel portraits (Maggie is not featured on showcases)
     return uid
 
 
@@ -235,7 +238,7 @@ def seed_meetup(uid, log=print):
 
 
 def seed_pack(uid, mid, load, log=print):
-    """Create the sample pack once (matched by seed key), organized by the owner with Lily and Maggie, and attach the
+    """Create the sample pack once (matched by seed key), organized by the owner with Lily, and attach the
     sample meetup to it. Sends no email."""
     spec = SAMPLE_PACK
     dog_ids = [x[0] for x in (A.one("SELECT id FROM dogs WHERE seed_key=:k AND user_id=:u", k=k, u=uid) for k in spec["dogs"]) if x]
