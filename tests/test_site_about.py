@@ -34,10 +34,22 @@ class AboutTests(unittest.TestCase):
                   "We never sell or share your info.", 'id="trust"', 'href="/privacy"', 'rel="canonical"'):
             self.assertIn(s, body)
         self.assertIn('content="index,follow"', body)
+        self.assertIn("The scruffy terrier in our logo is Jack, Mike's Cairn terrier. Jack lived to 17 and passed away in 2024.", body)
+        self.assertIn("We kept him in the logo, so a little of Jack comes along to every dog run, meetup and pack on BarksBuds.", body)
+        self.assertIn("Jack, Mike's Cairn terrier", body)
+        self.assertIn("/img/jack-about-480.webp?v=1", body)
+        self.assertIn("/img/jack-about-960.webp?v=1", body)
+        self.assertIn("/img/jack-about.jpg?v=1", body)
+        self.assertIn('loading="lazy"', body)
+        self.assertNotIn("/img/icon-440.webp", body)
         low = body.lower()
         for bad in ("maggie", "konstantinopl3", "owl", "crescent"):
             self.assertNotIn(bad, low)
         self.assertEqual(get("/about/")[0], 200)
+        st, _, _ = get("/img/jack-about.jpg?v=1")
+        self.assertEqual(st, 200)
+        st, _, _ = get("/img/jack-about-960.webp?v=1")
+        self.assertEqual(st, 200)
 
     def test_signin_privacy_line(self):
         st, _, body = get("/signin")

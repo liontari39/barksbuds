@@ -624,7 +624,8 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .lp-fine{margin-top:12px}
 /* About page + sign-in trust line (aboutweb.py) */
 .about-jack{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
-.about-jack img{width:200px;height:200px;border-radius:50%;background:var(--gold-l);flex:none;margin:0 auto}
+.about-jack picture{flex:none;margin:0 auto}
+.about-jack img{width:min(100%,280px);height:auto;display:block;border-radius:var(--r);border:2px solid var(--black);box-shadow:4px 4px 0 var(--gold);background:var(--gold-l)}
 .about-jack>div{flex:1 1 280px}
 .about-jack h2{margin:2px 0 10px}
 .about-jack p{margin:0 0 10px}

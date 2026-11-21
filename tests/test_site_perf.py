@@ -34,7 +34,7 @@ import webapp  # noqa: E402
 class HeaderTests(unittest.TestCase):
     def test_static_cache_control(self):
         cc = server.static_cache_control
-        self.assertEqual(cc("/app.css?v=21"), "public, max-age=31536000, immutable")
+        self.assertEqual(cc("/app.css?v=22"), "public, max-age=31536000, immutable")
         self.assertEqual(cc("/img/logo.webp?v=jack3"), "public, max-age=31536000, immutable")
         self.assertEqual(cc("/img/icon-32.png"), "public, max-age=604800")
         self.assertEqual(cc("/vendor/leaflet/leaflet.js"), "public, max-age=604800")
@@ -45,7 +45,7 @@ class HeaderTests(unittest.TestCase):
             self.assertIsNone(cc(p), p)
 
     def test_live_headers(self):
-        st, r, _ = get("/app.css?v=21")
+        st, r, _ = get("/app.css?v=22")
         self.assertEqual(st, 200)
         self.assertEqual(r.getheader("Cache-Control"), "public, max-age=31536000, immutable")
         st, r, _ = get("/img/icon-32.png")

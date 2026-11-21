@@ -29,7 +29,10 @@ class AboutRoutes:
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">our story</span><h1>About BarksBuds</h1>
 <p class="lead">A free community for dog people in NYC, Long Island and Westchester: a dog run map, meetups, packs and a profile for your pup. A group of friends that love their dogs.</p></div></section>
 <section class="section"><div class="wrap narrow">
-<div class="panel about-jack"><img src="/img/icon-440.webp?v=jack3" width="200" height="200" alt="Jack, the Cairn terrier in the BarksBuds logo" decoding="async">
+<div class="panel about-jack"><picture>
+<source type="image/webp" srcset="/img/jack-about-480.webp?v=1 480w, /img/jack-about-960.webp?v=1 960w" sizes="(max-width: 640px) 260px, 280px">
+<img src="/img/jack-about.jpg?v=1" width="960" height="1200" alt="Jack, Mike's Cairn terrier" loading="lazy" decoding="async">
+</picture>
 <div><span class="eyebrow">in loving memory</span><h2>Meet Jack</h2>
 <p>The scruffy terrier in our logo is Jack, Mike's Cairn terrier. Jack lived to 17 and passed away in 2024.</p>
 <p>We kept him in the logo, so a little of Jack comes along to every dog run, meetup and pack on BarksBuds.</p></div></div>
