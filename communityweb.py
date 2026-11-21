@@ -114,14 +114,14 @@ def alert_photo_id(a):
 
 def alert_mini(a):
     small, _ = alert_photo_id(a)
-    img = f'<img src="{small}" alt="" loading="lazy" width="56" height="56">' if small else '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>'
+    img = f'<img src="{small}" alt="" loading="lazy" decoding="async" width="56" height="56">' if small else '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>'
     return (f'<a class="lfmin k-{a["kind"]}" href="{alert_path(a)}">{img}<span><b><span class="lfk">{"LOST" if a["kind"] == "lost" else "FOUND"}</span> {e(alert_name(a))}</b>'
             f'<small>{e(alert_where(a))} · {e(ago(a["created_at"]))}</small></span></a>')
 
 
 def alert_card(a):
     small, _ = alert_photo_id(a)
-    img = f'<img src="{small}" alt="" loading="lazy">' if small else '<div class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>'
+    img = f'<img src="{small}" alt="" loading="lazy" decoding="async">' if small else '<div class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>'
     st = {"reunited": '<span class="badge gold">Reunited</span>', "expired": '<span class="badge">Expired</span>'}.get(a["state"], "")
     return (f'<a class="dcard lfcard k-{a["kind"]}" href="{alert_path(a)}"><div class="ph">{img}<span class="lfk">{"LOST" if a["kind"] == "lost" else "FOUND"}</span></div>'
             f'<div class="bd"><h3>{e(alert_name(a))} {st}</h3><p class="meta">{e(alert_where(a))}</p>'

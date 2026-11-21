@@ -270,6 +270,49 @@ def render_runs(host_url):
     return INDEX_CACHE[key]
 
 
+# Security headers (HSTS is sent in H.end_headers). The CSP is Report-Only for now:
+# it never blocks anything, browsers just log what would have been blocked. Pages use inline <script>/<style> and the
+# Pixel Pals page runs WebAssembly, hence 'unsafe-inline' and 'wasm-unsafe-eval'. Flip to enforcing only after
+# checking the browser console on every page type.
+CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; "
+       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
+       "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org; "
+       "connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'self'; base-uri 'self'; "
+       "form-action 'self'; object-src 'none'")
+VERSIONED_RE = re.compile(r"(^|&)v=[^&]+")
+STATIC_EXT = (".css", ".js", ".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2")
+
+
+def static_cache_control(raw_path):
+    """Cache-Control for static files, or None (pages set their own).
+    Versioned URLs (?v=...) never change, so they are cached for a year and marked immutable.
+    Unversioned images, fonts and vendored libraries: one week. Unversioned CSS/JS: 5 minutes, so an edit still shows up fast."""
+    sp = urlsplit(raw_path)
+    p = sp.path
+    if p == "/sw.js":
+        return "no-cache"  # browsers must always see the newest service worker
+    if not (p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico" or (p.count("/") == 1 and p.endswith(STATIC_EXT))):
+        return None
+    if VERSIONED_RE.search(sp.query or ""):
+        return "public, max-age=31536000, immutable"
+    if p.endswith((".css", ".js")) and not p.startswith("/vendor/"):
+        return "public, max-age=300"
+    return "public, max-age=604800"
+
+
+def lastmod(ts):
+    """Unix seconds -> W3C date for <lastmod>, or "" if unknown."""
+    try:
+        return datetime.fromtimestamp(int(ts), timezone.utc).strftime("%Y-%m-%d") if ts else ""
+    except (TypeError, ValueError, OverflowError, OSError):
+        return ""
+
+
+def sm_url(base, path, lm="", freq=""):
+    return (f"<url><loc>{base}{path}</loc>" + (f"<lastmod>{lm}</lastmod>" if lm else "")
+            + (f"<changefreq>{freq}</changefreq>" if freq else "") + "</url>")
+
+
 def render_index(host_url):
     """index.html with absolute URLs for Open Graph/canonical tags."""
     base = SITE_URL or host_url
@@ -292,17 +335,20 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
     def __init__(self, *a, **k):
         super().__init__(*a, directory=PUBLIC, **k)
 
+    def send_response(self, code, message=None):
+        self._status = code
+        super().send_response(code, message)
+
     def end_headers(self):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
         # HTTPS-only on barksbuds.app; omit includeSubDomains (www is a CNAME to onrender.com).
         self.send_header("Strict-Transport-Security", "max-age=31536000")
-        p = urlsplit(self.path).path
-        if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
-            self.send_header("Cache-Control", "public, max-age=86400")
-        elif p in ("/runs.js", "/app.css", "/suggest.js"):
-            self.send_header("Cache-Control", "public, max-age=300")
+        self.send_header("Content-Security-Policy-Report-Only", CSP)
+        cc = static_cache_control(self.path) if getattr(self, "_status", 200) in (200, 304) else None
+        if cc:
+            self.send_header("Cache-Control", cc)
         super().end_headers()
 
     def _gzip_ok(self):
@@ -414,26 +460,33 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
             return self._send(200, txt.encode(), "text/plain; charset=utf-8", {"Cache-Control": "public, max-age=3600"})
         if u.path == "/sitemap.xml":
             base = SITE_URL or self._host_url()
-            lm = max((r.get("last_checked") or "") for r in load_runs()["data"]) or "2026-10-24"
+            runs = load_runs()["data"]
+            run_lm = max((r.get("last_checked") or "") for r in runs) or ""
+            meets = [m for m in meetweb.M.upcoming(limit=500) if not m["is_sample"]]
+            packs_ = [p for p in packweb.P.browse() if not p["is_sample"]]
+            dogs_ = privacy.sitemap_dogs(limit=5000)
+            posts = photoweb.F.sitemap(limit=2000)
+            newest = lambda rows: lastmod(max((r.get("updated_at") or r.get("created_at") or 0) for r in rows)) if rows else ""
+            home_lm = max(run_lm, tipsweb.D.UPDATED, trailsweb.T.CHECKED)
             xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                   f'<url><loc>{base}/</loc><lastmod>{lm}</lastmod></url>'
-                   f'<url><loc>{base}/runs</loc><lastmod>{lm}</lastmod><changefreq>weekly</changefreq></url>'
-                   f'<url><loc>{base}/meetups</loc><changefreq>daily</changefreq></url>'
-                   + "".join(f'<url><loc>{base}{meetweb.meetup_path(m)}</loc></url>' for m in meetweb.M.upcoming(limit=500) if not m["is_sample"])
-                   + f'<url><loc>{base}/packs</loc><changefreq>daily</changefreq></url>'
-                   + "".join(f'<url><loc>{base}{packweb.pack_path(p)}</loc></url>' for p in packweb.P.browse() if not p["is_sample"])
-                   + f'<url><loc>{base}/pixel-pals</loc><changefreq>weekly</changefreq></url>'
-                   + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
-                   + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
-                   + f'<url><loc>{base}/trails</loc><lastmod>{trailsweb.T.CHECKED}</lastmod><changefreq>monthly</changefreq></url>'
-                   + f'<url><loc>{base}/about</loc></url><url><loc>{base}/privacy</loc></url><url><loc>{base}/terms</loc></url>'
-                   + f'<url><loc>{base}/community</loc><changefreq>daily</changefreq></url><url><loc>{base}/lost-found</loc><changefreq>hourly</changefreq></url>'
-                   + f'<url><loc>{base}/recommendations</loc><changefreq>weekly</changefreq></url>'
-                   + "".join(f'<url><loc>{base}{runpageweb.run_path(r)}</loc></url>' for r in webapp.RUNS())
-                   + "".join(f'<url><loc>{base}/lost-found/{a["id"]}</loc></url>' for a in communityweb.C.live_alerts(200))
-                   + f'<url><loc>{base}/dogs</loc><changefreq>daily</changefreq></url>'
-                   + "".join(f'<url><loc>{base}/dogs/{d["slug"]}</loc></url>' for d in privacy.sitemap_dogs(limit=5000))
-                   + "".join(f'<url><loc>{base}{photoweb.post_path(p["id"])}</loc></url>' for p in photoweb.F.sitemap(limit=2000))
+                   + sm_url(base, "/", home_lm)
+                   + sm_url(base, "/runs", run_lm, "weekly")
+                   + sm_url(base, "/meetups", newest(meets), "daily")
+                   + "".join(sm_url(base, meetweb.meetup_path(m), lastmod(m.get("updated_at"))) for m in meets)
+                   + sm_url(base, "/packs", newest(packs_), "daily")
+                   + "".join(sm_url(base, packweb.pack_path(p), lastmod(p.get("updated_at"))) for p in packs_)
+                   + sm_url(base, "/pixel-pals", "", "weekly")
+                   + sm_url(base, "/tips", tipsweb.D.UPDATED, "weekly")
+                   + "".join(sm_url(base, f'/tips/{t["slug"]}', t["updated"]) for t in tipsweb.D.TIPS)
+                   + sm_url(base, "/trails", trailsweb.T.CHECKED, "monthly")
+                   + sm_url(base, "/about") + sm_url(base, "/privacy") + sm_url(base, "/terms")
+                   + sm_url(base, "/community", "", "daily") + sm_url(base, "/lost-found", "", "hourly")
+                   + sm_url(base, "/recommendations", "", "weekly")
+                   + "".join(sm_url(base, runpageweb.run_path(r), r.get("last_checked") or "") for r in webapp.RUNS())
+                   + "".join(sm_url(base, f'/lost-found/{a["id"]}') for a in communityweb.C.live_alerts(200))
+                   + sm_url(base, "/dogs", newest(dogs_), "daily")
+                   + "".join(sm_url(base, f'/dogs/{d["slug"]}', lastmod(d.get("updated_at"))) for d in dogs_)
+                   + "".join(sm_url(base, photoweb.post_path(p["id"]), lastmod(p.get("updated_at") or p.get("created_at"))) for p in posts)
                    + '</urlset>\n')
             return self._send(200, xml.encode(), "application/xml; charset=utf-8", {"Cache-Control": "public, max-age=600"})
         if u.path == "/api/config":

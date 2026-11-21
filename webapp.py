@@ -3,7 +3,8 @@
 Mixed into server.H. Every page is server-rendered with escaped output; every POST checks a CSRF token
 (an HMAC of the bb_csrf cookie) plus the Origin header when the browser sends one.
 """
-import hashlib, hmac, html, re, secrets, unicodedata
+import hashlib, hmac, html, io, re, secrets, threading, unicodedata
+from collections import OrderedDict
 from datetime import date, datetime, timezone
 from email.parser import BytesParser
 from email.policy import HTTP
@@ -74,6 +75,38 @@ def clean(s, n, multiline=False):
     return s.strip()[:n]
 
 
+MEDIUM_PX = 1024
+_MEDIUM = OrderedDict()
+_MEDIUM_LOCK = threading.Lock()
+
+
+def medium_webp(pid):
+    """A 1024px WebP made on demand from the stored 1600px JPEG (the original is never changed). Kept in a small
+    in-memory LRU (about 48 photos), and browsers/CDNs cache public photos for a year, so each is encoded rarely."""
+    with _MEDIUM_LOCK:
+        if pid in _MEDIUM:
+            _MEDIUM.move_to_end(pid)
+            return _MEDIUM[pid]
+    full = A.photo_blob(pid, "full")
+    if full is None:
+        return None
+    try:
+        from PIL import Image
+        im = Image.open(io.BytesIO(full))
+        im.thumbnail((MEDIUM_PX, MEDIUM_PX))
+        out = io.BytesIO()
+        im.convert("RGB").save(out, "WEBP", quality=80, method=4)
+        blob = out.getvalue()
+    except Exception as ex:
+        print(f"medium_webp failed: {type(ex).__name__}", flush=True)
+        return None
+    with _MEDIUM_LOCK:
+        _MEDIUM[pid] = blob
+        while len(_MEDIUM) > 48:
+            _MEDIUM.popitem(last=False)
+    return blob
+
+
 def area_label(a):
     return A.AREA_LABEL.get(a, a)
 
@@ -116,6 +149,10 @@ def unread_count(user):
             print(f"messages: unread count failed: {type(ex).__name__}", flush=True)
             user["_unread"] = 0
     return user["_unread"]
+
+
+# Registers public/sw.js (the "waking up" page for Render free-tier cold starts). HTTPS only.
+SW_REGISTER = "<script>if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>"
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -351,11 +388,11 @@ class AppRoutes:
 </div></header>
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
-<div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
+<div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy" decoding="async">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
 <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
-{scripts}
+{scripts}{SW_REGISTER}
 </body></html>"""
         cache = "no-store" if (u or code != 200 or not index) else "no-cache"
         self._emit(code, doc, headers={"Cache-Control": cache, "Vary": "Cookie"})
@@ -409,9 +446,9 @@ class AppRoutes:
         m = re.fullmatch(r"/dogs/([a-z0-9-]{1,60})/?", path)
         if m:
             self.dog_page(m.group(1), q); return True
-        m = re.fullmatch(r"/p/(\d+)\.(jpg|webp)", path)
+        m = re.fullmatch(r"/p/(\d+)(\.jpg|\.webp|-m\.webp)", path)
         if m:
-            self.photo(int(m.group(1)), m.group(2), q); return True
+            self.photo(int(m.group(1)), m.group(2).lstrip("."), q); return True
         if path == "/admin/reports":
             self.admin_reports(q); return True
         return False
@@ -820,7 +857,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             mk = "<span></span>" if p["id"] == avatar else (
                 f'<form method="post" action="/me/dogs/{d["id"]}/photos/{p["id"]}/avatar">{self.csrf_field()}'
                 f'<button class="linkbtn" type="submit">Make profile pic</button></form>')
-            items.append(f"""<div class="pitem"><img src="/p/{p["id"]}.webp" alt="Photo {i + 1} of {e(d["name"])}" loading="lazy">
+            items.append(f"""<div class="pitem"><img src="/p/{p["id"]}.webp" alt="Photo {i + 1} of {e(d["name"])}" loading="lazy" decoding="async">
 <div class="pa"><span>{' '.join(badges) or '&nbsp;'}</span></div><div class="pa">{mk}
 <form method="post" action="/me/dogs/{d["id"]}/photos/{p["id"]}/delete" onsubmit="return confirm('Remove this photo?')">{self.csrf_field()}<button class="linkbtn" type="submit">Remove</button></form></div></div>""")
         left = A.MAX_PHOTOS - len(photos)
@@ -994,10 +1031,10 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         """Card image: the pixel pal when it's the avatar (or there's no photo), else the photo with a small sprite badge."""
         px = d.get("pixel_photo_id") if A.SHOW_OLD_SPRITES else None  # old maker sprites aren't shown
         if px and (d.get("pixel_primary") or not pid):
-            return (f'<div class="ph pxph"><img src="/px/{px}-1x.png" alt="{e(alt and alt + ", pixel art")}" loading="lazy"></div>')
+            return (f'<div class="ph pxph"><img src="/px/{px}-1x.png" alt="{e(alt and alt + ", pixel art")}" loading="lazy" decoding="async"></div>')
         if pid:
-            badge = f'<img class="pxbadge" src="/px/{px}-1x.png" alt="" width="52" height="52" loading="lazy">' if px else ""
-            return f'<div class="ph"><img src="/p/{pid}.webp" alt="{e(alt)}" loading="lazy">{badge}</div>'
+            badge = f'<img class="pxbadge" src="/px/{px}-1x.png" alt="" width="52" height="52" loading="lazy" decoding="async">' if px else ""
+            return f'<div class="ph"><img src="/p/{pid}.webp" alt="{e(alt)}" loading="lazy" decoding="async">{badge}</div>'
         return '<div class="ph empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>'
 
     def dog_card(self, d, pid):
@@ -1115,7 +1152,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             facts.append(fact("i-shield", 'Vaccinated <span class="small" style="opacity:.75">(owner-reported)</span>',
                               ' class="ok" title="Self-reported by the owner"'))
         alt = f'{d["name"]}, ' + (d["breed"] or "a dog")
-        cov = (f'<div class="cover"><img src="/p/{cover}.jpg" alt="{e(alt)}" fetchpriority="high"></div>' if cover else
+        cov = (f'<div class="cover"><img src="/p/{cover}-m.webp" srcset="/p/{cover}.webp 640w, /p/{cover}-m.webp 1024w" '
+               f'sizes="(max-width: 860px) 92vw, 560px" width="1024" height="768" alt="{e(alt)}" fetchpriority="high"></div>' if cover else
                '<div class="cover empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></div>')
         px = d.get("pixel_photo_id") if A.SHOW_OLD_SPRITES else None  # old maker sprites aren't shown
         av_photo = f'<img class="av" src="/p/{avatar}.webp" width="92" height="92" alt="{e(d["name"])}"' if avatar else ""
@@ -1142,7 +1180,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             dl = (f'<p style="margin:14px 0 0"><a class="btn btn-ghost btn-sm" href="/px/{px}.png" download="{e(d["slug"])}-pixel-pal.png">Download PNG</a></p>'
                   if is_owner else "")
             side.insert(0, f'<div class="panel pxshow"><h2>{e(d["name"])}\'s pixel pal</h2><div class="pxstage">'
-                           f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy"></div>{dl}</div>')
+                           f'<img src="/px/{px}-1x.png" width="192" height="192" alt="{e(d["name"])} as pixel art" loading="lazy" decoding="async"></div>{dl}</div>')
         if is_owner:  # "Get a pixel portrait" / its status; only the owner sees it
             side.insert(0, self.portrait_panel(d, compact=True))
         chips = []
@@ -1181,7 +1219,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             main.append('<div class="panel"><h2>Personality</h2><ul class="taglist">' + "".join(f"<li>{e(t)}</li>" for t in d["temperament"]) + "</ul></div>")
         if photos:
             main.append('<div class="panel"><h2>Photos</h2><div class="gallery">' + "".join(
-                f'<a href="/p/{p["id"]}.jpg" data-full="/p/{p["id"]}.jpg"><img src="/p/{p["id"]}.webp" alt="{e(d["name"])}, photo {i + 1}" loading="lazy"></a>'
+                f'<a href="/p/{p["id"]}.jpg" data-full="/p/{p["id"]}.jpg"><img src="/p/{p["id"]}.webp" alt="{e(d["name"])}, photo {i + 1}" loading="lazy" decoding="async"></a>'
                 for i, p in enumerate(photos)) + "</div></div>")
         import photoweb
         fstrip = photoweb.dog_strip(d, self.pv(), is_owner)
@@ -1283,7 +1321,7 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                 self.send_header(k, v)
             self.end_headers()
             return
-        blob = A.photo_blob(pid, "full" if ext == "jpg" else "thumb")
+        blob = medium_webp(pid) if ext == "-m.webp" else A.photo_blob(pid, "full" if ext == "jpg" else "thumb")
         if blob is None:
             return self._emit(404, b"Not found", "text/plain", {"Cache-Control": "no-store"})
         return self._emit(200, blob, "image/jpeg" if ext == "jpg" else "image/webp", hdr)

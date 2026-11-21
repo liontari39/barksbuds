@@ -420,7 +420,7 @@ class RunRoutes:
                 flags.append('<span class="flag">No pin</span>')
             pin = (f'<a href="https://www.openstreetmap.org/?mlat={d["lat"]}&amp;mlon={d["lng"]}#map=18/{d["lat"]}/{d["lng"]}" target="_blank" rel="noopener">'
                    f'pin {d["lat"]}, {d["lng"]}</a>') if isinstance(d.get("lat"), (int, float)) else ""
-            ph = (f'<a href="/admin/runs/photo/{s["id"]}.jpg?key={e(kq)}" target="_blank"><img src="/admin/runs/photo/{s["id"]}-t.webp?key={e(kq)}" alt="Suggested photo" loading="lazy"></a>'
+            ph = (f'<a href="/admin/runs/photo/{s["id"]}.jpg?key={e(kq)}" target="_blank"><img src="/admin/runs/photo/{s["id"]}-t.webp?key={e(kq)}" alt="Suggested photo" loading="lazy" decoding="async"></a>'
                   if s["has_photo"] else "")
             hidden = f'<input type="hidden" name="key" value="{e(key)}"><input type="hidden" name="id" value="{s["id"]}">'
             credit = (f'<label style="text-transform:none;letter-spacing:0"><input type="checkbox" name="credit" value="1"{" checked" if d.get("credit") else ""}> '

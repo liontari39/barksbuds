@@ -71,7 +71,7 @@ def landing_html():
     if not done:
         return ""
     cards = "".join(f'<a class="pp-card" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])} as pixel art" '
-                    f'width="240" height="240" loading="lazy"><b>{e(d["name"])}</b></a>' for d, pid in done)
+                    f'width="240" height="240" loading="lazy" decoding="async"><b>{e(d["name"])}</b></a>' for d, pid in done)
     one = " pp-one" if len(done) == 1 else ""
     lily_note = " Lily, our example pixel pal, shows how it looks." if any(d.get("slug") == "lily" for d, _ in done) else ""
     return f"""<style>
@@ -184,7 +184,7 @@ class PixelRoutes:
         cta = "Request one for your dog" if u else "Sign up and request one for your dog"
         done = _listable(P.done_portraits(limit=200), self.pv())[:24]
         cards = "".join(f'<a class="pp-card" href="/dogs/{e(d["slug"])}"><img src="/p/{pid}.webp" alt="{e(d["name"])} as pixel art" '
-                        f'width="300" height="300" loading="lazy"><b>{e(d["name"])}</b><small>{e(d["breed"] or "")}</small></a>' for d, pid in done)
+                        f'width="300" height="300" loading="lazy" decoding="async"><b>{e(d["name"])}</b><small>{e(d["breed"] or "")}</small></a>' for d, pid in done)
         one = " pp-one" if len(done) == 1 else ""
         body = f"""<section class="phead pps-head"><div class="wrap"><span class="eyebrow">pixel pals</span>
 <h1>Your dog, as a pixel-art pal</h1>
@@ -230,7 +230,7 @@ class PixelRoutes:
                 act = (f'<form method="post" action="/me/dogs/{did}/photos/{pid}/avatar" style="margin-top:8px">{self.csrf_field()}'
                        f'<button class="btn btn-sm" type="submit">Make it the profile pic</button></form>')
             return (f'<div class="panel portraitp" id="portrait-panel"><h2>{nm}\'s pixel portrait</h2><div class="pprow">'
-                    f'<img src="/p/{pid}.webp" alt="{nm} as pixel art" width="120" height="120" loading="lazy"><div>'
+                    f'<img src="/p/{pid}.webp" alt="{nm} as pixel art" width="120" height="120" loading="lazy" decoding="async"><div>'
                     f'<p class="pstat" style="margin:0"><span class="badge">Done</span> Ready{(" on " + fmt_day(req["completed_at"])) if req["completed_at"] else ""}.</p>'
                     f'{act}</div></div></div>')
         rejected = ""
@@ -243,7 +243,7 @@ class PixelRoutes:
                     f'<a class="btn btn-gold btn-sm" href="/me/dogs/{did}/edit#portrait-panel">Request a portrait</a></div>')
         photos = A.gallery(did)
         picks = "".join(f'<label class="ppick"><input type="checkbox" name="photo_id" value="{p["id"]}">'
-                        f'<img src="/p/{p["id"]}.webp" alt="Photo {i + 1} of {nm}" loading="lazy"></label>' for i, p in enumerate(photos))
+                        f'<img src="/p/{p["id"]}.webp" alt="Photo {i + 1} of {nm}" loading="lazy" decoding="async"></label>' for i, p in enumerate(photos))
         pick_html = (f'<fieldset class="ppicks"><legend>Pick photos</legend>{picks}</fieldset>' if picks else "")
         err = e(ERRS.get((q.get("pre") or [""])[0], ""))
         return f"""<div class="panel portraitp" id="portrait-panel"><h2>Get a pixel portrait</h2>{hint}{rejected}

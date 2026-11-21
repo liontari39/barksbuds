@@ -636,9 +636,9 @@ def tile_img(d, size=72):
     """<img> for a small dog tile (attendee/member lists): the sprite when the owner made it the avatar, else the photo."""
     import html as _h
     if d.get("pixel") and SHOW_OLD_SPRITES:
-        return (f'<img class="pxav" src="/px/{int(d["pixel"])}-1x.png" alt="" loading="lazy" width="{size}" height="{size}">')
+        return (f'<img class="pxav" src="/px/{int(d["pixel"])}-1x.png" alt="" loading="lazy" decoding="async" width="{size}" height="{size}">')
     if d.get("photo"):
-        return f'<img src="/p/{int(d["photo"])}.webp" alt="" loading="lazy" width="{size}" height="{size}">'
+        return f'<img src="/p/{int(d["photo"])}.webp" alt="" loading="lazy" decoding="async" width="{size}" height="{size}">'
     return '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></span>'
 
 

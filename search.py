@@ -293,7 +293,7 @@ def mobile_search_html():
 def result_row(r, kind):
     _, _, badge, icon = TYPE_INFO[kind]
     if r.get("img"):
-        th = f'<span class="sr-th"><img src="{e(r["img"])}" alt="" loading="lazy" width="56" height="56"></span>'
+        th = f'<span class="sr-th"><img src="{e(r["img"])}" alt="" loading="lazy" decoding="async" width="56" height="56"></span>'
     else:
         th = f'<span class="sr-th sr-ic"><svg class="ico" aria-hidden="true"><use href="#{icon}"/></svg></span>'
     tag = r.get("tag") or ""

@@ -225,7 +225,7 @@ class PackRoutes:
                 f'<button class="btn btn-ghost btn-sm" type="submit">{"Turn off pack emails" if on else "Turn on pack emails"}</button></form>')
 
     def pack_row(self, p, tag):
-        img = (f'<img src="/pp/{p["cover_photo_id"]}.webp" alt="" width="52" height="52" loading="lazy">' if p.get("cover_photo_id") else
+        img = (f'<img src="/pp/{p["cover_photo_id"]}.webp" alt="" width="52" height="52" loading="lazy" decoding="async">' if p.get("cover_photo_id") else
                '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>')
         return (f'<li><a href="{e(pack_path(p))}"><span class="pthumb">{img}</span>'
                 f'<span class="mrt"><strong>{e(p["name"])}</strong><small>{e(where_line(p))}</small></span>'
@@ -257,7 +257,7 @@ class PackRoutes:
 
     # ------------------------------------------------------------ browse
     def pack_card(self, p):
-        cover = (f'<img src="/pp/{p["cover_photo_id"]}.webp" alt="" loading="lazy" width="640" height="360">' if p.get("cover_photo_id") else
+        cover = (f'<img src="/pp/{p["cover_photo_id"]}.webp" alt="" loading="lazy" decoding="async" width="640" height="360">' if p.get("cover_photo_id") else
                  '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>')
         tags = []
         if p["is_sample"]:
@@ -551,7 +551,7 @@ class PackRoutes:
                             f'{self.csrf_field()}<select name="reason" aria-label="Reason">{reasons}</select><button class="linkbtn" type="submit">Send</button></form></details>')
             img = ""
             if po["photo_id"]:
-                img = (f'<a href="/pp/{po["photo_id"]}.jpg" target="_blank" rel="noopener"><img class="pimg" src="/pp/{po["photo_id"]}.webp" alt="Photo shared by {e(po["name"])}" loading="lazy"></a>')
+                img = (f'<a href="/pp/{po["photo_id"]}.jpg" target="_blank" rel="noopener"><img class="pimg" src="/pp/{po["photo_id"]}.webp" alt="Photo shared by {e(po["name"])}" loading="lazy" decoding="async"></a>')
             cms = []
             for c in po["comments"]:
                 cacts = []

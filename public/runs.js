@@ -107,7 +107,7 @@
       '<div class="live-slot">' + live(r) + "</div>" +
       '<div class="mu-slot">' + meetups(r) + "</div>" +
       '<details class="more" id="more-' + esc(r.id) + '"><summary><svg class="ico chev" aria-hidden="true"><use href="#i-chev"/></svg>Details, hours &amp; directions</summary><div class="body">' +
-      (r.photo && /^\/runs\/photo\/\d+\.jpg$/.test(r.photo) ? '<img class="ph" src="' + esc(r.photo) + '" alt="Photo of ' + esc(r.name) + '" loading="lazy">' : "") +
+      (r.photo && /^\/runs\/photo\/\d+\.jpg$/.test(r.photo) ? '<img class="ph" src="' + esc(r.photo) + '" alt="Photo of ' + esc(r.name) + '" loading="lazy" decoding="async">' : "") +
       '<dl class="amen">' + amen + "</dl>" +
       '<dl class="facts">' + facts + "</dl>" +
       '<div class="actions">' +
