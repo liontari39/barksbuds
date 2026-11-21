@@ -13,6 +13,22 @@ A dependency-light Python server (`server.py`) that serves `public/` and stores 
 - `GET /admin/export.csv?key=ADMIN_KEY` — download all signups as CSV (404 without the right key).
 - `POST /admin/delete?key=ADMIN_KEY&email=ADDRESS` — remove one signup.
 
+## Database backup and restore
+
+Free-tier Render Postgres has no platform backups and no external connections, so the app exposes a logical backup (gzip NDJSON of every table; bytea as base64):
+
+    curl -fsS -H "X-Admin-Key: $ADMIN_KEY" https://barksbuds.app/admin/maint/backup \
+      -o backups/barksbuds-backup-YYYY-MM-DD.ndjson.gz
+
+Stats (JSON, no row contents): `GET /admin/maint/stats` with the same header. Cleanup of expired sessions and login links is `POST /admin/maint/cleanup` (dry run unless `dry_run=0`). There is no HTTP restore endpoint.
+
+To test a restore locally (creates a throwaway SQLite database; does not touch production; `DATABASE_URL` in the environment is ignored unless you pass `--database-url`):
+
+    python3 scripts/restore_backup.py --data-dir /tmp/bb-restore-YYYYMMDD \
+      backups/barksbuds-backup-YYYY-MM-DD.ndjson.gz
+
+The script initializes the schema, refuses to write into a database that already has rows unless you pass `--replace`, and prints per-table counts only. Keep restored member data off git (mode 600). To restore onto a new Postgres database (for example after the free instance expires), pass `--database-url` pointing at the empty new database.
+
 ## Waitlist welcome emails
 
 `mailer.py` sends a branded welcome email (HTML + plain text) on a background thread after each *new* signup.

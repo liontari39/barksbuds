@@ -190,9 +190,13 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
  .brand{font-size:1.25rem}.brand img{width:34px;height:34px}
  .intro{padding:18px 0 8px}.intro p.lead{font-size:1rem}
  .controls{position:relative;top:auto;padding:10px 0 8px}
- .filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-left:-18px;margin-right:-18px;padding:0 18px 2px}
- .filters::-webkit-scrollbar{display:none}
+ /* Wrap filters on small screens instead of a hidden sideways scroll that clips the
+    borough select and amenity chips at the right edge of a phone. */
+ .filters{flex-wrap:wrap;overflow:visible;margin-left:0;margin-right:0;padding:0 0 2px}
  .filters>*{flex:none}
+ .seg{display:flex;width:100%;max-width:100%}
+ .seg button{flex:1 1 0;min-width:0;padding:8px 6px;font-size:.82rem}
+ .area,.area select{max-width:100%}
  .near .lbl{display:none}
  .near{padding:0 14px}
  .finder{grid-template-columns:1fr;padding-top:12px}

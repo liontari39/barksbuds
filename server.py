@@ -295,6 +295,8 @@ class H(maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, se
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
+        # HTTPS-only on barksbuds.app; omit includeSubDomains (www is a CNAME to onrender.com).
+        self.send_header("Strict-Transport-Security", "max-age=31536000")
         p = urlsplit(self.path).path
         if p.startswith(("/img/", "/vendor/")) or p == "/favicon.ico":
             self.send_header("Cache-Control", "public, max-age=86400")
