@@ -622,3 +622,15 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .lp-tips ul{margin:0 0 10px;padding-left:20px}
 .lp-tips li{margin:6px 0}
 .lp-fine{margin-top:12px}
+/* About page + sign-in trust line (aboutweb.py) */
+.about-jack{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.about-jack img{width:200px;height:200px;border-radius:50%;background:var(--gold-l);flex:none;margin:0 auto}
+.about-jack>div{flex:1 1 280px}
+.about-jack h2{margin:2px 0 10px}
+.about-jack p{margin:0 0 10px}
+.trust{list-style:none;margin:0 0 18px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.trust li{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 18px;line-height:1.5}
+.trust .ico{width:22px;height:22px;flex:none;color:var(--red);margin-top:2px}
+.trust strong{display:block}
+.authcard .trustline{display:flex;gap:8px;align-items:center;justify-content:center;margin:16px 0 0;font-size:.95rem;color:var(--ink)}
+.authcard .trustline .ico{width:20px;height:20px;color:var(--red)}

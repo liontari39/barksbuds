@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
 
+import aboutweb
 import accounts
 import communityweb
 import coownweb
@@ -280,7 +281,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
+class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -425,7 +426,7 @@ class H(maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, se
                    + f'<url><loc>{base}/tips</loc><lastmod>{tipsweb.D.UPDATED}</lastmod><changefreq>weekly</changefreq></url>'
                    + "".join(f'<url><loc>{base}/tips/{t["slug"]}</loc><lastmod>{t["updated"]}</lastmod></url>' for t in tipsweb.D.TIPS)
                    + f'<url><loc>{base}/trails</loc><lastmod>{trailsweb.T.CHECKED}</lastmod><changefreq>monthly</changefreq></url>'
-                   + f'<url><loc>{base}/privacy</loc></url><url><loc>{base}/terms</loc></url>'
+                   + f'<url><loc>{base}/about</loc></url><url><loc>{base}/privacy</loc></url><url><loc>{base}/terms</loc></url>'
                    + f'<url><loc>{base}/community</loc><changefreq>daily</changefreq></url><url><loc>{base}/lost-found</loc><changefreq>hourly</changefreq></url>'
                    + f'<url><loc>{base}/recommendations</loc><changefreq>weekly</changefreq></url>'
                    + "".join(f'<url><loc>{base}{runpageweb.run_path(r)}</loc></url>' for r in webapp.RUNS())

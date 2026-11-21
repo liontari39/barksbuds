@@ -340,7 +340,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=20"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=21"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -352,7 +352,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}
@@ -373,6 +373,8 @@ class AppRoutes:
     def app_get(self, path, q):
         self._app_reset()
         if self.coown_get(path, q):
+            return True
+        if self.about_get(path, q):
             return True
         if path == "/signin":
             nxt = safe_next(q.get("next", [""])[0])
@@ -450,9 +452,10 @@ class AppRoutes:
     # ------------------------------------------------------------ sign in
     def signin_page(self, email="", err="", code=200, flash="", nxt=""):
         nxt = safe_next(nxt)
-        fine = ('<p class="fine"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span>No passwords to remember. '
+        fine = ('<p class="trustline"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><strong>We never sell or share your info.</strong></p>'
+                '<p class="fine"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg><span>No passwords to remember. '
                 "We'll email you a link that signs you in. New to BarksBuds? The same link creates your free account. "
-                "We never show your email on the site.</span></p>")
+                "We never show your email on the site. <a href=\"/about#trust\">How we protect your info</a></span></p>")
         inv = ' aria-invalid="true" aria-describedby="err-email"' if err else ""
         body = f"""<div class="authwrap"><div class="authcard">
 <img class="logo" src="/img/icon-192.webp?v=jack3" width="84" height="84" alt="">
