@@ -204,3 +204,16 @@ are unset too, every member can receive them.
 page load (turn off with `COMMUNITY_AUTO_JOBS=0`), and can be triggered by any scheduler (it's safe to run more than once a day):
 
     curl -fsS -X POST -H "X-Admin-Key: $ADMIN_KEY" https://barksbuds.app/admin/jobs/daily
+
+## Partner invite links (off by default)
+
+`invites.py` adds per-partner links like `https://barksbuds.app/?ref=petshop` with sign-up attribution.
+It does nothing until `INVITES_ENABLED=1`; while off it creates no tables and sets no cookies.
+
+| Env var | Example | Notes |
+|---|---|---|
+| `INVITES_ENABLED` | `1` | Turns the feature on. Creates one new table, `signup_refs` (additive; nothing existing is altered). |
+| `INVITE_PARTNERS` | `petshop=Paws Pet Shop;vet=Main St Vet` | Only these slugs are accepted; any other `?ref=` is ignored. |
+
+The first partner link a visitor follows is kept in a 30-day `bb_ref` cookie. Only brand-new accounts are attributed.
+Counts per partner (no emails): `GET /admin/invites` with `X-Admin-Key`.

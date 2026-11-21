@@ -575,6 +575,11 @@ It comes from hello@barksbuds.app.</div>
             A.end_session(old)
         self._set_cookie(SESSION_COOKIE, A.create_session(uid), max_age=A.SESSION_TTL)
         print(f"signin: {'new account' if new else 'signed in'} user {uid}", flush=True)
+        import invites
+        if invites.enabled() and self._cookies().get(invites.COOKIE):
+            if new:
+                invites.record_signup(uid, self._cookies().get(invites.COOKIE))
+            self._set_cookie(invites.COOKIE, "", max_age=0)
         if nxt:
             return self.redirect(nxt)
         return self.redirect("/me?m=" + ("welcome" if new else "signedin"))

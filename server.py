@@ -26,6 +26,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlsplit, parse_qs, unquote
 
 import aboutweb
+import invites
 import accounts
 import communityweb
 import coownweb
@@ -346,6 +347,9 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
         # HTTPS-only on barksbuds.app; omit includeSubDomains (www is a CNAME to onrender.com).
         self.send_header("Strict-Transport-Security", "max-age=31536000")
         self.send_header("Content-Security-Policy-Report-Only", CSP)
+        if getattr(self, "_ref_cookie", None):
+            self.send_header("Set-Cookie", self._ref_cookie)
+            self._ref_cookie = None
         cc = static_cache_control(self.path) if getattr(self, "_status", 200) in (200, 304) else None
         if cc:
             self.send_header("Cache-Control", cc)
@@ -424,6 +428,16 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        self._ref_cookie = None
+        if invites.enabled() and "ref" in q:  # partner invite link: remember the partner until sign-up (first one wins)
+            ref = invites.valid_ref(q["ref"][0])
+            if ref and not invites.parse_cookie(invites.cookie_from_header(self.headers.get("Cookie")))[0]:
+                self._ref_cookie = (f"{invites.COOKIE}={invites.cookie_value(ref)}; Path=/; HttpOnly; SameSite=Lax; Max-Age={invites.COOKIE_TTL}"
+                                    + ("; Secure" if self._secure() else ""))
+        if u.path == "/admin/invites":
+            if not invites.enabled() or not self._admin_ok(q):
+                return self.send_error(404)
+            return self._json(200, {"enabled": True, "partners": sorted(invites.partners()), "signups": invites.counts()})
         meetweb.tick(SITE_URL or self._host_url())
         communityweb.tick(SITE_URL or self._host_url())
         if u.path == "/healthz":
@@ -639,6 +653,7 @@ def init_app():
     accounts.init_schema(STORE)
     runsugg.init_schema(STORE)
     tipsweb.init_schema(STORE)
+    invites.init_schema(STORE)  # no-op unless INVITES_ENABLED=1
     if runs_changed not in runsugg.CHANGED:
         runsugg.CHANGED.append(runs_changed)
     runs_changed()
