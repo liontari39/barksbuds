@@ -415,8 +415,9 @@ class MeetupRoutes:
             pn = P.names([m.get("pack_id") for m in ms])
             content = f'<div class="mgrid">{"".join(self.meetup_card(m, packnames=pn) for m in ms)}</div>'
         else:
-            content = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg><h2>No meetups {"here " if areas or ns else ""}yet</h2>'
-                       f'<p class="muted">Be the first! Pick a dog run, choose a time and invite the regulars.</p><a class="btn" href="{host_href}">Host a meetup</a></div>')
+            import emptystate as ES
+            content = ES.first_in_town_html("meetups", host_href, "Host a meetup", areas=areas, runs=W.RUNS(),
+                                            where=("the North Shore" if ns else label if areas else ""))
         nsm = M.upcoming(north_shore=True, limit=2)
         n = len(ms)
         when_lab = {"week": " this week", "weekend": " this weekend"}.get(when, "")

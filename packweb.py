@@ -307,9 +307,10 @@ class PackRoutes:
         if ps:
             content = f'<div class="pgrid">{"".join(self.pack_card(p) for p in ps)}</div>'
         else:
-            content = (f'<div class="empty panel"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg><h2>No packs here yet</h2>'
-                       f'<p class="muted">Be the first: start a pack for your run and invite your dog\'s friends.</p>'
-                       f'<a class="btn" href="{e(start)}">Start a pack</a></div>')
+            import emptystate as ES
+            content = ES.first_in_town_html("packs", start, "Start a pack", areas=areas, runs=W.RUNS(),
+                                            where=area_label(area) if area else (A.REGIONS[region][0] if region in A.REGIONS else ""),
+                                            second=("/meetups", "See meetups"))
         label = area_label(area) if area else ("the North Shore" if region == "northshore" else (A.REGIONS[region][0] if region else ""))
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">find your crew</span><h1>Dog packs</h1>
 <p class="lead">Packs are friendly regular groups of dogs and their people who meet at the same runs. Join one with your dogs, see the next pack meetup and chat on the pack board.</p>

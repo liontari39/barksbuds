@@ -597,3 +597,28 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 @media (max-width:640px){.fp-head{padding:12px 14px}.fp-body{padding:10px 14px 14px}.fp-hcta .btn{width:100%}.fp-hcta{width:100%}.fp-list{gap:22px}.fp-prev{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-run{margin-left:0}}
 .empty .btn .ico{width:18px;height:18px;margin:0;color:currentColor}
 @media (max-width:430px){.nav .wrap:has(.navmsg) .brand{font-size:0;gap:0}}
+/* "Be the first in your town" empty states + curated Long Island picks (emptystate.py) */
+.bfirst .eyebrow{display:block;margin-bottom:2px}
+.bfirst h2{margin:2px 0 8px}
+.bfirst>p.muted{max-width:560px;margin:0 auto}
+.bf-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.bf-share{margin:16px 0 0}
+.bfew{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px;background:var(--gold-l);border-radius:var(--r);padding:16px 20px}
+.bfew .ico{width:30px;height:30px;color:var(--gold-d);flex:none}
+.bfew p{margin:0;flex:1 1 260px}
+.lp{margin-top:34px}
+.lp-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lp h3{margin:0 0 12px}
+.lp-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.lp-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.lp-card h4{margin:0 0 6px;font-size:1.05rem}
+.lp-card h4 a{color:var(--ink);text-decoration:none}
+.lp-card h4 a:hover{text-decoration:underline}
+.lp-card p{margin:4px 0;font-size:.92rem}
+.lp-card .ico{width:16px;height:16px;vertical-align:-3px;margin-right:5px;color:var(--gold-d)}
+.lp-where{color:var(--muted)}
+.lp-src{font-size:.82rem;color:var(--muted)}
+.lp-tips{margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px}
+.lp-tips ul{margin:0 0 10px;padding-left:20px}
+.lp-tips li{margin:6px 0}
+.lp-fine{margin-top:12px}

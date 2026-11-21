@@ -340,7 +340,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=19"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=20"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -1032,9 +1032,14 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         chips.append('<li class="sep" aria-hidden="true"></li>')
         chips += [f'<li><a href="/dogs?area={quote(a)}"{cur(area == a)}>{e(area_label(a))}</a></li>' for a in A.AREA_NAMES if a != "Westchester"]
         add = "/me/dogs/new" if self.user() else self.signin_href("/me/dogs/new")
-        grid = (f'<div class="dgrid">{"".join(cards)}</div>' if cards else
-                f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><h2>No dogs in {e(label)} yet</h2>'
-                f'<p class="muted">Be the first! Create a profile for your dog and invite your dog run friends.</p><a class="btn" href="{add}">Add your dog</a></div>')
+        import emptystate as ES
+        where = label if areas else ""
+        if cards:
+            grid = f'<div class="dgrid">{"".join(cards)}</div>'
+            if len(cards) < 4 and not filtered:
+                grid += ES.few_html("dogs", add, "Add your dog", where)
+        else:
+            grid = ES.first_in_town_html("dogs", add, "Add your dog", areas=areas, runs=RUNS(), where=where)
         if filtered and not cards:
             grid = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><h2>No matches yet</h2>'
                     f'<p class="muted">No dogs in {e(label)} match those filters. Try fewer filters.</p>'

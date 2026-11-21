@@ -328,8 +328,9 @@ class PhotoRoutes:
         elif before:
             listing = '<div class="empty"><p style="margin:0">That\'s everything. <a href="/photos">Back to the newest photos</a></p></div>'
         else:
-            listing = (f'<div class="empty fp-empty">{self._jack("No photos yet, be the first!")}'
-                       f'<p class="muted" style="margin:6px 0 18px">Share a photo of your dog at the run, on a walk or napping on the couch.</p>{share}</div>')
+            import emptystate as ES
+            listing = ES.first_in_town_html("photos", "/photos/new" if u else self.signin_href("/photos/new"),
+                                            "Share a photo" if u else "Sign in to share a photo", runs=W.RUNS())
         filt_html = (f'<p class="fp-filter">{filt} <a class="fp-clear" href="/photos" aria-label="Show all photos">&times; Show all</a></p>' if filt else "")
         signed_out_note = ("" if u else '<p class="small muted" style="margin:14px 0 0">You\'re seeing public posts. '
                            f'<a href="{e(self.signin_href("/photos"))}">Sign in</a> to see photos shared with members.</p>')
