@@ -17,8 +17,9 @@
   * Dog compatibility notes: dogs.energy and dogs.compat (JSON list), see accounts.SIZES / ENERGY / COMPAT.
   * Vaccination and license reminders (PRIVATE, owners and co-owners only): dog_care rows (rabies, license, other
     vaccines with due dates). Reminder emails 30 and 7 days before (care_sent keeps them once-only).
-  * Trusted local recommendations: recs (one row per business: category, name, town, area, contact) and rec_votes
-    (one per member per business, with an optional note: "I use them too"). Reports go to rec_reports.
+  * Trusted local recommendations (Local picks): recs (one row per business: category, name, town, area, contact) and rec_votes
+    (one per member per business, with an optional note: "I use them too"). Browse at /picks or /recommendations,
+    filterable by area, category and town, sorted by votes then name. Reports go to rec_reports.
   * Birthday and gotcha-day shout-outs: dogs.gotcha_day; celebration emails logged in celebrate_sent.
 
 Everything works on SQLite and Postgres through accounts.STORE.q (integer Unix timestamps, ISO date strings).
@@ -539,15 +540,28 @@ def my_votes(uid):
     return {r[0] for r in q("SELECT rec_id FROM rec_votes WHERE user_id=:u", u=uid)} if uid else set()
 
 
-def browse_recs(areas=None, category=None, include_hidden=False, limit=200):
+def browse_recs(areas=None, category=None, include_hidden=False, limit=200, town=None):
     where, kw = ["1=1" if include_hidden else "r.hidden=0"], {}
     if category:
         where.append("r.category=:c"); kw["c"] = category
     if areas:
         where.append("r.area IN (%s)" % ",".join(f":a{i}" for i in range(len(areas)))); kw.update({f"a{i}": a for i, a in enumerate(areas)})
+    if town:
+        where.append("r.town_key=:tk"); kw["tk"] = key(town)
     rows = q(f"""SELECT {REC_COLS}, (SELECT COUNT(*) FROM rec_votes v WHERE v.rec_id=r.id) AS n FROM recs r WHERE {' AND '.join(where)}
                  ORDER BY n DESC, r.name LIMIT {int(limit)}""", **kw)
     return [_rec(r) for r in rows]
+
+
+def rec_towns(areas=None, category=None, include_hidden=False):
+    """Towns that have listings: [{town, area, n, votes}], most votes first then town name."""
+    by = {}
+    for r in browse_recs(areas, category, include_hidden=include_hidden, limit=2000):
+        k = (r["town"], r["area"])
+        slot = by.setdefault(k, dict(town=r["town"], area=r["area"], n=0, votes=0))
+        slot["n"] += 1
+        slot["votes"] += r["votes"]
+    return sorted(by.values(), key=lambda x: (-x["votes"], (x["town"] or "").lower()))
 
 
 def rec_notes(rid, limit=6):

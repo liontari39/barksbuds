@@ -192,9 +192,11 @@ Hub: `/community`. Code: `community.py` (data), `communityweb.py` (pages, emails
   the dog page, filters on `/dogs`.
 - **Care reminders (private)**: `/me/dogs/<id>/care`, owners and co-owners only: rabies, town license, other vaccines.
   Emails 30 and 7 days before the due date.
-- **Recommendations**: `/recommendations?area=&cat=` for vets, groomers, walkers, sitters, trainers, daycare and pet stores.
-  Members add businesses they use (website or phone required, customer checkbox), one per member per business, "I use
-  them too", and report listings. Moderation at `/admin/recs?key=...`. Nothing is seeded.
+- **Local picks (recommendations)**: `/picks` and `/recommendations?area=&cat=&town=` for vets, groomers, walkers,
+  sitters, trainers, daycare and pet stores, listed by town (filter chips, grouped when more than one town is in view,
+  sorted by member votes then name). Members add businesses they use (website or phone required, customer checkbox),
+  one vote per member per business, "I use them too", and report listings. Moderation at `/admin/recs?key=...`.
+  Nothing is seeded.
 - **Birthdays and gotcha days**: optional gotcha day on the dog form. "Celebrating today" on the homepage and `/dogs`
   area pages, a card at `/celebrate/<slug>` (`?k=gotcha`) with an OG image, and an email to owners on the day (opt-out).
 

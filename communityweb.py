@@ -10,7 +10,8 @@ Routes:
   GET  /lost-found/<id>/photo.(jpg|webp)       the alert's own photo (re-encoded, EXIF stripped)
   POST /lost-found/<id>/reunited | /remove     the poster closes the alert
   GET/POST /admin/lost?key=KEY                 admin: every alert, remove
-  GET  /recommendations[?area=&cat=]           trusted local businesses, by area and category
+  GET  /recommendations[?area=&cat=&town=]     trusted local businesses, by area, category and town
+  GET  /picks[?area=&cat=&town=]               alias for /recommendations (Local picks)
   POST /recommendations/new                    recommend (or "I use them too" if it's already listed)
   POST /recommendations/<id>/vote | /unvote | /report
   GET/POST /admin/recs?key=KEY                 admin: reports and listings (hide, unhide, delete, resolve)
@@ -187,7 +188,7 @@ def _community_home_html():
 <div class="commlinks">
 <a class="commlink" href="/runs"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg><span><b>At the run now</b><small>{here}</small></span></a>
 <a class="commlink" href="/lost-found"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><span><b>Lost and found</b><small>{lost}</small></span></a>
-<a class="commlink" href="/recommendations"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><span><b>Local favorites</b><small>Vets, groomers and walkers members use</small></span></a>
+<a class="commlink" href="/picks"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><span><b>Local picks</b><small>Vets, groomers and walkers members use</small></span></a>
 </div></div></section>"""
 
 
@@ -370,7 +371,7 @@ class CommunityRoutes:
         routes = [(r"/community/?", self.community_hub), (r"/lost-found/?", self.lost_list), (r"/lost-found/new", self.lost_form),
                   (r"/lost-found/(\d+)", self.lost_page), (r"/lost-found/(\d+)/og\.png", self.lost_og),
                   (r"/lost-found/(\d+)/photo\.(jpg|webp)", self.lost_photo), (r"/admin/lost", self.admin_lost),
-                  (r"/recommendations/?", self.recs_page), (r"/admin/recs", self.admin_recs),
+                  (r"/recommendations/?", self.recs_page), (r"/picks/?", self.recs_page), (r"/admin/recs", self.admin_recs),
                   (r"/me/dogs/(\d+)/care", self.care_page), (r"/celebrate/([a-z0-9-]+)\.png", self.celebrate_og),
                   (r"/celebrate/([a-z0-9-]+)", self.celebrate_page), (r"/emails/community", self.community_unsub_page)]
         return self._cdispatch(routes, path, q)
@@ -429,7 +430,7 @@ class CommunityRoutes:
 <div class="panel"><h2>At the runs now</h2>{busy_html}<p class="small" style="margin:12px 0 0"><a href="/runs">Find a run</a></p></div>
 <div class="panel"><h2>Lost and found</h2>{lost_html}<div class="racts"><a class="btn btn-sm" href="/lost-found/new">Post an alert</a><a class="btn btn-ghost btn-sm" href="/lost-found">All alerts</a></div></div>
 </div><div>
-<div class="panel"><h2>Local favorites{where}</h2>{recs_html}<div class="racts"><a class="btn btn-sm" href="/recommendations{rq}">Browse recommendations</a></div></div>
+<div class="panel"><h2>Local picks{where}</h2>{recs_html}<div class="racts"><a class="btn btn-sm" href="/picks{rq}">Browse local picks</a></div></div>
 {mine}</div></div></div></section>"""
         self.page("Community", body, index=True, active="community", canonical="/community",
                   desc="BarksBuds community: dogs at the run now, lost and found alerts, birthdays and trusted local vets, groomers and walkers.")
@@ -664,15 +665,26 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
         area = area if area in A.AREA_NAMES else ""
         cat = q.get("cat", [""])[0]
         cat = cat if cat in C.REC_ONE else ""
-        recs = C.browse_recs([area] if area else None, cat or None)
+        want_town = (q.get("town", [""])[0] or "").strip()
+        towns = C.rec_towns([area] if area else None, cat or None)
+        # prefer the signed-in member's town at the front of the chip row
+        mine_town = ((u.get("town") if u else "") or "").strip()
+        if mine_town:
+            mk = C.key(mine_town)
+            towns = [x for x in towns if C.key(x["town"]) == mk] + [x for x in towns if C.key(x["town"]) != mk]
+        town = next((x["town"] for x in towns if want_town and C.key(x["town"]) == C.key(want_town)), "")
+        recs = C.browse_recs([area] if area else None, cat or None, town=town or None)
         mine = C.my_votes(u["id"]) if u else set()
         cur = lambda on: ' aria-current="page"' if on else ""
-        cchips = [f'<li><a href="?{urlencode({"area": area} if area else {})}"{cur(not cat)}>Everything</a></li>']
-        cchips += [f'<li><a href="?{urlencode({k: v for k, v in (("area", area), ("cat", c)) if v})}"{cur(cat == c)}>{e(lbl)}</a></li>' for c, lbl in C.REC_CATS]
+        qs = lambda **extra: urlencode({k: v for k, v in {"area": area, "cat": cat, "town": town, **extra}.items() if v})
+        cchips = [f'<li><a href="?{qs(cat="", town=town)}"{cur(not cat)}>Everything</a></li>']
+        cchips += [f'<li><a href="?{urlencode({k: v for k, v in (("area", area), ("cat", c), ("town", town)) if v})}"{cur(cat == c)}>{e(lbl)}</a></li>' for c, lbl in C.REC_CATS]
+        tchips = [f'<li><a href="?{urlencode({k: v for k, v in (("area", area), ("cat", cat)) if v})}"{cur(not town)}>All towns</a></li>']
+        tchips += [f'<li><a href="?{urlencode({k: v for k, v in (("area", area), ("cat", cat), ("town", x["town"])) if v})}"{cur(C.key(x["town"]) == C.key(town))}>{e(x["town"])}</a></li>' for x in towns]
         reasons = "".join(f'<label class="tick"><input type="radio" name="reason" value="{e(r)}"{" checked" if i == 0 else ""}><span>{e(r)}</span></label>'
                           for i, r in enumerate(C.REC_REPORT_REASONS))
-        cards = []
-        for r in recs:
+
+        def card(r):
             nh = "".join(f'<blockquote>{e(n["note"])}<cite>{e(n["name"] or "A member")}</cite></blockquote>' for n in C.rec_notes(r["id"], 3))
             n = r["votes"]
             if u and r["id"] in mine:
@@ -682,18 +694,39 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
                 vb = (f'<form method="post" action="/recommendations/{r["id"]}/vote">{self.csrf_field()}<button class="btn btn-sm" type="submit">'
                       f'<svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg>I use them too</button></form>')
             else:
-                vb = f'<a class="btn btn-sm" href="{e(self.signin_href("/recommendations"))}"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg>I use them too</a>'
+                vb = f'<a class="btn btn-sm" href="{e(self.signin_href("/picks"))}"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg>I use them too</a>'
             rep = (f'<details class="rep"><summary>Report</summary><form method="post" action="/recommendations/{r["id"]}/report">{self.csrf_field()}'
                    f'<fieldset class="checks-grid">{reasons}</fieldset><div class="field"><label for="d{r["id"]}">Details <span class="opt">(optional)</span></label>'
                    f'<textarea id="d{r["id"]}" name="details" rows="2" maxlength="500"></textarea></div><button class="btn btn-ghost btn-sm" type="submit">Send report</button></form></details>') if u else ""
             where = e(r["town"]) + (", " + e(W.area_label(r["area"])) if r["area"] else "") + (" · " + nice_contact(r["contact"]) if r["contact"] else "")
-            cards.append(f"""<article class="panel rec" id="r{r["id"]}"><div class="rech"><div><span class="badge">{e(C.REC_ONE.get(r["category"], ""))}</span>
+            return f"""<article class="panel rec" id="r{r["id"]}"><div class="rech"><div><span class="badge">{e(C.REC_ONE.get(r["category"], ""))}</span>
 <h3>{e(r["name"])}</h3><p class="small muted" style="margin:0">{where}</p></div>
 <p class="recn"><b>{n}</b><small>member{"s" if n != 1 else ""} use{"s" if n == 1 else ""} them</small></p></div>{nh}
-<div class="racts">{vb}{rep}</div></article>""")
+<div class="racts">{vb}{rep}</div></article>"""
+
+        loc = (" in " + e(town)) if town else ((" in " + e(W.area_label(area))) if area else " yet")
         what = C.REC_ONE.get(cat, "business").lower()
-        empty = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><h2>No recommendations {"in " + e(W.area_label(area)) if area else "yet"}</h2>'
+        empty = (f'<div class="empty"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><h2>No recommendations{loc if (town or area) else " yet"}</h2>'
                  f'<p class="muted">Know a great {e(what)}? Members only add places they actually use, so the list starts empty and grows honestly.</p></div>')
+        if not recs:
+            recs_html = empty
+        elif town or len({r["town"] for r in recs}) <= 1:
+            recs_html = f'<div class="recgrid">{"".join(card(r) for r in recs)}</div>'
+        else:
+            order = []
+            by = {}
+            for r in recs:
+                by.setdefault(r["town"], []).append(r)
+            if mine_town and mine_town in by:
+                order.append(mine_town)
+            order += [x["town"] for x in towns if x["town"] in by and x["town"] not in order]
+            order += [k for k in by if k not in order]
+            blocks = []
+            for tn in order:
+                hid = e(C.key(tn).replace(" ", "-") or "town")
+                blocks.append(f'<div class="townblock" id="town-{hid}"><h2 class="townh">{e(tn)}</h2>'
+                              f'<div class="recgrid">{"".join(card(r) for r in by[tn])}</div></div>')
+            recs_html = "".join(blocks)
         v = vals or {"category": cat, "area": area or (u.get("area") if u else ""), "town": (u.get("town") if u else "") or ""}
         errs = errs or {}
         err = lambda k: f'<span class="err">{e(errs.get(k, ""))}</span>'
@@ -711,18 +744,20 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
 <div class="formfoot"><button class="btn" type="submit">Add recommendation</button></div></form>"""
         else:
             form = (f'<div class="panel" id="add"><h2>Recommend a local business</h2><p>Sign in to share a vet, groomer or walker you trust.</p>'
-                    f'<a class="btn btn-sm" href="{e(self.signin_href("/recommendations#add"))}">Sign in</a></div>')
-        body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">trusted by members</span><h1>Local favorites</h1>
-<p class="lead">Vets, groomers, walkers, sitters, trainers, daycares and pet stores that BarksBuds members actually use.</p>
+                    f'<a class="btn btn-sm" href="{e(self.signin_href("/picks#add"))}">Sign in</a></div>')
+        town_nav = f'<nav aria-label="Filter by town"><ul class="filters">{"".join(tchips)}</ul></nav>' if towns else ""
+        body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">trusted by members</span><h1>Local picks</h1>
+<p class="lead">Vets, groomers, walkers and other local businesses that BarksBuds members actually use, listed by town.</p>
 <div class="racts"><a class="btn btn-sm" href="#add">Recommend one</a></div></div></section>
-<section class="section"><div class="wrap"><nav aria-label="Filter by area"><ul class="filters">{area_chips({"cat": cat}, area)}</ul></nav>
+<section class="section"><div class="wrap"><nav aria-label="Filter by area"><ul class="filters">{area_chips({"cat": cat, "town": town}, area)}</ul></nav>
 <nav aria-label="Filter by type"><ul class="filters">{"".join(cchips)}</ul></nav>
-<div class="recgrid">{"".join(cards) or empty}</div>{form}
+{town_nav}{recs_html}{form}
 <p class="small muted" style="margin-top:20px">Recommendations come from members, not businesses. BarksBuds isn't paid for listings. See something wrong? Use Report.</p></div></section>"""
-        title = "Local favorites" + (f" in {W.area_label(area)}" if area else "")
-        qs = urlencode({k: x for k, x in (("area", area), ("cat", cat)) if x})
-        self.page(title, body, code=code, index=True, active="community", flash=self.flash_from(q), canonical="/recommendations" + ("?" + qs if qs else ""),
-                  desc="Dog vets, groomers, walkers, sitters, trainers, daycares and pet stores recommended by BarksBuds members.")
+        title = "Local picks" + (f" in {town}" if town else (f" in {W.area_label(area)}" if area else ""))
+        qstr = urlencode({k: x for k, x in (("area", area), ("cat", cat), ("town", town)) if x})
+        self.page(title, body, code=code, index=True, active="community", flash=self.flash_from(q),
+                  canonical="/recommendations" + ("?" + qstr if qstr else ""),
+                  desc="Dog vets, groomers, walkers and other local businesses recommended by BarksBuds members, organized by town.")
 
     def post_rec(self, q):
         u = self.user()
