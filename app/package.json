@@ -1,0 +1,27 @@
+{
+  "name": "barksbuds-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BarksBuds Capacitor shell for the App Store and Google Play",
+  "scripts": {
+    "sync": "npx cap sync",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios",
+    "icons": "python3 scripts/make_icons.py && npx capacitor-assets generate --iconBackgroundColor \"#FFF8EA\" --iconBackgroundColorDark \"#FFF8EA\" --splashBackgroundColor \"#FFF8EA\" --splashBackgroundColorDark \"#FFF8EA\" --assetPath resources"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/camera": "^7.0.5",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/geolocation": "^7.1.8",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/push-notifications": "^7.0.7",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^7.6.10"
+  }
+}

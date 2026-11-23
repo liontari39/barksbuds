@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BarksBuds</string>
+    <string name="title_activity_main">BarksBuds</string>
+    <string name="package_name">app.barksbuds</string>
+    <string name="custom_url_scheme">app.barksbuds</string>
+</resources>

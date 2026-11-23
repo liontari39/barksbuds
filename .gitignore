@@ -28,3 +28,36 @@ formtest.py
 backups/
 .venv-restore/
 .neon_url
+
+# Capacitor native app (local builds, secrets, generated junk)
+app/node_modules/
+app/android/.gradle/
+app/android/app/build/
+app/android/build/
+app/android/local.properties
+app/android/.idea/
+app/android/*.iml
+app/android/app/google-services.json
+app/ios/App/Pods/
+app/ios/App/build/
+app/ios/DerivedData/
+app/ios/App/App/GoogleService-Info.plist
+app/*.apk
+app/*.aab
+app/*.ipa
+app/*.keystore
+app/*.jks
+app/*.p8
+app/*.p12
+app/*.mobileprovision
+app/google-services.json
+app/GoogleService-Info.plist
+app/local.config.json
+app/.env
+app/resources/.tmp/
+
+# Commit Jack-derived app icons and Android/iOS res PNGs
+!app/resources/*.png
+!app/www/*.png
+!app/android/app/src/main/res/**/*.png
+!app/ios/App/App/Assets.xcassets/**/*.png

@@ -1,0 +1,96 @@
+# Starter workflows for BarksBuds iOS + Android. Not connected to any
+# Codemagic account. Signing files and Firebase configs come from
+# environment groups Mike adds after signing up — never from the repo.
+#
+# Expected (optional) group names:
+#   ios_credentials, android_credentials, firebase_configs
+# Expected env:
+#   BARKSBUDS_SERVER_URL (defaults to https://barksbuds.app)
+#   FCM / APNs secrets stay on the BarksBuds host, not in this file.
+
+workflows:
+  android-debug:
+    name: Android debug APK
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      java: 17
+      vars:
+        BARKSBUDS_SERVER_URL: https://barksbuds.app
+    scripts:
+      - name: Install JS deps and sync Capacitor
+        script: |
+          cd app
+          npm ci || npm install
+          python3 scripts/make_icons.py
+          npx cap sync android
+      - name: Build debug APK
+        script: |
+          cd app/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - app/android/app/build/outputs/apk/debug/*.apk
+
+  android-release:
+    name: Android release AAB
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      java: 17
+      groups:
+        - android_credentials
+        - firebase_configs
+      vars:
+        BARKSBUDS_SERVER_URL: https://barksbuds.app
+    scripts:
+      - name: Install JS deps and sync Capacitor
+        script: |
+          cd app
+          if [ -n "$GCLOUD_SERVICE_ACCOUNT" ]; then :; fi
+          if [ -f "$CM_BUILD_DIR/google-services.json" ]; then
+            cp "$CM_BUILD_DIR/google-services.json" android/app/google-services.json
+          fi
+          npm ci || npm install
+          python3 scripts/make_icons.py
+          npx cap sync android
+      - name: Build release bundle
+        script: |
+          cd app/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+    artifacts:
+      - app/android/app/build/outputs/bundle/release/*.aab
+
+  ios-release:
+    name: iOS release
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      groups:
+        - ios_credentials
+        - firebase_configs
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: app.barksbuds
+      vars:
+        BARKSBUDS_SERVER_URL: https://barksbuds.app
+    scripts:
+      - name: Install JS deps and sync Capacitor
+        script: |
+          cd app
+          if [ -f "$CM_BUILD_DIR/GoogleService-Info.plist" ]; then
+            mkdir -p ios/App/App
+            cp "$CM_BUILD_DIR/GoogleService-Info.plist" ios/App/App/GoogleService-Info.plist
+          fi
+          npm ci || npm install
+          python3 scripts/make_icons.py
+          npx cap sync ios
+          cd ios/App && pod install
+      - name: Build iOS
+        script: |
+          xcode-project build-ipa \
+            --workspace "app/ios/App/App.xcworkspace" \
+            --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
