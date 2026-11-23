@@ -30,7 +30,10 @@ NORTH_SHORE = ("manhasset", "great neck", "roslyn", "north hills", "port washing
 LOCK = threading.Lock()            # serializes RSVP changes so capacity can't be oversold (one web process)
 
 M_COLS = ("id,host_user_id,slug,title,starts_at,duration_min,run_id,place_name,address,lat,lng,area,town,description,"
-          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at,pack_id,members_only,seed_rev,visibility,invite_token_ver")
+          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at,pack_id,members_only,seed_rev,visibility,invite_token_ver,"
+          "morning_reminder_sent_at,series_id")
+SERIES_AHEAD = 8                 # keep this many future weekly occurrences
+MORNING_HOUR = 7                 # ET hour when morning-of reminders may start going out
 
 
 def q(sql, **kw):
@@ -80,6 +83,11 @@ def init_schema(store):
         store.q("ALTER TABLE meetups ADD COLUMN visibility TEXT NOT NULL DEFAULT 'public'")
     if "invite_token_ver" not in mc:
         store.q(f"ALTER TABLE meetups ADD COLUMN invite_token_ver {INT} NOT NULL DEFAULT 0")
+    if "morning_reminder_sent_at" not in mc:
+        store.q(f"ALTER TABLE meetups ADD COLUMN morning_reminder_sent_at {INT}")
+    if "series_id" not in mc:
+        store.q(f"ALTER TABLE meetups ADD COLUMN series_id {INT}")
+    store.q("CREATE INDEX IF NOT EXISTS meetups_series_idx ON meetups(series_id)")
     store.q(f"""CREATE TABLE IF NOT EXISTS meetup_invites(
         meetup_id {INT} NOT NULL, user_id {INT} NOT NULL, invited_by {INT},
         created_at {INT} NOT NULL, PRIMARY KEY (meetup_id, user_id))""")
@@ -298,7 +306,7 @@ def save(host_id, f, mid=None, seed_key=None, is_sample=0):
         q("""UPDATE meetups SET title=:ti,starts_at=:st,duration_min=:du,run_id=:ru,place_name=:pn,address=:ad,lat=:la,lng=:ln,
              area=:ar,town=:tw,description=:de,fit=:fi,capacity=:ca,slug=:sl,pack_id=:pk,members_only=:mo,visibility=:vis,
              invite_token_ver=:iv,updated_at=:t""" +
-          (",reminder_sent_at=NULL" if moved and not (old and old["is_sample"]) else "") + " WHERE id=:i",
+          (",reminder_sent_at=NULL,morning_reminder_sent_at=NULL" if moved and not (old and old["is_sample"]) else "") + " WHERE id=:i",
           i=mid, iv=ver, **vals)
         return mid, promote(mid)
     iv = 1 if vals["vis"] == "private" else 0
@@ -644,6 +652,118 @@ def dog_names(ids):
         return []
     names = {r[0]: r[1] for r in q("SELECT id, name FROM dogs WHERE id IN (%s)" % ",".join(str(int(i)) for i in ids))}
     return [names[i] for i in ids if i in names]
+
+
+def can_chat(m, uid):
+    """Host plus anyone with a going / maybe / waitlist RSVP."""
+    if not uid or not m:
+        return False
+    if uid == m["host_user_id"]:
+        return True
+    r = rsvp_of(m["id"], uid)
+    return bool(r and r["status"] in ("going", "maybe", "waitlist"))
+
+
+def start_weekly_series(first_id):
+    """Mark the first occurrence and fill the next weeks. Creating a series counts as one meetup."""
+    q("UPDATE meetups SET series_id=:s WHERE id=:i AND series_id IS NULL", s=first_id, i=first_id)
+    return extend_series(first_id)
+
+
+def series_future(mid, include_self=True):
+    m = get(mid)
+    if not m:
+        return []
+    if not m.get("series_id"):
+        return [m] if include_self else []
+    lo = m["starts_at"] if include_self else m["starts_at"] + 1
+    return [_m(r) for r in q(f"SELECT {M_COLS} FROM meetups WHERE series_id=:s AND status='active' AND starts_at>=:t ORDER BY starts_at",
+                             s=m["series_id"], t=lo)]
+
+
+def series_upcoming_dates(m):
+    if not m or not m.get("series_id"):
+        return []
+    return [_m(r) for r in q(f"SELECT {M_COLS} FROM meetups WHERE series_id=:s AND status='active' AND hidden=0 AND starts_at>=:t ORDER BY starts_at",
+                             s=m["series_id"], t=A.now())]
+
+
+def _apply_clock(old_ts, template_ts):
+    od, nd = to_et(old_ts), to_et(template_ts)
+    dt = od.replace(hour=nd.hour, minute=nd.minute, second=0, microsecond=0)
+    return int(dt.timestamp())
+
+
+def update_series_from(mid, form):
+    """Copy details (not calendar dates) to later uncancelled occurrences in the series."""
+    m = get(mid)
+    if not m or not m.get("series_id"):
+        return 0
+    n = 0
+    for o in series_future(mid, include_self=False):
+        f = dict(form)
+        f["starts_at"] = _apply_clock(o["starts_at"], form["starts_at"])
+        save(m["host_user_id"], f, mid=o["id"])
+        n += 1
+    extend_series(m["series_id"])
+    return n
+
+
+def cancel_scope(mid, series=False):
+    """Cancel one date, or this date and later uncancelled dates. Returns [(meetup, rsvp rows)]."""
+    targets = series_future(mid, include_self=True) if series else [get(mid)]
+    out = []
+    for o in targets:
+        if o and o["status"] != "cancelled":
+            out.append((o, cancel(o["id"])))
+    return out
+
+
+def extend_series(series_id):
+    """Keep SERIES_AHEAD future active occurrences on the same weekday and time."""
+    if not series_id:
+        return 0
+    rows = [_m(r) for r in q(f"SELECT {M_COLS} FROM meetups WHERE series_id=:s ORDER BY starts_at", s=series_id)]
+    if not rows:
+        return 0
+    last = rows[-1]
+    n_future = sum(1 for m in rows if m["status"] == "active" and not m.get("hidden") and m["starts_at"] > A.now())
+    seen = {m["starts_at"] for m in rows}
+    added = 0
+    cursor = last
+    for _ in range(SERIES_AHEAD * 2):
+        if n_future >= SERIES_AHEAD:
+            break
+        form = as_form(cursor, days=7)
+        st = form["starts_at"]
+        cursor = dict(cursor, starts_at=st)
+        if st in seen:
+            continue
+        nid, _ = save(last["host_user_id"], form, is_sample=last["is_sample"])
+        q("UPDATE meetups SET series_id=:s WHERE id=:i", s=series_id, i=nid)
+        seen.add(st)
+        added += 1
+        if st > A.now():
+            n_future += 1
+    return added
+
+
+def morning_reminders_due(now=None):
+    """Morning-of reminders: after MORNING_HOUR ET on the meetup's day, and only if it hasn't started yet."""
+    n = now or A.now()
+    et = to_et(n)
+    if et.hour < MORNING_HOUR:
+        return []
+    end = int((et.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)).timestamp())
+    return [r[0] for r in q("""SELECT id FROM meetups WHERE status='active' AND hidden=0 AND is_sample=0
+                               AND morning_reminder_sent_at IS NULL AND starts_at>:n AND starts_at<:e ORDER BY starts_at""",
+                            n=n, e=end)]
+
+
+def claim_morning_reminder(mid):
+    """Atomically mark the morning-of reminder as sent; True for exactly one caller."""
+    return bool(q("UPDATE meetups SET morning_reminder_sent_at=:t WHERE id=:i AND morning_reminder_sent_at IS NULL RETURNING id",
+                  t=A.now(), i=mid))
 
 
 def reminders_due(now=None):

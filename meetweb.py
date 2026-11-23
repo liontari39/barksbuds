@@ -22,7 +22,9 @@ e = html.escape
 W.FLASH.update({
     "m_created": "Your meetup is live! Share the link so friends can RSVP.", "m_saved": "Meetup updated.",
     "m_cancelled": "Meetup cancelled. We let everyone who RSVP'd know.",
+    "m_cancelled_series": "This date and later ones in the series are cancelled. We let everyone who RSVP'd know.",
     "m_cancelled_sample": "Sample meetup cancelled (no emails are sent for samples).",
+    "m_saved_series": "This date and later ones in the series are updated.",
     "m_repeat": "Copied to next week. Check the details and save.", "going": "You're going! See you there.",
     "maybe": "You're marked as Maybe.",
     "waitlist": "This meetup is full, so you're on the waitlist. We'll email you if a spot opens up.",
@@ -210,7 +212,7 @@ def notify_cancel(base, m, rows):
 
 
 def send_reminders(base):
-    """Send the day-before reminders that are due. Returns (meetups, emails queued)."""
+    """Send due day-before and morning-of reminders. Returns (meetups, emails queued)."""
     nm = ne = 0
     for mid in M.reminders_due():
         if not M.claim_reminder(mid):
@@ -222,6 +224,17 @@ def send_reminders(base):
             if send_meetup_mail(base, uid, "reminder", m, status=st, dogs=M.dog_names(r["dogs"] if r else [])):
                 ne += 1
             push.notify_async(uid, "meetups", "Meetup reminder",
+                              f"{m['title']} — {M.when_text(m['starts_at'], short=True)}", meetup_path(m))
+    for mid in M.morning_reminders_due():
+        if not M.claim_morning_reminder(mid):
+            continue
+        m = M.get(mid)
+        nm += 1
+        for uid, st in M.reminder_recipients(mid):
+            r = M.rsvp_of(mid, uid)
+            if send_meetup_mail(base, uid, "reminder", m, status=st, dogs=M.dog_names(r["dogs"] if r else [])):
+                ne += 1
+            push.notify_async(uid, "meetups", "Meetup this morning",
                               f"{m['title']} — {M.when_text(m['starts_at'], short=True)}", meetup_path(m))
     if nm:
         print(f"meetups: reminders for {nm} meetup(s), {ne} email(s) queued", flush=True)
@@ -690,6 +703,21 @@ class MeetupRoutes:
                     + f'</div>{err("visibility")}'
                     + '<span class="help">Private meetups are hidden from the meetup list, calendar, sitemap and public calendar feed. Only you and people with your invite link can open them.</span></fieldset>')
 
+        weekly_html = ""
+        if not m:
+            weekly_html = ('<label class="tick" style="margin:0 0 8px"><input type="checkbox" name="weekly" value="1"'
+                           + (' checked' if vals.get("weekly") == "1" else '')
+                           + '><span>Repeat weekly</span></label>'
+                           '<p class="help" style="margin:0 0 16px">We\'ll add the next 8 weeks. You can edit or cancel one date or the whole series later.</p>')
+        elif m.get("series_id"):
+            scope = vals.get("scope") or "one"
+            weekly_html = ('<fieldset class="field"><legend class="lab">Save changes to</legend><div class="checks-grid">'
+                           '<label class="tick"><input type="radio" name="scope" value="one"'
+                           + (" checked" if scope != "series" else "")
+                           + '><span>This date only</span></label>'
+                           '<label class="tick"><input type="radio" name="scope" value="series"'
+                           + (" checked" if scope == "series" else "")
+                           + '><span>This and future dates</span></label></div></fieldset>')
         body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">{"edit" if m else "let's meet up"}</span><h1>{title}</h1>
 <p class="lead">Pick a dog run (or any dog-friendly place), set a time and tell people what to expect. Times are Eastern (New York).</p></div></section>
 <section class="section"><div class="wrap narrow"><form class="panel mform" method="post" action="{action}" novalidate>{self.csrf_field()}{top}
@@ -711,6 +739,7 @@ class MeetupRoutes:
 <fieldset class="field"><legend class="lab">Good fit for <span class="opt">(optional)</span></legend><div class="checks-grid">{fits}</div></fieldset>
 {pack_html}{vis_html}<div class="field" style="max-width:280px"><label for="capacity">Capacity <span class="opt">(optional)</span></label><input type="number" id="capacity" name="capacity" min="2" max="{M.MAX_CAPACITY}" inputmode="numeric" value="{v("capacity")}" placeholder="No limit"{inv("capacity")}>
 <span class="help">Max dogs going. Extra RSVPs join a waitlist.</span>{err("capacity")}</div>
+{weekly_html}
 <div class="formfoot"><button class="btn" type="submit">{"Save changes" if m else "Publish meetup"}</button>
 <a class="small" href="{e(meetup_path(m)) if m else "/meetups"}">Cancel</a></div>
 <p class="small muted" style="margin:14px 0 0">Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
@@ -722,7 +751,8 @@ class MeetupRoutes:
     def parse_meetup(self, f, old=None):
         errs = {}
         vals = {k: f.get(k) for k in ("title", "date", "time", "duration", "loc", "run_id", "place_name", "address", "area",
-                                      "town", "description", "fit", "capacity", "pack_id", "members_only", "visibility")}
+                                      "town", "description", "fit", "capacity", "pack_id", "members_only", "visibility",
+                                      "weekly", "scope")}
         out = {"title": clean(f.get("title"), M.MAX_TITLE)}
         if len(out["title"]) < 3:
             errs["title"] = "Give your meetup a title (at least 3 characters)."
@@ -803,22 +833,43 @@ class MeetupRoutes:
         if not old and not A.LIMITER.allow(f"mcreate:{u['id']}", A.cap(u["id"], "meetups_day"), 86400):
             return self.msg_page("Slow down a little", '<p class="sub">You\'ve created a lot of meetups today. Please try again tomorrow.</p>', code=429)
         new_id, promoted = M.save(u["id"], out, mid=mid)
+        saved_series = False
+        if not old and f.get("weekly") == "1":
+            M.start_weekly_series(new_id)
+        elif old and old.get("series_id") and f.get("scope") == "series":
+            M.update_series_from(new_id, out)
+            saved_series = True
         m = M.get(new_id)
         notify_promoted(self._base(), m, promoted)
         if m["pack_id"] and (not old or old.get("pack_id") != m["pack_id"]):
             import packweb
             packweb.notify_pack_meetup(self._base(), m)
         print(f"meetups: {'updated' if old else 'created'} meetup {new_id}", flush=True)
-        return self.redirect(meetup_path(m) + ("?m=m_saved" if old else "?m=m_created"))
+        if saved_series:
+            flash = "m_saved_series"
+        elif old:
+            flash = "m_saved"
+        else:
+            flash = "m_created"
+        return self.redirect(meetup_path(m) + "?m=" + flash)
 
     def meetup_cancel_page(self, m):
         if m["status"] == "cancelled":
             return self.redirect(meetup_path(m))
         n = sum(len(v) for v in M.attendees(m["id"]).values())
         note = " Sample meetups don't send emails." if m["is_sample"] else ""
+        scope = ""
+        if m.get("series_id"):
+            later = max(0, len(M.series_future(m["id"], include_self=True)) - 1)
+            scope = ('<fieldset class="field" style="text-align:left"><legend class="lab">Cancel</legend><div class="checks-grid">'
+                     '<label class="tick"><input type="radio" name="scope" value="one" checked><span>This date only</span></label>'
+                     '<label class="tick"><input type="radio" name="scope" value="series"><span>This and future dates'
+                     + (f' ({later + 1} meetups)' if later else '')
+                     + '</span></label></div></fieldset>')
         body = (f'<p class="sub">This tells everyone who RSVP\'d ({n} member{"s" if n != 1 else ""}) that <b>{e(m["title"])}</b> on '
                 f'{e(M.when_text(m["starts_at"], short=True))} ET is off.{note}</p>'
-                f'<form method="post" action="{path_id(m)}/cancel">{self.csrf_field()}<div class="formfoot" style="justify-content:center">'
+                f'<form method="post" action="{path_id(m)}/cancel">{self.csrf_field()}{scope}'
+                f'<div class="formfoot" style="justify-content:center">'
                 f'<button class="btn" type="submit">Cancel meetup</button><a href="{e(meetup_path(m))}">Keep it</a></div></form>')
         return self.msg_page("Cancel this meetup?", body, icon="i-cal")
 
@@ -830,10 +881,20 @@ class MeetupRoutes:
         if f is None:
             return
         if m["status"] != "cancelled":
-            rows = M.cancel(mid)
-            notify_cancel(self._base(), M.get(mid), rows)
-            print(f"meetups: cancelled meetup {mid} ({len(rows)} rsvps)", flush=True)
-        return self.redirect(meetup_path(m) + ("?m=m_cancelled_sample" if m["is_sample"] else "?m=m_cancelled"))
+            series = bool(m.get("series_id") and f.get("scope") == "series")
+            done = M.cancel_scope(mid, series=series)
+            for o, rows in done:
+                notify_cancel(self._base(), o, rows)
+                print(f"meetups: cancelled meetup {o['id']} ({len(rows)} rsvps)", flush=True)
+        else:
+            series = False
+        if m["is_sample"]:
+            flash = "m_cancelled_sample"
+        elif series:
+            flash = "m_cancelled_series"
+        else:
+            flash = "m_cancelled"
+        return self.redirect(meetup_path(m) + "?m=" + flash)
 
     def post_meetup_repeat(self, mid):
         m = self.own_meetup(mid)
@@ -907,12 +968,17 @@ class MeetupRoutes:
         if f is None:
             return
         path = meetup_path(m)
-        if not (u["id"] == m["host_user_id"] or M.rsvp_of(mid, u["id"])):
+        if not M.can_chat(m, u["id"]):
             return self.redirect(path + "?e=rsvpfirst#comments")
+        import messages as MS
+        if MS.either_blocked(u["id"], m["host_user_id"]):
+            return self.redirect(path + "?e=blocked#comments")
         body = clean(f.get("body"), M.MAX_COMMENT, multiline=True)
         if not body:
             return self.redirect(path + "?e=empty#comments")
-        if not (A.LIMITER.allow(f"mcomment:{u['id']}", 6, 600) and A.LIMITER.allow(f"mcomment-day:{u['id']}", 30, 86400)):
+        if not (A.LIMITER.allow(f"mcomment:{u['id']}", 6, 600)
+                and A.LIMITER.allow(f"mcomment-day:{u['id']}", 30, 86400)
+                and A.LIMITER.allow(f"mcomment-cap:{u['id']}", A.cap(u["id"], "comments_day"), 86400)):
             return self.redirect(path + "?e=slow#comments")
         M.add_comment(mid, u["id"], body)
         return self.redirect(path + "?m=commented#comments")
@@ -1130,12 +1196,19 @@ class MeetupRoutes:
 
     def comments_html(self, m, u, is_host, mine):
         ccount = M.comment_count(m["id"])
+        in_chat = bool(u and M.can_chat(m, u["id"]))
         if not u:
             return (f'<p class="muted" style="margin:0">{ccount} comment{"s" if ccount != 1 else ""}. '
-                    f'<a href="{e(self.signin_href(meetup_path(m)))}">Sign in</a> to read the conversation and join in.</p>')
+                    f'<a href="{e(self.signin_href(meetup_path(m)))}">Sign in</a> to read the chat and join in.</p>')
+        if not in_chat:
+            return (f'<p class="muted" style="margin:0">{ccount} comment{"s" if ccount != 1 else ""}. '
+                    'RSVP to read the chat and join in.</p>')
+        import messages as MS
         reasons = "".join(f"<option>{e(x)}</option>" for x in A.REPORT_REASONS)
         items = []
         for c in M.comments(m["id"]):
+            if c["user_id"] != u["id"] and MS.either_blocked(u["id"], c["user_id"]):
+                continue
             acts = []
             if u["id"] in (c["user_id"], m["host_user_id"]):
                 acts.append(f'<form method="post" action="{path_id(m)}/comments/{c["id"]}/delete">{self.csrf_field()}'
@@ -1149,12 +1222,12 @@ class MeetupRoutes:
                          f'{e(M.when_text(c["created_at"], short=True))} ET</span></div><p class="cbody">{e(c["body"])}</p>'
                          f'<div class="cacts small">{"".join(acts)}</div></li>')
         lst = f'<ul class="clist">{"".join(items)}</ul>' if items else '<p class="muted">No comments yet.</p>'
-        if is_host or mine:
+        if MS.either_blocked(u["id"], m["host_user_id"]) and u["id"] != m["host_user_id"]:
+            form = '<p class="small muted" style="margin:0">You can\'t post in this chat.</p>'
+        else:
             form = (f'<form method="post" action="{path_id(m)}/comments" class="cform">{self.csrf_field()}<label class="sr-only" for="cbody">Comment</label>'
                     f'<textarea id="cbody" name="body" maxlength="{M.MAX_COMMENT}" rows="3" required placeholder="Ask a question or say hi to the pack"></textarea>'
-                    f'<button class="btn btn-sm" type="submit">Post comment</button></form>')
-        else:
-            form = '<p class="small muted" style="margin:0">RSVP to join the conversation.</p>'
+                    f'<button class="btn btn-sm" type="submit">Post to the chat</button></form>')
         return lst + form
 
     def meetup_og(self, mid):
@@ -1211,17 +1284,21 @@ class MeetupRoutes:
             banners.append('<p class="formerr" style="margin:0 0 16px">Hidden by our team while we review a report. Only you can see it.</p>')
         left_q = q.get("left", ["0"])[0]
         err = {"closed": "RSVPs are closed for this meetup.", "slow": "That's a lot of changes. Please wait a few minutes and try again.",
-               "nodogs": "Pick at least one dog.", "adddog": "Add your dog first.", "rsvpfirst": "RSVP to join the conversation.",
-               "empty": "Write something first.", "packonly": "Only pack members can RSVP to this meetup.",
+               "nodogs": "Pick at least one dog.", "adddog": "Add your dog first.", "rsvpfirst": "RSVP to join the chat.",
+               "empty": "Write something first.", "blocked": "You can't post in this chat.",
+               "packonly": "Only pack members can RSVP to this meetup.",
                "full": f"Only {int(left_q) if left_q.isdigit() and len(left_q) < 4 else 0} spot(s) left, so you can't add more dogs right now."
                }.get(q.get("e", [""])[0], "")
         errhtml = f'<p class="formerr" role="alert">{e(err)}</p>' if err else ""
+        if m.get("series_id") and m["status"] == "active":
+            M.extend_series(m["series_id"])
         host_tools = ""
         if is_host:
             tools = []
             if m["status"] == "active":
                 tools.append(f'<a class="btn btn-ghost btn-sm" href="{path_id(m)}/edit">Edit</a>')
-            tools.append(f'<form method="post" action="{path_id(m)}/repeat">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Repeat next week</button></form>')
+            if not m.get("series_id"):
+                tools.append(f'<form method="post" action="{path_id(m)}/repeat">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Repeat next week</button></form>')
             if m["status"] == "active":
                 tools.append(f'<a class="btn btn-danger btn-sm" href="{path_id(m)}/cancel">Cancel meetup</a>')
             host_tools = f'<div class="formfoot mtools"><span class="small muted">You\'re the host:</span>{"".join(tools)}</div>'
@@ -1275,15 +1352,23 @@ class MeetupRoutes:
                          f'<span>A <a href="{e(pack_path(pack))}"><b>{e(pack["name"])}</b></a> meetup'
                          + (" · pack members only" if m.get("members_only") else "") + '</span></p>')
         host_q = ("?run=" + quote(m["run_id"])) if m["run_id"] else ""
+        series_html = ""
+        if m.get("series_id"):
+            dates = [x for x in M.series_upcoming_dates(m) if x["id"] != m["id"]]
+            links = "".join(f'<li><a href="{e(meetup_path(x))}">{e(M.when_text(x["starts_at"], short=True))}</a></li>' for x in dates[:8])
+            series_html = (f'<div class="panel" id="series"><h2>Weekly series</h2>'
+                           f'<p class="small" style="margin:0 0 8px">This meetup repeats every week.</p>'
+                           + (f'<ul class="clist">{links}</ul>' if links else '<p class="muted" style="margin:0">No later dates yet.</p>')
+                           + '</div>')
         body = f"""<section class="dhero mhero"><div class="wrap"><div>{''.join(banners)}
-<span class="eyebrow" style="margin:0">dog meetup{sample_b}</span>
+<span class="eyebrow" style="margin:0">{"weekly " if m.get("series_id") else ""}dog meetup{sample_b}</span>
 <h1 class="dname mtitle">{e(m["title"])}</h1><ul class="facts">{''.join(facts)}</ul>
 <p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-user"/></svg><span>Hosted by <b>{self.human_link(m["host_user_id"], host_first_name(m))}</b></span></p>{pack_line}
 <div style="margin-top:18px">{cal}</div>{host_tools}</div><div>{mapbox}</div></div></section>
 <section class="section" style="padding-top:36px"><div class="wrap">{errhtml}<div class="dgrid2"><div>
 <div class="panel"><h2>About this meetup</h2><p class="bio">{e(desc_txt)}</p></div>
 <div class="panel"><h2>Who's coming <span class="mcount2">{ngoing} dog{"s" if ngoing != 1 else ""} going</span></h2>{self.who_html(att)}</div>
-<div class="panel" id="comments"><h2>Conversation</h2>{self.comments_html(m, u, is_host, mine)}</div></div>
+{series_html}<div class="panel" id="comments"><h2>Meetup chat</h2>{self.comments_html(m, u, is_host, mine)}</div></div>
 <div><div class="panel" id="rsvp"><h2>RSVP</h2>{self.rsvp_panel(m, u, mine)}</div><div class="panel">{''.join(wp)}</div>
 <div class="panel" style="background:var(--black);color:#E9E1D3;box-shadow:6px 6px 0 var(--red)"><h2 style="color:#fff">Host your own</h2>
 <p>Pick your favorite run, set a time and invite the regulars.</p><a class="btn btn-gold btn-sm" href="/meetups/new{host_q}">Host a meetup</a></div></div></div>

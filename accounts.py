@@ -279,6 +279,7 @@ def cap(uid, kind):
         "msg_new_day": min(3, MS.NEW_PER_DAY) if new else MS.NEW_PER_DAY,
         "meetups_day": 2 if new else 10,
         "invites_day": 3 if new else 10,
+        "comments_day": 10 if new else 30,
     }[kind]
 
 
