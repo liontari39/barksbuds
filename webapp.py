@@ -377,7 +377,7 @@ class AppRoutes:
 <link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=26"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=27"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -395,7 +395,10 @@ class AppRoutes:
 {scripts}{SW_REGISTER}
 </body></html>"""
         cache = "no-store" if (u or code != 200 or not index) else "no-cache"
-        self._emit(code, doc, headers={"Cache-Control": cache, "Vary": "Cookie"})
+        headers = {"Cache-Control": cache, "Vary": "Cookie"}
+        if not index:
+            headers["X-Robots-Tag"] = "noindex, nofollow"
+        self._emit(code, doc, headers=headers)
 
     def msg_page(self, title, html_body, code=200, icon="i-paw"):
         body = f"""<div class="authwrap"><div class="authcard">

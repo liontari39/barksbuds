@@ -75,7 +75,10 @@ first-out when a spot opens. Pages: `/meetups` (filters: `area`, `region`, `ns=1
 `/meetups/feed.ics` (subscribable iCal of public upcoming meetups; `webcal://` from the Subscribe link),
 a per-member private feed at the same path with a signed `u`/`t` token (pack and members-only meetups they can see,
 plus ones they host or RSVP'd to; enable, rotate or revoke from the account page or the Subscribe panel),
-`/meetups/new`, and `/admin/meetups?key=...` for hiding/deleting meetups (including bulk hide/delete of sample meetups).
+`/meetups/new` (visibility: Public, Members only, Pack only, or Private invite-only),
+and `/admin/meetups?key=...` for hiding/deleting meetups (including bulk hide/delete of sample meetups).
+Private meetups are hidden from lists, the calendar, sitemap, search and the public iCal feed; only the host
+and invited members (via a secret link) can open them, and the page is served `noindex` with `X-Robots-Tag`.
 Code: `meetups.py` (data), `meetweb.py` (pages/routes), email templates in `mailer.py`.
 
 Emails (Brevo, async): RSVP confirmation, host notice, waitlist promotion, cancellation and a day-before reminder.

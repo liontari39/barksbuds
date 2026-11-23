@@ -30,7 +30,7 @@ NORTH_SHORE = ("manhasset", "great neck", "roslyn", "north hills", "port washing
 LOCK = threading.Lock()            # serializes RSVP changes so capacity can't be oversold (one web process)
 
 M_COLS = ("id,host_user_id,slug,title,starts_at,duration_min,run_id,place_name,address,lat,lng,area,town,description,"
-          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at,pack_id,members_only,seed_rev")
+          "fit,capacity,status,is_sample,hidden,seed_key,reminder_sent_at,created_at,updated_at,pack_id,members_only,seed_rev,visibility,invite_token_ver")
 
 
 def q(sql, **kw):
@@ -75,11 +75,30 @@ def init_schema(store):
         store.q(f"ALTER TABLE users ADD COLUMN meetup_emails {INT} NOT NULL DEFAULT 1")
     if "cal_token_ver" not in uc:
         store.q(f"ALTER TABLE users ADD COLUMN cal_token_ver {INT} NOT NULL DEFAULT 0")
+    mc = cols("meetups")
+    if "visibility" not in mc:
+        store.q("ALTER TABLE meetups ADD COLUMN visibility TEXT NOT NULL DEFAULT 'public'")
+    if "invite_token_ver" not in mc:
+        store.q(f"ALTER TABLE meetups ADD COLUMN invite_token_ver {INT} NOT NULL DEFAULT 0")
+    store.q(f"""CREATE TABLE IF NOT EXISTS meetup_invites(
+        meetup_id {INT} NOT NULL, user_id {INT} NOT NULL, invited_by {INT},
+        created_at {INT} NOT NULL, PRIMARY KEY (meetup_id, user_id))""")
+    backfill_pack_visibility(store)
     rc = cols("reports")
     if "meetup_id" not in rc:
         store.q(f"ALTER TABLE reports ADD COLUMN meetup_id {INT}")
     if "comment_id" not in rc:
         store.q(f"ALTER TABLE reports ADD COLUMN comment_id {INT}")
+
+
+
+def backfill_pack_visibility(store):
+    """Map legacy pack-only rows (members_only=1) to visibility='pack'. Safe if those columns are not there yet."""
+    pg = store.kind == "postgres"
+    mc = ({r[0] for r in store.q("SELECT column_name FROM information_schema.columns WHERE table_name=:t", t="meetups")} if pg
+          else {r[1] for r in store.q("PRAGMA table_info(meetups)")})
+    if "visibility" in mc and "members_only" in mc:
+        store.q("UPDATE meetups SET visibility='pack' WHERE members_only=1 AND pack_id IS NOT NULL AND visibility='public'")
 
 
 # ---------------------------------------------------------------- time helpers
@@ -172,6 +191,94 @@ def get(mid):
     return m
 
 
+VISIBILITIES = ("public", "members", "pack", "private")
+VIS_LABEL = {"public": "Public", "members": "Members only", "pack": "Pack only", "private": "Private (invite-only)"}
+
+
+def visibility(m):
+    v = (m or {}).get("visibility") or "public"
+    if v in VISIBILITIES:
+        return v
+    if m.get("members_only") and m.get("pack_id"):
+        return "pack"
+    return "public"
+
+
+def norm_visibility(vis, pack_id=None, members_only=None):
+    v = vis if vis in VISIBILITIES else ""
+    if not v:
+        v = "pack" if pack_id and members_only else "public"
+    if v == "pack" and not pack_id:
+        return "public"
+    return v
+
+
+def invite_ver_for_save(old, vis):
+    if vis != "private":
+        return 0
+    if old and visibility(old) == "private":
+        return int(old.get("invite_token_ver") or 1) or 1
+    return 1
+
+
+def invite_token(m):
+    if visibility(m) != "private":
+        return None
+    ver = int(m.get("invite_token_ver") or 0)
+    if not ver:
+        return None
+    return hmac.new(A.SECRET, f"meetup-invite:{int(m['id'])}:{ver}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def check_invite_token(m, tok):
+    good = invite_token(m)
+    return bool(good and tok and hmac.compare_digest(good, tok))
+
+
+def rotate_invite_token(mid):
+    q("UPDATE meetups SET invite_token_ver=invite_token_ver+1, updated_at=:t WHERE id=:i AND visibility='private'",
+      t=A.now(), i=mid)
+    return get(mid)
+
+
+def is_invited(mid, uid):
+    return bool(uid and one("SELECT 1 FROM meetup_invites WHERE meetup_id=:m AND user_id=:u", m=mid, u=uid))
+
+
+def add_invite(mid, uid, by=None):
+    if not uid or is_invited(mid, uid):
+        return False
+    q("INSERT INTO meetup_invites(meetup_id,user_id,invited_by,created_at) VALUES(:m,:u,:b,:t)",
+      m=mid, u=uid, b=by, t=A.now())
+    return True
+
+
+def can_list_meetup(m, uid=None):
+    vis = visibility(m)
+    if vis == "private":
+        return bool(uid and (uid == m.get("host_user_id") or is_invited(m["id"], uid) or rsvp_of(m["id"], uid)))
+    if vis == "members":
+        return bool(uid)
+    return True
+
+
+def can_view_meetup(m, uid=None, token=None):
+    if not m:
+        return False
+    if m.get("hidden") and uid != m.get("host_user_id"):
+        return False
+    vis = visibility(m)
+    if vis in ("public", "pack"):
+        return True
+    if vis == "members":
+        return bool(uid)
+    if uid and uid == m.get("host_user_id"):
+        return True
+    if uid and (is_invited(m["id"], uid) or rsvp_of(m["id"], uid)):
+        return True
+    return bool(token and check_invite_token(m, token))
+
+
 def is_north_shore(m):
     hay = " ".join([m.get("town") or "", m.get("place_name") or "", m.get("address") or ""]).lower()
     return m.get("area") in ("Nassau", "Suffolk") and any(t in hay for t in NORTH_SHORE)
@@ -181,18 +288,25 @@ def save(host_id, f, mid=None, seed_key=None, is_sample=0):
     t = A.now()
     vals = dict(ti=f["title"], st=f["starts_at"], du=f["duration_min"], ru=f["run_id"], pn=f["place_name"], ad=f["address"],
                 la=f["lat"], ln=f["lng"], ar=f["area"], tw=f["town"], de=f["description"], fi=f["fit"], ca=f["capacity"],
-                sl=A.slugify(f["title"], 60), pk=f.get("pack_id") or None, mo=1 if f.get("pack_id") and f.get("members_only") else 0, t=t)
+                sl=A.slugify(f["title"], 60), pk=f.get("pack_id") or None,
+                mo=1 if (f.get("visibility") == "pack" or f.get("members_only")) and f.get("pack_id") else 0,
+                vis=norm_visibility(f.get("visibility"), f.get("pack_id"), f.get("members_only")), t=t)
     if mid:
         old = get(mid)
         moved = old and old["starts_at"] != f["starts_at"]
+        ver = invite_ver_for_save(old, vals["vis"])
         q("""UPDATE meetups SET title=:ti,starts_at=:st,duration_min=:du,run_id=:ru,place_name=:pn,address=:ad,lat=:la,lng=:ln,
-             area=:ar,town=:tw,description=:de,fit=:fi,capacity=:ca,slug=:sl,pack_id=:pk,members_only=:mo,updated_at=:t""" +
-          (",reminder_sent_at=NULL" if moved and not (old and old["is_sample"]) else "") + " WHERE id=:i", i=mid, **vals)
+             area=:ar,town=:tw,description=:de,fit=:fi,capacity=:ca,slug=:sl,pack_id=:pk,members_only=:mo,visibility=:vis,
+             invite_token_ver=:iv,updated_at=:t""" +
+          (",reminder_sent_at=NULL" if moved and not (old and old["is_sample"]) else "") + " WHERE id=:i",
+          i=mid, iv=ver, **vals)
         return mid, promote(mid)
+    iv = 1 if vals["vis"] == "private" else 0
     r = one("""INSERT INTO meetups(host_user_id,slug,title,starts_at,duration_min,run_id,place_name,address,lat,lng,area,town,
-               description,fit,capacity,is_sample,seed_key,reminder_sent_at,pack_id,members_only,created_at,updated_at)
-               VALUES(:h,:sl,:ti,:st,:du,:ru,:pn,:ad,:la,:ln,:ar,:tw,:de,:fi,:ca,:sa,:sk,:rs,:pk,:mo,:t,:t) RETURNING id""",
-            h=host_id, sa=1 if is_sample else 0, sk=seed_key, rs=(t if is_sample else None), **vals)
+               description,fit,capacity,is_sample,seed_key,reminder_sent_at,pack_id,members_only,visibility,invite_token_ver,
+               created_at,updated_at)
+               VALUES(:h,:sl,:ti,:st,:du,:ru,:pn,:ad,:la,:ln,:ar,:tw,:de,:fi,:ca,:sa,:sk,:rs,:pk,:mo,:vis,:iv,:t,:t) RETURNING id""",
+            h=host_id, sa=1 if is_sample else 0, sk=seed_key, rs=(t if is_sample else None), iv=iv, **vals)
     return r[0], []
 
 
@@ -202,7 +316,7 @@ def as_form(m, days=0):
     st = int(s.replace(tzinfo=None).replace(tzinfo=ET).timestamp()) if days else m["starts_at"]
     return dict(title=m["title"], starts_at=st, duration_min=m["duration_min"], run_id=m["run_id"], place_name=m["place_name"],
                 address=m["address"], lat=m["lat"], lng=m["lng"], area=m["area"], town=m["town"], description=m["description"],
-                fit=m["fit"], capacity=m["capacity"], pack_id=m.get("pack_id"), members_only=m.get("members_only"))
+                fit=m["fit"], capacity=m["capacity"], pack_id=m.get("pack_id"), members_only=m.get("members_only"), visibility=visibility(m))
 
 
 def duplicate_next_week(m):
@@ -219,6 +333,7 @@ def cancel(mid):
 def delete(mid):
     q("DELETE FROM rsvps WHERE meetup_id=:m", m=mid)
     q("DELETE FROM meetup_comments WHERE meetup_id=:m", m=mid)
+    q("DELETE FROM meetup_invites WHERE meetup_id=:m", m=mid)
     q("DELETE FROM reports WHERE meetup_id=:m", m=mid)
     q("DELETE FROM meetups WHERE id=:m", m=mid)
 
@@ -227,14 +342,20 @@ def set_hidden(mid, hidden):
     q("UPDATE meetups SET hidden=:h WHERE id=:m", h=1 if hidden else 0, m=mid)
 
 
-def upcoming(areas=None, start=None, end=None, run_id=None, north_shore=False, limit=200):
-    """Active, visible meetups that haven't ended, soonest first."""
+def upcoming(areas=None, start=None, end=None, run_id=None, north_shore=False, limit=200, viewer=None):
+    """Active, visible meetups that haven't ended, soonest first.
+
+    viewer is a user id or None (anonymous). Private meetups are listed only for the
+    host and invitees; members-only meetups only for signed-in members.
+    """
     n = A.now()
     rows = q(f"SELECT {M_COLS} FROM meetups WHERE status='active' AND hidden=0 AND starts_at>:a ORDER BY starts_at, id",
              a=n - 6 * 3600)
     out = []
     for r in rows:
         m = _m(r)
+        if not can_list_meetup(m, viewer):
+            continue
         if m["ends_at"] <= n:
             continue
         if areas and m["area"] not in areas:
@@ -445,7 +566,7 @@ def can_include_in_private_feed(m, uid):
     if vis == "members" and uid:
         return True
     if vis == "private":
-        return False  # invite list is wired in with private visibility
+        return bool(uid and is_invited(m["id"], uid))
     pid = m.get("pack_id")
     if pid and uid:
         import packs as P
@@ -455,7 +576,7 @@ def can_include_in_private_feed(m, uid):
 
 def feed_meetups(uid=None, limit=500):
     """Upcoming meetups for an iCal feed. uid=None is the public feed."""
-    ms = upcoming(limit=limit)
+    ms = upcoming(limit=limit, viewer=uid)
     if uid is None:
         return [m for m in ms if is_public_feed_item(m)]
     return [m for m in ms if can_include_in_private_feed(m, uid)]

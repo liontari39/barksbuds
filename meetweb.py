@@ -30,6 +30,8 @@ W.FLASH.update({
     "cal_on": "Your private calendar feed is on. Add the link below to your calendar app.",
     "cal_new": "Your old calendar link no longer works. Add the new one below.",
     "cal_off": "Your private calendar feed is off.",
+    "invite_new": "Your old invite link no longer works. Share the new one below.",
+    "invited": "You're in. This private meetup is now in your list.",
 })
 AUTO_REMINDERS = os.environ.get("MEETUP_AUTO_REMINDERS", "1") != "0"
 _tick = {"last": 0.0, "lock": threading.Lock()}
@@ -276,7 +278,7 @@ class MeetupRoutes:
             self.meetups_feed(q); return True
         mt = re.fullmatch(r"/meetups/(\d+)\.ics", path)
         if mt:
-            self.meetup_ics(int(mt.group(1))); return True
+            self.meetup_ics(int(mt.group(1)), q); return True
         mt = re.fullmatch(r"/meetups/(\d+)/(edit|cancel)", path)
         if mt:
             m = self.own_meetup(int(mt.group(1)))
@@ -300,7 +302,7 @@ class MeetupRoutes:
     def meetup_post(self, path, q):
         self._app_reset()
         routes = [(r"/meetups/new", self.post_meetup), (r"/meetups/(\d+)/edit", self.post_meetup),
-                  (r"/meetups/(\d+)/cancel", self.post_meetup_cancel), (r"/meetups/(\d+)/repeat", self.post_meetup_repeat),
+                  (r"/meetups/(\d+)/cancel", self.post_meetup_cancel), (r"/meetups/(\d+)/repeat", self.post_meetup_repeat), (r"/meetups/(\d+)/invite-link", self.post_invite_link),
                   (r"/meetups/(\d+)/rsvp", self.post_rsvp), (r"/meetups/(\d+)/rsvp/cancel", self.post_rsvp_cancel),
                   (r"/meetups/(\d+)/comments", self.post_comment),
                   (r"/meetups/(\d+)/comments/(\d+)/delete", self.post_comment_delete),
@@ -320,12 +322,29 @@ class MeetupRoutes:
         return self.msg_page("We couldn't find that meetup", '<p class="sub">It may have been removed.</p>'
                              '<p><a class="btn" href="/meetups">See upcoming meetups</a></p>', code=404, icon="i-cal")
 
-    def visible_meetup(self, mid):
+    def visible_meetup(self, mid, q=None):
         m = M.get(mid)
         u = self.user()
-        if not m or (m["hidden"] and not (u and u["id"] == m["host_user_id"])):
+        uid = u["id"] if u else None
+        if q is None:
+            q = parse_qs(urlsplit(self.path).query)
+        tok = (q.get("k") or [""])[0]
+        if not m or (m["hidden"] and not (uid and uid == m["host_user_id"])):
             self.not_found_meetup()
             return None
+        vis = M.visibility(m)
+        if vis == "members" and not uid:
+            self.need_login()
+            return None
+        if vis == "private":
+            if not M.can_view_meetup(m, uid, tok):
+                self.not_found_meetup()
+                return None
+            if not uid and M.check_invite_token(m, tok):
+                self.need_login()
+                return None
+            if uid and tok and M.check_invite_token(m, tok) and uid != m["host_user_id"]:
+                M.add_invite(m["id"], uid)
         return m
 
     def own_meetup(self, mid):
@@ -384,6 +403,11 @@ class MeetupRoutes:
                 tags.append(f'<span class="badge pack"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg>{e(pn[0])}</span>')
             if m.get("members_only"):
                 tags.append('<span class="badge">Pack members only</span>')
+        vis = M.visibility(m)
+        if vis == "private":
+            tags.append('<span class="badge">Private</span>')
+        elif vis == "members":
+            tags.append('<span class="badge">Members only</span>')
         if m["fit"]:
             tags.append(f'<span class="badge">{e(M.FIT_LABEL[m["fit"]])}</span>')
         cap = ""
@@ -423,7 +447,8 @@ class MeetupRoutes:
         else:
             when = ""
         view = "map" if view == "map" else ""
-        ms = M.upcoming(areas, start, end, north_shore=ns)
+        uid = (self.user() or {}).get("id")
+        ms = M.upcoming(areas, start, end, north_shore=ns, viewer=uid)
 
         def link(**kw):
             p = {"region": region, "area": area, "when": when, "view": view, "ns": "1" if ns else ""}
@@ -459,7 +484,7 @@ class MeetupRoutes:
             import emptystate as ES
             content = ES.first_in_town_html("meetups", host_href, "Host a meetup", areas=areas, runs=W.RUNS(),
                                             where=("the North Shore" if ns else label if areas else ""))
-        nsm = M.upcoming(north_shore=True, limit=2)
+        nsm = M.upcoming(north_shore=True, limit=2, viewer=(self.user() or {}).get("id"))
         n = len(ms)
         when_lab = {"week": " this week", "weekend": " this weekend"}.get(when, "")
         body = f"""<section class="phead"><div class="wrap"><div class="mehead"><div><span class="eyebrow">meet the pack</span><h1>Dog meetups</h1>
@@ -493,7 +518,8 @@ class MeetupRoutes:
                 label = "the North Shore"
         year, month = M.parse_year_month(q.get("y", [""])[0], q.get("m", [""])[0])
         start, end = M.month_range(year, month)
-        ms = M.upcoming(areas, start, end, north_shore=ns)
+        uid = (self.user() or {}).get("id")
+        ms = M.upcoming(areas, start, end, north_shore=ns, viewer=uid)
         today = M.to_et(A.now()).date()
         by_day = {}
         for m in ms:
@@ -575,7 +601,7 @@ class MeetupRoutes:
     def meetups_api(self):
         """Upcoming meetups keyed by run id, for the dog run finder."""
         out = {}
-        for m in M.upcoming(limit=500):
+        for m in M.upcoming(limit=500, viewer=(self.user() or {}).get("id")):
             if m["run_id"]:
                 out.setdefault(m["run_id"], []).append({"id": m["id"], "title": m["title"], "url": meetup_path(m),
                                                         "when": M.when_text(m["starts_at"], short=True), "sample": bool(m["is_sample"]),
@@ -608,7 +634,7 @@ class MeetupRoutes:
                             loc="custom" if custom else "run", run_id=m["run_id"], place_name=m["place_name"] if custom else "",
                             address=m["address"] if custom else "", area=m["area"] if custom else "", town=m["town"] if custom else "",
                             description=m["description"], fit=m["fit"], capacity=str(m["capacity"] or ""),
-                            pack_id=str(m.get("pack_id") or ""), members_only="1" if m.get("members_only") else "")
+                            pack_id=str(m.get("pack_id") or ""), members_only="1" if m.get("members_only") else "", visibility=M.visibility(m))
             else:
                 rid = (q or {}).get("run", [""])[0]
                 pk = (q or {}).get("pack", [""])[0]
@@ -617,7 +643,7 @@ class MeetupRoutes:
                     rid = pack["run_id"]
                 vals = dict(title="", date="", time="10:00", duration="60", loc="run", run_id=rid if rid in W.run_index() else "",
                             place_name="", address="", area=u.get("area") or "", town="", description="", fit="", capacity="",
-                            pack_id=str(pack["id"]) if pack else "", members_only="")
+                            pack_id=str(pack["id"]) if pack else "", members_only="", visibility="public")
         v = lambda k: e(vals.get(k) or "")
         err = lambda k: f'<span class="err" id="{k}-err">{e(errs.get(k, ""))}</span>'
         inv = lambda k: ' aria-invalid="true"' if k in errs else ""
@@ -642,9 +668,22 @@ class MeetupRoutes:
                 f'<option value="{p["id"]}"{" selected" if str(p["id"]) == str(vals.get("pack_id") or "") else ""}>{e(p["name"])}</option>' for p in my_packs)
             pack_html = (f'<fieldset class="field"><legend class="lab">Pack <span class="opt">(optional)</span></legend>'
                          f'<label class="sr-only" for="pack_id">Pack</label><select id="pack_id" name="pack_id">{popts}</select>{err("pack_id")}'
-                         f'<label class="tick" style="margin-top:10px"><input type="checkbox" name="members_only" value="1"{" checked" if vals.get("members_only") else ""}>'
-                         f'<span>Pack members only (others can see it but can\'t RSVP)</span></label>'
                          f'<span class="help">Pack meetups show on the pack page, and pack members get an email about new ones.</span></fieldset>')
+        vis = vals.get("visibility") or "public"
+        vis_html = ('<fieldset class="field visopts"><legend class="lab">Who can see this</legend><div class="checks-grid">'
+                    + "".join(
+                        f'<label class="tick"><input type="radio" name="visibility" value="{k}"'
+                        + (" checked" if vis == k else "")
+                        + f'><span>{e(lab)}</span></label>'
+                        for k, lab in (
+                            ("public", "Public — listed for everyone"),
+                            ("members", "Members only — listed for signed-in members"),
+                            ("pack", "Pack only — listed, but only pack members can RSVP"),
+                            ("private", "Private (invite-only) — hidden from lists and search; share a secret link"),
+                        ))
+                    + f'</div>{err("visibility")}'
+                    + '<span class="help">Private meetups are hidden from the meetup list, calendar, sitemap and public calendar feed. Only you and people with your invite link can open them.</span></fieldset>')
+
         body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">{"edit" if m else "let's meet up"}</span><h1>{title}</h1>
 <p class="lead">Pick a dog run (or any dog-friendly place), set a time and tell people what to expect. Times are Eastern (New York).</p></div></section>
 <section class="section"><div class="wrap narrow"><form class="panel mform" method="post" action="{action}" novalidate>{self.csrf_field()}{top}
@@ -664,11 +703,11 @@ class MeetupRoutes:
 <span class="help">Custom places show the address and directions but aren't pinned on the map.</span></div></fieldset>
 <div class="field"><label for="description">Description <span class="opt">(optional)</span></label><textarea id="description" name="description" maxlength="{M.MAX_DESC}" rows="5" placeholder="What to expect, where exactly to find you, anything to bring.">{v("description")}</textarea></div>
 <fieldset class="field"><legend class="lab">Good fit for <span class="opt">(optional)</span></legend><div class="checks-grid">{fits}</div></fieldset>
-{pack_html}<div class="field" style="max-width:280px"><label for="capacity">Capacity <span class="opt">(optional)</span></label><input type="number" id="capacity" name="capacity" min="2" max="{M.MAX_CAPACITY}" inputmode="numeric" value="{v("capacity")}" placeholder="No limit"{inv("capacity")}>
+{pack_html}{vis_html}<div class="field" style="max-width:280px"><label for="capacity">Capacity <span class="opt">(optional)</span></label><input type="number" id="capacity" name="capacity" min="2" max="{M.MAX_CAPACITY}" inputmode="numeric" value="{v("capacity")}" placeholder="No limit"{inv("capacity")}>
 <span class="help">Max dogs going. Extra RSVPs join a waitlist.</span>{err("capacity")}</div>
 <div class="formfoot"><button class="btn" type="submit">{"Save changes" if m else "Publish meetup"}</button>
 <a class="small" href="{e(meetup_path(m)) if m else "/meetups"}">Cancel</a></div>
-<p class="small muted" style="margin:14px 0 0">Meetups are public (pack-only meetups too, but only members can RSVP). Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
+<p class="small muted" style="margin:14px 0 0">Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
         js = ("<script>(function(){var f=document.querySelector('form.mform');if(!f)return;function sync(){var c=f.querySelector('input[name=loc]:checked');"
               "var v=c?c.value:'run';f.querySelector('.loc-run').hidden=v!=='run';f.querySelector('.loc-custom').hidden=v!=='custom'}"
               "f.querySelectorAll('input[name=loc]').forEach(function(r){r.addEventListener('change',sync)});sync()})();</script>")
@@ -677,7 +716,7 @@ class MeetupRoutes:
     def parse_meetup(self, f, old=None):
         errs = {}
         vals = {k: f.get(k) for k in ("title", "date", "time", "duration", "loc", "run_id", "place_name", "address", "area",
-                                      "town", "description", "fit", "capacity", "pack_id", "members_only")}
+                                      "town", "description", "fit", "capacity", "pack_id", "members_only", "visibility")}
         out = {"title": clean(f.get("title"), M.MAX_TITLE)}
         if len(out["title"]) < 3:
             errs["title"] = "Give your meetup a title (at least 3 characters)."
@@ -726,9 +765,16 @@ class MeetupRoutes:
             u = self.user()
             if pk.isdigit() and (P.is_member(int(pk), u["id"]) or (old and old.get("pack_id") == int(pk))) and P.get(int(pk)):
                 out["pack_id"] = int(pk)
-                out["members_only"] = 1 if f.get("members_only") == "1" else 0
             else:
                 errs["pack_id"] = "You can only host meetups for packs you're a member of."
+        vis = f.get("visibility")
+        if vis not in M.VISIBILITIES:
+            vis = "pack" if (f.get("members_only") == "1" and out["pack_id"]) else "public"
+        if vis == "pack" and not out["pack_id"]:
+            errs["visibility"] = "Choose a pack for a pack-only meetup."
+            vis = "public"
+        out["visibility"] = vis
+        out["members_only"] = 1 if vis == "pack" and out["pack_id"] else 0
         return out, vals, errs
 
     def post_meetup(self, mid=None):
@@ -911,9 +957,27 @@ class MeetupRoutes:
         return self._report(m, cid)
 
     # ------------------------------------------------------------ meetup page
-    def meetup_ics(self, mid):
+
+    def post_invite_link(self, mid):
+        m = self.own_meetup(mid)
+        if not m:
+            return
+        f = self._form_or_fail()
+        if f is None:
+            return
+        if M.visibility(m) != "private":
+            return self.redirect(meetup_path(m))
+        M.rotate_invite_token(mid)
+        return self.redirect(meetup_path(m) + "?m=invite_new#invite")
+
+    def meetup_ics(self, mid, q=None):
         m = M.get(mid)
-        if not m or m["hidden"]:
+        u = self.user()
+        uid = u["id"] if u else None
+        tok = ((q or {}).get("k") or [""])[0]
+        if not m or m["hidden"] or not M.can_view_meetup(m, uid, tok):
+            return self._emit(404, b"Not found", "text/plain")
+        if M.visibility(m) in ("members", "private") and not uid and not tok:
             return self._emit(404, b"Not found", "text/plain")
         fn = (m["slug"] or "meetup") + ".ics"
         return self._emit(200, ics_text(self._base(), m), "text/calendar; charset=utf-8",
@@ -991,6 +1055,8 @@ class MeetupRoutes:
         return self.redirect(loc)
 
     def can_rsvp(self, m, u):
+        if M.visibility(m) == "private":
+            return u["id"] == m["host_user_id"] or M.is_invited(m["id"], u["id"]) or bool(M.rsvp_of(m["id"], u["id"]))
         return not (m.get("members_only") and m.get("pack_id")) or u["id"] == m["host_user_id"] or P.is_member(m["pack_id"], u["id"])
 
     def rsvp_panel(self, m, u, mine):
@@ -1086,7 +1152,14 @@ class MeetupRoutes:
         return lst + form
 
     def meetup_page(self, mid, slugpart, q):
-        m = self.visible_meetup(mid)
+        m = self.visible_meetup(mid, q)
+        if not m:
+            return
+        u = self.user()
+        tok = q.get("k", [""])[0]
+        if u and tok and M.check_invite_token(m, tok):
+            loc = meetup_path(m) + ("?m=invited" if u["id"] != m["host_user_id"] else "")
+            return self.redirect(loc)
         if not m:
             return
         if slugpart != (f"-{m['slug']}" if m["slug"] else ""):
@@ -1136,6 +1209,16 @@ class MeetupRoutes:
             if m["status"] == "active":
                 tools.append(f'<a class="btn btn-danger btn-sm" href="{path_id(m)}/cancel">Cancel meetup</a>')
             host_tools = f'<div class="formfoot mtools"><span class="small muted">You\'re the host:</span>{"".join(tools)}</div>'
+        if is_host and M.visibility(m) == "private" and M.invite_token(m):
+            inv = self._base() + meetup_path(m) + "?k=" + M.invite_token(m)
+            host_tools += (
+                '<div class="calsub" id="invite"><p><b>Private meetup.</b> Only people with this invite link can see it. Share it with the friends you want there.</p>'
+                f'<p class="calurl"><label class="sr-only" for="invite-url">Invite link</label><input id="invite-url" readonly value="{e(inv)}"></p>'
+                f'<form method="post" action="{path_id(m)}/invite-link">{self.csrf_field()}'
+                '<button class="btn btn-ghost btn-sm" type="submit">Get a new link</button></form>'
+                '<p class="small muted">People who already opened the old link can still see the meetup.</p></div>')
+        elif M.visibility(m) == "private":
+            host_tools += '<p class="notice small">This is a private, invite-only meetup.</p>'
         cal = ""
         if m["status"] == "active":
             cal = (f'<div class="formfoot"><a class="btn btn-gold btn-sm mjump" href="#rsvp">RSVP</a><a class="btn btn-sm" href="/meetups/{mid}.ics"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Add to calendar</a>'
@@ -1198,8 +1281,8 @@ class MeetupRoutes:
             og["image"] = f"{base}/p/{going_dogs[0]['photo']}.jpg"
             og.pop("w"); og.pop("h")
         return self.page(m["title"], body, canonical=meetup_path(m), desc=og_desc, og=og,
-                         index=not (m["hidden"] or m["is_sample"] or m["status"] != "active"), active="meetups", scripts=scripts,
-                         flash=self.flash_from(q))
+                         index=M.visibility(m) == "public" and not (m["hidden"] or m["is_sample"] or m["status"] != "active"),
+                         active="meetups", scripts=scripts, flash=self.flash_from(q))
 
     # ------------------------------------------------------------ email preferences
     def post_email_prefs(self):
@@ -1334,7 +1417,7 @@ class MeetupRoutes:
 def landing_html():
     """'Starting on the North Shore' highlight for the landing page (index.html {{NORTH_SHORE}})."""
     try:
-        ms = M.upcoming(north_shore=True, limit=2)
+        ms = M.upcoming(north_shore=True, limit=2, viewer=(self.user() or {}).get("id"))
     except Exception:
         ms = []
     cards = []

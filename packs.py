@@ -78,6 +78,8 @@ def init_schema(store):
         store.q(f"ALTER TABLE meetups ADD COLUMN members_only {INT} NOT NULL DEFAULT 0")
     if "seed_rev" not in mc:
         store.q(f"ALTER TABLE meetups ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
+    import meetups as M
+    M.backfill_pack_visibility(store)
 
 
 # ---------------------------------------------------------------- packs
@@ -402,9 +404,9 @@ def add_report(pid, post_id, cid, uid, reason, details, ip):
 
 
 # ---------------------------------------------------------------- meetups of a pack
-def meetups(pid, limit=20):
+def meetups(pid, limit=20, viewer=None):
     import meetups as M
-    return [m for m in M.upcoming(limit=500) if m.get("pack_id") == pid][:limit]
+    return [m for m in M.upcoming(limit=500, viewer=viewer) if m.get("pack_id") == pid][:limit]
 
 
 def names(ids):

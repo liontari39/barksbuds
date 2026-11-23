@@ -623,7 +623,7 @@ class PackRoutes:
             cta = f'<a class="btn btn-gold btn-sm" href="#join">{"Join the pack" if p["visibility"] == "open" else "Request to join"}</a>'
         cover = (f'<img src="/pp/{p["cover_photo_id"]}.jpg" alt="{e(p["name"])} cover photo" width="1600" height="900">' if p["cover_photo_id"] else
                  '<span class="noph"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg></span>')
-        ms = P.meetups(pid, 6)
+        ms = P.meetups(pid, 6, viewer=(self.user() or {}).get("id"))
         mlist = "".join(self.meetup_row(m, "Members only" if m.get("members_only") else M.to_et(m["starts_at"]).strftime("%a")) for m in ms)
         host_btn = (f'<a class="btn btn-sm" href="/meetups/new?pack={pid}">Host a pack meetup</a>' if is_mem else "")
         meet_html = (f'<ul class="mrows">{mlist}</ul>' if ms else '<p class="muted" style="margin:0 0 12px">No pack meetups on the calendar yet.</p>') + \
@@ -1059,7 +1059,7 @@ class PackRoutes:
             kw = dict(who="A neighbor", who_dogs=M.dog_names(mem["dogs"] if mem else [])[:1] or ["Buddy"],
                       message="Hi! We're at the run most mornings and would love to join.")
         elif kind == "meetup":
-            ms = P.meetups(p["id"], 1)
+            ms = P.meetups(p["id"], 1, viewer=(self.user() or {}).get("id"))
             if not ms:
                 return self._emit(400, b"No upcoming pack meetup to use", "text/plain")
             kw = dict(meetup=meetup_mail(base, ms[0]))

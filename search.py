@@ -145,7 +145,7 @@ def s_meetups(terms, blocked, limit):
     out = []
     for r in rows:
         m = M._m(r)
-        if m["ends_at"] <= n or m["host_user_id"] in blocked:
+        if m["ends_at"] <= n or m["host_user_id"] in blocked or not M.can_list_meetup(m, None):
             continue
         run = runs.get(m["run_id"]) if m.get("run_id") else None
         hay = " ".join([m.get("place_name") or "", m.get("town") or "", m.get("area") or "", _area(m.get("area")),
