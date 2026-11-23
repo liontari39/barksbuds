@@ -1,0 +1,223 @@
+/* App shell for Capacitor and installed PWA only. Every rule is gated on html.bb-app
+   so a regular browser visit is visually unchanged. */
+html.bb-app{
+  --bb-safe-top:env(safe-area-inset-top,0px);
+  --bb-safe-bottom:env(safe-area-inset-bottom,0px);
+  --bb-bar:52px;
+  --bb-tabs:56px;
+  --bb-bar-bg:rgba(255,248,234,.96);
+  --bb-chrome:#FFFDF8;
+  --black:#141414;--ink:#2a2622;--muted:#625a50;--red:#C8201E;--red-d:#9E1714;
+  --gold:#FBB321;--gold-d:#C98A0C;--cream:#FFF8EA;--line:#EADBB9;
+  color-scheme:light dark;
+  -webkit-text-size-adjust:100%;
+  overscroll-behavior:none;
+  height:100%;
+}
+html.bb-app body{
+  min-height:100%;
+  min-height:100dvh;
+  overscroll-behavior:none;
+  padding-top:calc(var(--bb-bar) + var(--bb-safe-top));
+  padding-bottom:calc(var(--bb-tabs) + var(--bb-safe-bottom));
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+html.bb-app #map,html.bb-app .mapwrap,html.bb-app .leaflet-container,html.bb-app .mmap{touch-action:pan-x pan-y}
+html.bb-app header.nav,
+html.bb-app footer,
+html.bb-app .mmenu,
+html.bb-app .a2hs,
+html.bb-app .skip{display:none !important}
+html.bb-app .phead{padding:10px 0 8px}
+html.bb-app .phead .lead,html.bb-app .intro,html.bb-app .phead .eyebrow{display:none}
+html.bb-app .phead h1{font-size:1.35rem;margin:0}
+html.bb-app .phead h1.bb-title-dup,html.bb-app .phead h1[hidden]{display:none !important}
+html.bb-app .phead:has(h1.bb-title-dup),html.bb-app .phead:has(h1[hidden]){padding-top:8px;padding-bottom:4px}
+html.bb-app .mehead:has(h1.bb-title-dup),html.bb-app .mehead:has(h1[hidden]){justify-content:flex-end}
+html.bb-app .mehead > div:has(h1.bb-title-dup),html.bb-app .mehead > div:has(h1[hidden]){display:none}
+html.bb-app .section{padding-top:16px}
+html.bb-app .bb-sheet .checkin{border-top:0;margin-top:0;padding-top:0}
+html.bb-app .bb-sheet .mine-in{margin-top:0}
+
+/* chrome: no select, 44px targets */
+html.bb-app .bb-appbar,
+html.bb-app .bb-tabbar,
+html.bb-app .bb-sheet-h,
+html.bb-app .bb-tab,
+html.bb-app .bb-iconbtn{
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+html.bb-app .bb-iconbtn,
+html.bb-app .bb-tab,
+html.bb-app .bb-sheet-h .bb-iconbtn{
+  min-width:44px;min-height:44px;
+}
+
+/* top app bar */
+html.bb-app .bb-appbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;gap:4px;
+  height:calc(var(--bb-bar) + var(--bb-safe-top));
+  padding:var(--bb-safe-top) 6px 0;
+  background:var(--bb-bar-bg);
+  -webkit-backdrop-filter:saturate(1.4) blur(12px);
+  backdrop-filter:saturate(1.4) blur(12px);
+  border-bottom:1px solid var(--line);
+  color:var(--black);
+}
+html.bb-app .bb-appbar .bb-title{
+  flex:1;min-width:0;margin:0;font:800 1.15rem/1.1 "Baloo 2",system-ui,sans-serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
+}
+html.bb-app .bb-appbar .bb-brand{
+  display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--black);
+  font:800 1.15rem/1 "Baloo 2",system-ui,sans-serif;min-height:44px;padding:0 8px;
+}
+html.bb-app .bb-appbar .bb-brand img{width:28px;height:28px;border-radius:8px}
+html.bb-app .bb-iconbtn{
+  appearance:none;background:none;border:0;border-radius:12px;color:var(--black);
+  display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
+  text-decoration:none;position:relative;
+}
+html.bb-app .bb-iconbtn:active{opacity:.7}
+html.bb-app .bb-iconbtn .ico,html.bb-app .bb-iconbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+html.bb-app .bb-iconbtn .nbadge{position:absolute;top:4px;right:2px}
+
+/* bottom tabs */
+html.bb-app .bb-tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  display:flex;align-items:stretch;justify-content:space-around;
+  height:calc(var(--bb-tabs) + var(--bb-safe-bottom));
+  padding:0 2px var(--bb-safe-bottom);
+  background:var(--bb-chrome);
+  border-top:1px solid var(--line);
+  box-shadow:0 -8px 24px -18px rgba(20,20,20,.35);
+}
+html.bb-app .bb-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;color:var(--muted);text-decoration:none;font:700 .68rem/1 Nunito,system-ui,sans-serif;
+  background:none;border:0;padding:6px 2px 4px;cursor:pointer;border-radius:12px;
+}
+html.bb-app .bb-tab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+html.bb-app .bb-tab[aria-current="page"],
+html.bb-app .bb-tab.is-on{color:var(--red)}
+html.bb-app .bb-tab[aria-current="page"] svg,
+html.bb-app .bb-tab.is-on svg{stroke-width:2.4}
+
+/* runs: compact finder; filters live in a sheet */
+html.bb-app .controls{
+  position:sticky;top:calc(var(--bb-bar) + var(--bb-safe-top));z-index:15;
+  background:var(--cream);
+}
+html.bb-app #filters,html.bb-app nav[aria-label^="Filter"]{display:none}
+html.bb-app .bb-sheet #filters,html.bb-app .bb-sheet nav[aria-label^="Filter"]{display:block}
+html.bb-app .bb-filter-btn{margin-left:8px}
+
+/* sheets */
+html.bb-app .bb-scrim{
+  position:fixed;inset:0;z-index:60;background:rgba(20,20,20,.45);
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+html.bb-app .bb-scrim.is-on{opacity:1;pointer-events:auto}
+html.bb-app .bb-sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;
+  max-height:min(86dvh, 86%);
+  background:var(--chrome, #fff);
+  background:#fff;
+  border-radius:22px 22px 0 0;
+  box-shadow:0 -12px 40px rgba(20,20,20,.18);
+  transform:translateY(110%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding:0 0 calc(12px + var(--bb-safe-bottom));
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+html.bb-app .bb-sheet.is-on{transform:translateY(0)}
+html.bb-app .bb-sheet-h{
+  display:flex;align-items:center;gap:8px;padding:8px 12px 4px;
+  flex:none;
+}
+html.bb-app .bb-sheet-h .grab{
+  width:36px;height:4px;border-radius:99px;background:#D9CBB0;margin:6px auto 2px;
+  position:absolute;left:50%;transform:translateX(-50%);top:8px;
+}
+html.bb-app .bb-sheet-h h2{
+  flex:1;margin:18px 8px 8px;font-size:1.2rem;
+}
+html.bb-app .bb-sheet-b{overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 20px 12px;flex:1}
+
+/* pull to refresh */
+html.bb-app .bb-ptr{
+  position:fixed;left:0;right:0;z-index:40;
+  top:calc(var(--bb-bar) + var(--bb-safe-top));
+  display:flex;align-items:center;justify-content:center;
+  height:0;overflow:hidden;pointer-events:none;color:var(--muted);
+  font:700 .85rem/1 Nunito,system-ui,sans-serif;
+}
+html.bb-app .bb-ptr span{display:inline-flex;align-items:center;gap:8px}
+
+/* skeleton overlay */
+html.bb-app .bb-skel{
+  position:fixed;inset:0;z-index:45;
+  background:var(--cream);
+  padding:calc(var(--bb-bar) + var(--bb-safe-top) + 24px) 24px;
+  display:none;
+}
+html.bb-app .bb-skel.is-on{display:block}
+html.bb-app .bb-skel i{
+  display:block;height:16px;border-radius:8px;background:linear-gradient(90deg,#EADBB9 0%,#FFF8EA 40%,#EADBB9 80%);
+  background-size:200% 100%;animation:bb-shimmer 1s linear infinite;margin:0 0 14px;
+}
+html.bb-app .bb-skel i:nth-child(1){width:40%;height:28px}
+html.bb-app .bb-skel i:nth-child(2){width:88%}
+html.bb-app .bb-skel i:nth-child(3){width:70%}
+html.bb-app .bb-skel i:nth-child(4){width:80%;height:88px}
+html.bb-app .bb-skel i:nth-child(5){width:80%;height:88px}
+@keyframes bb-shimmer{to{background-position:-200% 0}}
+
+/* more-menu list */
+html.bb-app .bb-more a{
+  display:flex;align-items:center;gap:10px;padding:12px 4px;min-height:44px;
+  color:var(--ink);text-decoration:none;font-weight:800;border-bottom:1px solid var(--line);
+}
+html.bb-app .bb-check-list{list-style:none;margin:0;padding:0}
+html.bb-app .bb-check-list button,
+html.bb-app .bb-check-list a{
+  display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
+  padding:14px 4px;min-height:44px;font:800 1rem/1.3 Nunito,system-ui,sans-serif;color:var(--ink);cursor:pointer;
+}
+html.bb-app .bb-check-list .muted{font-weight:600;color:var(--muted);font-size:.85rem}
+
+@media (prefers-color-scheme:dark){
+  html.bb-app{
+    --black:#F3EBDD;--ink:#F0E6D4;--muted:#C4B8A4;--cream:#1A1714;--line:#3A332C;
+    --red:#E24A45;--red-d:#9E1714;--gold:#FBB321;--gold-d:#C98A0C;
+    --bb-bar-bg:rgba(26,23,20,.96);--bb-chrome:#221E1A;
+    background:#1A1714;color:var(--ink);
+  }
+  html.bb-app body,html.bb-app .controls{background:var(--cream);color:var(--ink)}
+  html.bb-app .bb-sheet,html.bb-app .panel,html.bb-app .btn-ghost{background:#241F1A;color:var(--ink)}
+  html.bb-app .btn-ghost{border-color:var(--black);box-shadow:0 4px 0 #000}
+  html.bb-app .bb-skel{background:var(--cream)}
+  html.bb-app .bb-skel i{background:linear-gradient(90deg,#3A332C 0%,#241F1A 40%,#3A332C 80%);background-size:200% 100%}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html.bb-app,html.bb-app *{animation:none !important;transition:none !important;scroll-behavior:auto !important}
+  html.bb-app .bb-sheet{transform:none}
+  html.bb-app .bb-sheet:not(.is-on){display:none}
+}
+
+/* MPA view transitions */
+html.bb-app::view-transition-old(root){animation:bb-fade .16s ease-out both}
+html.bb-app::view-transition-new(root){animation:bb-in .22s ease-out both}
+@keyframes bb-fade{to{opacity:0}}
+@keyframes bb-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  html.bb-app::view-transition-old(root),
+  html.bb-app::view-transition-new(root){animation:none}
+}

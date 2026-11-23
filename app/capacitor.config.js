@@ -18,12 +18,13 @@ module.exports = {
       launchAutoHide: true,
       backgroundColor: "#FFF8EA",
       showSpinner: false,
-      launchFadeOutDuration: 200,
+      launchFadeOutDuration: 280,
     },
     StatusBar: {
-      style: "LIGHT",
+      style: "DARK",
       backgroundColor: "#FFF8EA",
     },
+    Haptics: {},
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
@@ -37,7 +38,7 @@ module.exports = {
   },
   ios: {
     appendUserAgent: "BarksBudsApp/1.0",
-    contentInset: "automatic",
+    contentInset: "never",
     scheme: "BarksBuds",
     preferredContentMode: "mobile",
   },

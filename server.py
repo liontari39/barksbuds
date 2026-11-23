@@ -499,6 +499,7 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
                     .replace(b"{{PHOTOS}}", photoweb.home_html().encode())
                     .replace(b"{{PIXEL_HERO}}", pixelweb.hero_html().encode())
                     .replace(b"{{TIPS}}", tipsweb.landing_html().encode()))
+            body = body.replace(b"</body>", (self._pwa_boot() + "</body>").encode())
             return self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-cache", "Vary": "Cookie"})
         if u.path in ("/runs", "/runs/", "/runs.html"):
             self._app_reset()
@@ -507,6 +508,7 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
             body = (body.replace(b"{{NAV_ACCOUNT}}", webapp.nav_account_html(u, "runs").encode())
                     .replace(b"{{SUGGEST_CTA}}", (b'<a class="btn btn-ghost btn-sm sg-cta" href="/runs/suggest" data-signed-in="1">+ Suggest a run</a>' if u else
                                                   b'<a class="btn btn-ghost btn-sm sg-cta" href="/signin?next=%2Fruns%2Fsuggest">+ Suggest a run</a>')))
+            body = body.replace(b"</body>", (self._pwa_boot() + "</body>").encode())
             return self._send_maybe_gz(body, gzip.compress(body, 6), "text/html; charset=utf-8",
                                        {"Cache-Control": "no-cache", "Vary": "Accept-Encoding, Cookie"})
         if u.path == "/robots.txt":

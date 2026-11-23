@@ -156,6 +156,17 @@ def unread_count(user):
 # Registers public/sw.js (the "waking up" page for Render free-tier cold starts). HTTPS only.
 SW_REGISTER = "<script>if('serviceWorker' in navigator&&!window.Capacitor&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>"
 
+# Early boot so Capacitor / installed-PWA visits get the app class before first paint.
+# Regular browser tabs are unchanged: the class is not added, and all app-shell CSS is gated.
+APP_SHELL_BOOT = (
+    '<script>!function(){try{if(window.Capacitor||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches)||navigator.standalone){'
+    'document.documentElement.classList.add("bb-app");'
+    'var m=document.querySelector("meta[name=viewport]");'
+    'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
+    '<link rel="stylesheet" href="/app-shell.css?v=2">'
+)
+APP_SHELL_JS = '<script src="/app-shell.js?v=2" defer></script>'
+
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
                 '<path d="M8.5 11h7M8.5 14h4"/></svg>')
@@ -373,7 +384,7 @@ class AppRoutes:
               f'<use href="#i-check"/></svg>{e(flash)}</p></div>') if flash else ""
         acct = ('<li><a href="/me">My dogs</a></li>' if u else '<li><a href="/signin">Sign in</a></li>')
         doc = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{e(title)} | BarksBuds</title>
 {chr(10).join(meta)}
 <meta name="theme-color" content="#FBB321">
@@ -388,6 +399,7 @@ class AppRoutes:
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css?v=29"><link rel="stylesheet" href="/search.css?v=2">
+{APP_SHELL_BOOT}
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -402,7 +414,7 @@ class AppRoutes:
 <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
-{scripts}<script src="/pwa.js?v=1" defer></script><script src="/native.js?v=1" defer></script>{self._pwa_boot()}{SW_REGISTER}
+{scripts}<script src="/pwa.js?v=1" defer></script><script src="/native.js?v=1" defer></script>{APP_SHELL_JS}{self._pwa_boot()}{SW_REGISTER}
 </body></html>"""
         cache = "no-store" if (u or code != 200 or not index) else "no-cache"
         headers = {"Cache-Control": cache, "Vary": "Cookie"}
@@ -666,6 +678,9 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
         """Public VAPID key and CSRF token for pwa.js. The private key is never sent."""
         u = self.user()
         bits = [f'window.BB_CSRF={json.dumps(self.csrf_token())};']
+        if u:
+            dogs = [{"id": d["id"], "name": d["name"]} for d in A.dogs_for_user(u["id"])[:12]]
+            bits.append(f'window.BB_DOGS={json.dumps(dogs, separators=(",", ":"))};')
         if u and push.enabled():
             bits.append(f'window.BB_VAPID={json.dumps(push.vapid_public())};')
         return "<script>" + "".join(bits) + "</script>"
