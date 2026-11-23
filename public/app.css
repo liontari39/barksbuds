@@ -686,3 +686,10 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .hcard-dogs{margin-top:4px}
 .hcard-tools{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0 0}
 .hlink{color:inherit}
+
+.rconds{display:flex;flex-wrap:wrap;gap:8px}
+.rcond-f{display:inline;margin:0}
+.rcond{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line,#d8c9a8);background:#fff;border-radius:999px;padding:6px 12px;font:600 14px Nunito,system-ui;color:inherit;cursor:pointer;text-decoration:none}
+.rcond.on{background:#fff4d6;border-color:#e0b94a}
+.rcond.mine{box-shadow:0 0 0 2px #fbb321}
+.rcond-in{background:transparent}

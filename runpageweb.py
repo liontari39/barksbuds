@@ -6,6 +6,7 @@ Routes:
   POST /runs/<run id>/checkin                "We're here": dogs (ids, owner or co-owner), anon=1 hides the dogs; 2-hour expiry
   POST /runs/<run id>/leave                  "Check out" (alias: /checkout)
   POST /runs/<run id>/follow                 on=1 follow / on=0 unfollow (followers get announcement emails)
+  POST /runs/<run id>/condition              members only: kind=crowded|quiet|muddy|water_off|closed|icy (fades in 3 hours)
   POST /runs/<run id>/announce               verified park account only: kind, title, body, until (YYYY-MM-DD, optional)
   POST /runs/<run id>/announce/<id>/remove   verified park account (or admin) removes an announcement
   GET  /runs/<run id>/news                   plain public page with the run's announcements (current and past)
@@ -91,7 +92,7 @@ class RunPageRoutes:
         return False
 
     def runpage_post(self, path, q):
-        m = re.fullmatch(r"/runs/" + RUN_RE + r"/(checkin|leave|checkout|follow|announce)", path)
+        m = re.fullmatch(r"/runs/" + RUN_RE + r"/(checkin|leave|checkout|follow|announce|condition)", path)
         if m:
             self._app_reset()
             getattr(self, "post_run_" + m.group(2))(m.group(1)); return True
@@ -129,7 +130,9 @@ class RunPageRoutes:
                  "followed": "You're following this run.", "unfollowed": "You're no longer following this run.",
                  "posted": "Announcement posted.", "removed": "Announcement removed.",
                  "slow": "That's a lot of check-ins. Please try again in a bit.",
-                 "wait": "You just checked out. Please try again in a minute.", "nodogs": "Pick at least one dog."}.get(q.get("m", [""])[0], "")
+                 "wait": "You just checked out. Please try again in a minute.", "nodogs": "Pick at least one dog.",
+                 "cond": "Thanks — that will show for a few hours.", "cond_already": "You already reported that.",
+                 "cond_slow": "That's a lot of condition reports today. Please try again tomorrow."}.get(q.get("m", [""])[0], "")
         # announcements: prominent, above everything else
         ann_html = ""
         if anns:
@@ -199,6 +202,23 @@ class RunPageRoutes:
         # park account tools
         org = C.park_role(u["id"], rid) if u else None
         park_html = self._park_tools(r, org) if org else ""
+        conds = C.live_conditions(rid, u["id"] if u else None)
+        fresh = C.conditions_freshness(conds)
+        chips = []
+        for cnd in conds:
+            lab = e(cnd["label"]) + (f' · {cnd["count"]}' if cnd["count"] else "")
+            if u:
+                chips.append(f'<form method="post" action="/runs/{rid}/condition" class="rcond-f">{self.csrf_field()}'
+                             f'<input type="hidden" name="kind" value="{e(cnd["kind"])}">'
+                             f'<button class="rcond{" on" if cnd["count"] else ""}{" mine" if cnd["mine"] else ""}" type="submit">{lab}</button></form>')
+            elif cnd["count"]:
+                chips.append(f'<span class="rcond on">{lab}</span>')
+        if not u:
+            chips.append(f'<a class="rcond rcond-in" href="{e(self.signin_href(run_path(r)))}">Sign in to report</a>')
+        when = f' <span class="muted">Updated {e(ago(fresh))}</span>' if fresh else ""
+        cond_html = (f'<div class="panel" id="conditions"><h2>How is the run?</h2>' 
+                     f'<p class="small muted" style="margin:0 0 10px">One-tap reports from members, fading after a few hours.{when}</p>'
+                     f'<div class="rconds">{"".join(chips)}</div></div>')
         # details
         LBL = {"yes": "Yes", "no": "No", "partial": "Partial", "seasonal": "Seasonal", "nearby": "Nearby, outside the run", "minimal": "Minimal"}
         val = lambda v: e(LBL.get(str(v or "").strip().lower(), str(v or "").strip())) or '<span class="unk">Not yet confirmed</span>'
@@ -218,7 +238,7 @@ class RunPageRoutes:
 <section class="section"><div class="wrap">{ann_html}
 <div class="dgrid2"><div>
 <div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}{recent_html}</div>
-{photos_html}{lost_html}
+{cond_html}{photos_html}{lost_html}
 <div class="panel"><h2>About this run</h2><dl class="amen">{dl}</dl><dl class="facts">{dl2}</dl>
 <p class="small muted" style="margin:14px 0 0">Know this run? <a href="/runs/suggest?edit={quote(rid)}">Suggest an edit</a></p></div>
 </div><div>{park_html}
@@ -339,6 +359,19 @@ class RunPageRoutes:
         on = f.get("on") == "1"
         C.follow(u["id"], rid, on)
         return self.redirect(run_path(r) + "?m=" + ("followed" if on else "unfollowed"))
+
+    def post_run_condition(self, rid):
+        u, r, f = self._run_member(rid)
+        if not u:
+            return
+        if not A.LIMITER.allow(f"rcond:{u['id']}", C.COND_PER_DAY, 86400):
+            return self.redirect(run_path(r) + "?m=cond_slow#conditions")
+        st = C.add_condition(u["id"], rid, (f.get("kind") or "").strip())
+        if st == "already":
+            return self.redirect(run_path(r) + "?m=cond_already#conditions")
+        if st != "ok":
+            return self.redirect(run_path(r) + "?m=cond_slow#conditions")
+        return self.redirect(run_path(r) + "?m=cond#conditions")
 
     # ------------------------------------------------------------ announcements
     def post_run_announce(self, rid):

@@ -115,6 +115,10 @@ def init_schema(store):
         f"""CREATE TABLE IF NOT EXISTS celebrate_sent(id {ID}, dog_id {INT} NOT NULL, kind TEXT NOT NULL, day TEXT NOT NULL,
             user_id {INT} NOT NULL, sent_at {INT} NOT NULL, UNIQUE(dog_id, kind, day, user_id))""",
         f"""CREATE TABLE IF NOT EXISTS job_runs(id {ID}, job TEXT NOT NULL, day TEXT NOT NULL, ran_at {INT} NOT NULL, UNIQUE(job, day))""",
+        f"""CREATE TABLE IF NOT EXISTS run_conditions(id {ID}, run_id TEXT NOT NULL, user_id {INT} NOT NULL, kind TEXT NOT NULL,
+            created_at {INT} NOT NULL, expires_at {INT} NOT NULL)""",
+        "CREATE INDEX IF NOT EXISTS run_conditions_run_idx ON run_conditions(run_id, expires_at)",
+        "CREATE INDEX IF NOT EXISTS run_conditions_user_idx ON run_conditions(user_id, created_at)",
     ]:
         store.q(s)
     cols = lambda t: ({r[0] for r in store.q(f"SELECT column_name FROM information_schema.columns WHERE table_name='{t}'")} if pg
@@ -382,6 +386,49 @@ def announcement_counts():
 def remove_announcement(aid):
     q("UPDATE announcements SET removed=1 WHERE id=:i", i=aid)
 
+
+
+
+# ---------------------------------------------------------------- run conditions (one-tap, fade after a few hours)
+COND_KINDS = (
+    ("crowded", "Crowded"), ("quiet", "Quiet"), ("muddy", "Muddy"),
+    ("water_off", "Water off"), ("closed", "Closed"), ("icy", "Icy"),
+)
+COND_TTL = 3 * 3600          # reports drop off after 3 hours
+COND_PER_DAY = 8             # per member, all runs
+
+
+def add_condition(uid, run_id, kind):
+    """Post a live condition. Returns 'ok', 'already' (same kind still live), or 'limit'."""
+    if kind not in dict(COND_KINDS) or not run_id:
+        return "bad"
+    t = now()
+    if one("SELECT id FROM run_conditions WHERE user_id=:u AND run_id=:r AND kind=:k AND expires_at>:t",
+           u=uid, r=run_id, k=kind, t=t):
+        return "already"
+    if one("SELECT COUNT(*) FROM run_conditions WHERE user_id=:u AND created_at>:s", u=uid, s=t - 86400)[0] >= COND_PER_DAY:
+        return "limit"
+    q("INSERT INTO run_conditions(run_id, user_id, kind, created_at, expires_at) VALUES(:r,:u,:k,:t,:x)",
+      r=run_id, u=uid, k=kind, t=t, x=t + COND_TTL)
+    return "ok"
+
+
+def live_conditions(run_id, uid=None):
+    """Live reports grouped by kind: [{kind, label, count, latest, mine}]."""
+    t = now()
+    rows = q("""SELECT kind, COUNT(*), MAX(created_at),
+                       SUM(CASE WHEN user_id=:u THEN 1 ELSE 0 END)
+                FROM run_conditions WHERE run_id=:r AND expires_at>:t
+                GROUP BY kind""", r=run_id, u=uid or 0, t=t)
+    by = {r[0]: dict(kind=r[0], count=r[1], latest=r[2], mine=bool(r[3])) for r in rows}
+    return [dict(kind=k, label=lab, count=by[k]["count"], latest=by[k]["latest"], mine=by[k]["mine"])
+            if k in by else dict(kind=k, label=lab, count=0, latest=0, mine=False)
+            for k, lab in COND_KINDS]
+
+
+def conditions_freshness(items):
+    latest = max((x["latest"] for x in items if x["count"]), default=0)
+    return latest
 
 # ---------------------------------------------------------------- lost and found
 ALERT_COLS = ("id, user_id, kind, dog_id, dog_name, description, run_id, area, town, lat, lng, seen_at, status, "
@@ -780,6 +827,7 @@ def owners_of(dog_id):
 def purge_user(uid):
     """Account deletion: everything this member created in the community features."""
     q("DELETE FROM checkins WHERE user_id=:u", u=uid)
+    q("DELETE FROM run_conditions WHERE user_id=:u", u=uid)
     q("DELETE FROM run_follows WHERE user_id=:u", u=uid)
     q("DELETE FROM park_roles WHERE user_id=:u", u=uid)
     q("UPDATE announcements SET user_id=NULL WHERE user_id=:u", u=uid)

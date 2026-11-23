@@ -399,7 +399,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=30"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=31"><link rel="stylesheet" href="/search.css?v=2">
 {APP_SHELL_BOOT}
 </head><body>
 {ICONS}
