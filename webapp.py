@@ -399,7 +399,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=33"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=34"><link rel="stylesheet" href="/search.css?v=2">
 {APP_SHELL_BOOT}
 </head><body>
 {ICONS}
@@ -1577,6 +1577,7 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                        f'<td>{e(r["reporter_name"] or "deleted")}</td><td>{e(r["reported_name"] or "deleted")}</td>'
                        f'<td>{e(r["reason"])}</td><td style="white-space:pre-line">{e((r.get("body") or r.get("details") or "")[:200])}</td><td>{e(r["status"])}</td><td>{" · ".join(acts)}</td></tr>')
         import community as C
+        import runhealthweb as RHW
         ltr = []
         for r in C.list_lost_reports():
             hid = f'<input type="hidden" name="key" value="{e(key)}"><input type="hidden" name="kind" value="lost"><input type="hidden" name="id" value="{r["id"]}">'
@@ -1603,7 +1604,9 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
 <h2 style="margin-top:28px">Member and message reports</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>{''.join(mtr) or '<tr><td colspan="9">No member or message reports yet.</td></tr>'}</tbody></table></div>
 <h2 style="margin-top:28px">Lost-dog alerts</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Posted by</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody>{''.join(ltr) or '<tr><td colspan="9">No lost-dog reports yet.</td></tr>'}</tbody></table></div></div></section>"""
+<tbody>{''.join(ltr) or '<tr><td colspan="9">No lost-dog reports yet.</td></tr>'}</tbody></table></div>
+<h2 style="margin-top:28px">Run health heads-ups</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{RHW.review_rows_html(key) or '<tr><td colspan="8">No health-report flags yet.</td></tr>'}</tbody></table></div></div></section>"""
         return self.page("Admin: review queue", body)
 
     def post_admin_reports(self):
@@ -1611,7 +1614,10 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
         if f is None or not self._admin_key_ok(f.get("key")):
             return self._emit(404, b"Not found", "text/plain")
         act, rid, dog = f.get("action"), f.get("id"), f.get("dog")
-        if act in ("resolve", "dismiss", "reopen") and rid and rid.isdigit():
+        import runhealthweb as RHW
+        if RHW.handle_review_action(f):
+            pass
+        elif act in ("resolve", "dismiss", "reopen") and rid and rid.isdigit():
             if f.get("kind") == "message":
                 import messages as MS
                 MS.set_report_status(int(rid), "open" if act == "reopen" else "resolved")

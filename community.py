@@ -826,8 +826,10 @@ def owners_of(dog_id):
 # ---------------------------------------------------------------- cleanup
 def purge_user(uid):
     """Account deletion: everything this member created in the community features."""
+    import runhealth as RH
     import runsafety as RS
     RS.purge_user(uid)
+    RH.purge_user(uid)
     q("DELETE FROM checkins WHERE user_id=:u", u=uid)
     q("DELETE FROM run_conditions WHERE user_id=:u", u=uid)
     q("DELETE FROM run_follows WHERE user_id=:u", u=uid)

@@ -711,3 +711,12 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .plan-list.mine li,.favdogs li{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 form.inline,form.favform{display:inline}
 form.favform{margin-left:8px}
+
+.health-list{margin:0 0 12px;padding:0;list-style:none}
+.health-pin{margin:0 0 12px;padding:0 0 12px;border-bottom:1px solid var(--line)}
+.health-pin:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.health-kind{margin:0 0 4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.health-unv{background:#F4E6C8;color:#5A3D00;font-weight:700;font-size:.75rem;padding:2px 8px;border-radius:99px}
+.health-note{margin:0 0 6px}
+.health-rep{margin-top:6px}
+.health-form{margin-top:14px}

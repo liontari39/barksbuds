@@ -138,6 +138,8 @@ def init_schema(store):
     community.init_schema(store)  # also adds dogs.energy/compat/gotcha_day and users email/privacy columns
     import runsafety
     runsafety.init_schema(store)
+    import runhealth
+    runhealth.init_schema(store)
     import privacy
     privacy.init_schema(store)    # dogs.visibility + users.priv_* (legacy defaults keep existing profiles unchanged)
     messages.init_schema(store)
@@ -311,10 +313,11 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import community, feed, meetups, messages, packs, runsafety
+    import community, feed, meetups, messages, packs, runhealth, runsafety
     feed.purge_user(user_id)  # their photo posts, comments and likes
     community.purge_user(user_id)  # check-ins, follows, alerts, recommendations, reminder logs
     runsafety.purge_user(user_id)
+    runhealth.purge_user(user_id)
     messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
     meetups.purge_user(user_id)

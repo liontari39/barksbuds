@@ -152,7 +152,12 @@ class RunPageRoutes:
                  "plan_bad": "Pick at least one dog and a time at least a few minutes from now.",
                  "plan_slow": "That's a lot of planned arrivals today. Please try again tomorrow.",
                  "plan_off": "Planned arrival cancelled.",
-                 "gate": "Scanned the gate sticker. Check in below when you're ready."}.get(q.get("m", [""])[0], "")
+                 "gate": "Scanned the gate sticker. Check in below when you're ready.",
+                 "health": "Thanks. This unverified owner report will show for 10 days.",
+                 "health_already": "You already posted that heads-up for this run.",
+                 "health_slow": "That's a lot of health reports today. Please try again tomorrow.",
+                 "health_bad": "Please pick what was noticed.",
+                 "health_reported": "Thanks. We'll review this report."}.get(q.get("m", [""])[0], "")
         # announcements: prominent, above everything else
         ann_html = ""
         if anns:
@@ -222,6 +227,8 @@ class RunPageRoutes:
         cond_html = (f'<div class="panel" id="conditions"><h2>How is the run?</h2>' 
                      f'<p class="small muted" style="margin:0 0 10px">One-tap reports from members, fading after a few hours.{when}</p>'
                      f'<div class="rconds">{"".join(chips)}</div></div>')
+        import runhealthweb as RHW
+        health_html = RHW.health_html(self, r, u, q)
         # details
         LBL = {"yes": "Yes", "no": "No", "partial": "Partial", "seasonal": "Seasonal", "nearby": "Nearby, outside the run", "minimal": "Minimal"}
         val = lambda v: e(LBL.get(str(v or "").strip().lower(), str(v or "").strip())) or '<span class="unk">Not yet confirmed</span>'
@@ -241,7 +248,7 @@ class RunPageRoutes:
 <section class="section"><div class="wrap">{ann_html}
 <div class="dgrid2"><div>
 <div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}{recent_html}</div>
-{plan_html}{quiet_html}{packs_html}{cond_html}{photos_html}{lost_html}
+{plan_html}{quiet_html}{packs_html}{cond_html}{health_html}{photos_html}{lost_html}
 <div class="panel"><h2>About this run</h2><dl class="amen">{dl}</dl><dl class="facts">{dl2}</dl>
 <p class="small muted" style="margin:14px 0 0">Know this run? <a href="/runs/suggest?edit={quote(rid)}">Suggest an edit</a></p></div>
 </div><div>{park_html}
