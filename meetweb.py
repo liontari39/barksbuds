@@ -282,6 +282,9 @@ class MeetupRoutes:
         mt = re.fullmatch(r"/meetups/(\d+)\.ics", path)
         if mt:
             self.meetup_ics(int(mt.group(1)), q); return True
+        mt = re.fullmatch(r"/meetups/(\d+)/og\.png", path)
+        if mt:
+            self.meetup_og(int(mt.group(1))); return True
         mt = re.fullmatch(r"/meetups/(\d+)/(edit|cancel)", path)
         if mt:
             m = self.own_meetup(int(mt.group(1)))
@@ -1154,6 +1157,16 @@ class MeetupRoutes:
             form = '<p class="small muted" style="margin:0">RSVP to join the conversation.</p>'
         return lst + form
 
+    def meetup_og(self, mid):
+        """Public share card only. Private meetups have no unique preview image."""
+        m = M.get(mid)
+        if not m or M.visibility(m) == "private" or m.get("hidden"):
+            return self.send_error(404)
+        from communityweb import og_card
+        sub = f"{M.when_text(m['starts_at'])} · {where_line(m)}"
+        png = og_card(None, m["title"], sub, "MEETUP")
+        self._emit(200, png, "image/png", headers={"Cache-Control": "public, max-age=3600"})
+
     def meetup_page(self, mid, slugpart, q):
         m = self.visible_meetup(mid, q)
         if not m:
@@ -1278,11 +1291,11 @@ class MeetupRoutes:
         when_s = M.when_text(m["starts_at"], m["duration_min"])
         extra = (m["description"][:110] + ("…" if len(m["description"]) > 110 else "")) if m["description"] else "RSVP with your dogs on BarksBuds."
         og_desc = f"{when_s} at {where_line(m)}. {extra}"
-        og = {"title": m["title"], "desc": og_desc, "type": "website", "alt": f"{m['title']} on BarksBuds",
-              "image": base + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630}
-        if going_dogs and going_dogs[0]["photo"]:
-            og["image"] = f"{base}/p/{going_dogs[0]['photo']}.jpg"
-            og.pop("w"); og.pop("h")
+        vis = M.visibility(m)
+        og = None
+        if vis != "private":
+            og = {"title": m["title"], "desc": og_desc, "type": "website", "alt": f"{m['title']} on BarksBuds",
+                  "image": base + f"/meetups/{m['id']}/og.png", "w": 1200, "h": 630}
         return self.page(m["title"], body, canonical=meetup_path(m), desc=og_desc, og=og,
                          index=M.visibility(m) == "public" and not (m["hidden"] or m["is_sample"] or m["status"] != "active"),
                          active="meetups", scripts=scripts, flash=self.flash_from(q))

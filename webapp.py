@@ -606,10 +606,15 @@ It comes from hello@barksbuds.app.</div>
         self._set_cookie(SESSION_COOKIE, A.create_session(uid), max_age=A.SESSION_TTL)
         print(f"signin: {'new account' if new else 'signed in'} user {uid}", flush=True)
         import invites
+        import growth
         if invites.enabled() and self._cookies().get(invites.COOKIE):
             if new:
                 invites.record_signup(uid, self._cookies().get(invites.COOKIE))
             self._set_cookie(invites.COOKIE, "", max_age=0)
+        if self._cookies().get(growth.COOKIE):
+            if new:
+                growth.record_signup(uid, self._cookies().get(growth.COOKIE))
+            self._set_cookie(growth.COOKIE, "", max_age=0)
         if nxt:
             return self.redirect(nxt)
         return self.redirect("/me?m=" + ("welcome" if new else "signedin"))
@@ -622,8 +627,23 @@ It comes from hello@barksbuds.app.</div>
         self._set_cookie(SESSION_COOKIE, "", max_age=0)
         return self.redirect("/signin?m=signedout")
 
+    def invite_panel(self, u):
+        import growth
+        url = self._base() + growth.invite_path(u["id"])
+        n = growth.signup_count(u["id"])
+        count = ("No one has joined with your link yet." if n == 0
+                 else f"{n} person has joined with your link." if n == 1
+                 else f"{n} people have joined with your link.")
+        return f"""<div class="panel" id="invite"><h2>Invite a neighbor</h2>
+<p>Share this link with other dog owners. We only count people who create a new account — never visits, names or emails.</p>
+<p><label class="sr-only" for="invite-link">Your invite link</label>
+<input id="invite-link" type="text" readonly value="{e(url)}" onclick="this.select()" style="width:100%;max-width:36rem"></p>
+<p class="small muted" style="margin:0">{e(count)}</p></div>
+"""
+
     # ------------------------------------------------------------ dashboard + owner profile
     def dashboard(self, q):
+
         u = self.user()
         if not u:
             return self.need_login()
@@ -676,7 +696,7 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
 {self.email_prefs_html(u)}{self.push_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}{self.community_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
-</div>{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
+</div>{self.invite_panel(u)}{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
         return self.page("My dogs", body, flash=self.flash_from(q))
 
 

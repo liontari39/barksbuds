@@ -11,6 +11,8 @@ Routes:
   POST /runs/<run id>/announce/<id>/remove   verified park account (or admin) removes an announcement
   GET  /runs/<run id>/news                   plain public page with the run's announcements (current and past)
   GET  /runs/<run id>/feed.xml               public RSS feed of the run's announcements
+  GET  /runs/<run id>/flyer                  printable QR flyer (build only; nothing is printed or posted for you)
+  GET  /runs/<run id>/og.png                 1200x630 share image
   GET  /api/runs/live                        {"here": {run id: dogs here now}, "news": {run id: current announcements}}
   GET  /admin/parks?key=KEY                  admin: verified park accounts (grant by member email + run ids) and announcements
   POST /admin/parks                          admin: action=grant|revoke|remove_announcement
@@ -84,6 +86,12 @@ class RunPageRoutes:
         m = re.fullmatch(r"/runs/" + RUN_RE + r"/news/?", path)
         if m:
             self._app_reset(); self.run_news(m.group(1)); return True
+        m = re.fullmatch(r"/runs/" + RUN_RE + r"/flyer/?", path)
+        if m:
+            self._app_reset(); self.run_flyer(m.group(1)); return True
+        m = re.fullmatch(r"/runs/" + RUN_RE + r"/og\.png", path)
+        if m:
+            self._app_reset(); self.run_og(m.group(1)); return True
         m = re.fullmatch(r"/runs/" + RUN_RE + r"(-[a-z0-9-]*)?/?", path)
         if m:
             self._app_reset(); self.run_page(m.group(1), m.group(2) or "", q); return True
@@ -229,7 +237,7 @@ class RunPageRoutes:
         dl = "".join(f"<div><dt>{k}</dt><dd>{val(v)}</dd></div>" for k, v in amen)
         dl2 = "".join(f"<div><dt>{k}</dt><dd>{e(str(v))}</dd></div>" for k, v in facts if str(v or "").strip())
         dest = quote(f'{r["lat"]},{r["lng"]}' if isinstance(r.get("lat"), (int, float)) else (r.get("address") or r.get("name")))
-        news_link = f'<a href="/runs/{rid}/news">All announcements</a> · <a href="/runs/{rid}/feed.xml">RSS feed</a>'
+        news_link = f'<a href="/runs/{rid}/news">All announcements</a> · <a href="/runs/{rid}/feed.xml">RSS feed</a> · <a href="/runs/{rid}/flyer">Print a flyer</a>'
         body = f"""<section class="phead rhead"><div class="wrap"><span class="eyebrow">dog run</span><h1>{e(r["name"])}</h1>
 <p class="lead">{e(run_where(r))}</p>
 <div class="racts">{follow}<a class="btn btn-ghost btn-sm" href="/runs?q={quote(r["name"])}"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>See it on the map</a>
@@ -250,9 +258,70 @@ class RunPageRoutes:
         desc = f"{r['name']} in {run_where(r)}: who's at the run now, official park news and details on BarksBuds."
         extra = f'<link rel="alternate" type="application/rss+xml" title="{e(r["name"])} announcements" href="/runs/{rid}/feed.xml">'
         self.page(r["name"], body.replace("<section", extra + "<section", 1), index=True, canonical=run_path(r), desc=desc, active="runs",
-                  og={"title": r["name"] + " · BarksBuds", "image": base + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630}, flash=flash)
+                  og={"title": r["name"] + " · BarksBuds", "image": base + f"/runs/{rid}/og.png", "w": 1200, "h": 630,
+                      "alt": r["name"] + " on BarksBuds"}, flash=flash)
+
+    def run_og(self, rid):
+        r = self._run_or_404(rid)
+        if not r:
+            return
+        from communityweb import og_card
+        png = og_card(None, r["name"], run_where(r), "DOG RUN")
+        self._emit(200, png, "image/png", headers={"Cache-Control": "public, max-age=3600"})
+
+    def run_flyer(self, rid):
+        r = self._run_or_404(rid)
+        if not r:
+            return
+        import growth
+        url = self._base() + run_path(r)
+        qr = growth.qr_svg(url, scale=10)
+        where = e(run_where(r))
+        name = e(r["name"])
+        body = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Flyer · {name} | BarksBuds</title>
+<style>
+  :root {{ --ink:#141414; --red:#C8201E; --gold:#FBB321; --cream:#F6EFE4; }}
+  * {{ box-sizing:border-box; }}
+  body {{ margin:0; font-family:Georgia, "Times New Roman", serif; color:var(--ink); background:var(--cream); }}
+  .sheet {{ max-width:720px; margin:0 auto; padding:36px 28px 48px; text-align:center; }}
+  .brand {{ display:flex; align-items:center; justify-content:center; gap:12px; margin:0 0 28px; font-family:system-ui,sans-serif; font-weight:800; letter-spacing:.04em; text-transform:uppercase; font-size:13px; }}
+  .brand img {{ width:56px; height:56px; }}
+  h1 {{ font-size:2.2rem; line-height:1.15; margin:0 0 8px; }}
+  .where {{ margin:0 0 22px; font-size:1.15rem; }}
+  .qr {{ display:inline-block; background:#fff; padding:14px; border:4px solid var(--ink); box-shadow:8px 8px 0 var(--red); }}
+  .qr svg {{ width:260px; height:260px; display:block; }}
+  .hint {{ margin:22px auto 0; max-width:28rem; font-size:1.05rem; line-height:1.4; }}
+  .url {{ margin:10px 0 0; font-family:system-ui,sans-serif; font-size:14px; word-break:break-all; }}
+  .tools {{ margin:28px 0 0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }}
+  .tools a, .tools button {{ font-family:system-ui,sans-serif; font-weight:700; font-size:14px; background:var(--ink); color:#fff; border:0; padding:10px 16px; cursor:pointer; text-decoration:none; }}
+  @media print {{
+    body {{ background:#fff; }}
+    .tools {{ display:none; }}
+    .sheet {{ padding:0; }}
+    .qr {{ box-shadow:none; }}
+  }}
+</style></head>
+<body>
+  <div class="sheet">
+    <div class="brand"><img src="/img/icon-192.png?v=jack4" width="56" height="56" alt="">BarksBuds</div>
+    <h1>{name}</h1>
+    <p class="where">{where}</p>
+    <div class="qr">{qr}</div>
+    <p class="hint">Scan to see this dog run on BarksBuds — who&#x27;s here, conditions and upcoming meetups.</p>
+    <p class="url">{e(url)}</p>
+    <div class="tools">
+      <button type="button" onclick="window.print()">Print flyer</button>
+      <a href="{e(run_path(r))}">Back to the run</a>
+    </div>
+  </div>
+</body></html>"""
+        self._emit(200, body, "text/html; charset=utf-8", headers={"Cache-Control": "public, max-age=300"})
 
     def _checkin_form(self, r, u):
+
         rid = r["id"]
         if not u:
             return (f'<p style="margin:14px 0 0"><a class="btn btn-sm" href="{e(self.signin_href(run_path(r) + "#here"))}">'

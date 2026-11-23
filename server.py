@@ -27,6 +27,7 @@ from urllib.parse import urlsplit, parse_qs, unquote
 
 import aboutweb
 import invites
+import growth
 import accounts
 import communityweb
 import coownweb
@@ -369,6 +370,9 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
         if getattr(self, "_ref_cookie", None):
             self.send_header("Set-Cookie", self._ref_cookie)
             self._ref_cookie = None
+        if getattr(self, "_inv_cookie", None):
+            self.send_header("Set-Cookie", self._inv_cookie)
+            self._inv_cookie = None
         cc = static_cache_control(self.path) if getattr(self, "_status", 200) in (200, 304) else None
         if cc:
             self.send_header("Cache-Control", cc)
@@ -470,12 +474,25 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
                 return self.send_error(404)
             return self._send(200, body, "application/json", {"Cache-Control": "public, max-age=3600"})
         self._ref_cookie = None
+        self._inv_cookie = None
         if invites.enabled() and "ref" in q:  # partner invite link: remember the partner until sign-up (first one wins)
             ref = invites.valid_ref(q["ref"][0])
             if ref and not invites.parse_cookie(invites.cookie_from_header(self.headers.get("Cookie")))[0]:
                 ss = nativeapp.cookie_samesite()
                 self._ref_cookie = (f"{invites.COOKIE}={invites.cookie_value(ref)}; Path=/; HttpOnly; SameSite={ss}; Max-Age={invites.COOKIE_TTL}"
                                     + ("; Secure" if (self._secure() or ss == "None") else ""))
+        inv = None
+        if u.path.startswith("/join/"):
+            inv = growth.parse_token(u.path[len("/join/"):].strip("/"))
+        elif "inv" in q:
+            inv = growth.parse_token(q["inv"][0])
+        if inv and not growth.parse_cookie(growth.cookie_from_header(self.headers.get("Cookie"))):
+            ss = nativeapp.cookie_samesite()
+            self._inv_cookie = (f"{growth.COOKIE}={growth.cookie_value(inv)}; Path=/; HttpOnly; SameSite={ss}; Max-Age={growth.COOKIE_TTL}"
+                                + ("; Secure" if (self._secure() or ss == "None") else ""))
+        if u.path.startswith("/join/"):
+            self._app_reset()
+            return self.redirect("/")
         if u.path == "/admin/invites":
             if not invites.enabled() or not self._admin_ok(q):
                 return self.send_error(404)
@@ -698,6 +715,7 @@ def init_app():
     runsugg.init_schema(STORE)
     tipsweb.init_schema(STORE)
     invites.init_schema(STORE)  # no-op unless INVITES_ENABLED=1
+    growth.init_schema(STORE)
     if runs_changed not in runsugg.CHANGED:
         runsugg.CHANGED.append(runs_changed)
     runs_changed()
