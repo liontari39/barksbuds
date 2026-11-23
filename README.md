@@ -70,7 +70,8 @@ Tests (SQLite, and Postgres when `TEST_DATABASE_URL` is set):
 Members can host meetups at a dog run from the runs data (pinned, with directions) or at a custom address, and RSVP
 Going/Maybe with their dogs. Capacity counts dogs marked Going; extra RSVPs join a waitlist and are promoted first-in,
 first-out when a spot opens. Pages: `/meetups` (filters: `area`, `region`, `ns=1` for the North Shore, `when=week|weekend`,
-`view=map`), `/meetups/<id>-<slug>` (Open Graph tags, `.ics`, Google Calendar, directions, attendee comments),
+`view=map`), `/meetups/calendar` (month view with list/calendar/map toggle, `y`/`m` for the month),
+`/meetups/<id>-<slug>` (Open Graph tags, `.ics`, Google Calendar, directions, attendee comments),
 `/meetups/new`, and `/admin/meetups?key=...` for hiding/deleting meetups (including bulk hide/delete of sample meetups).
 Code: `meetups.py` (data), `meetweb.py` (pages/routes), email templates in `mailer.py`.
 

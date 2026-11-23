@@ -6,7 +6,7 @@ Reminders: an opportunistic, throttled check runs on incoming requests, and POST
 can be called by a scheduler.
 """
 import html, json, os, re, threading, time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, quote, urlencode, urlsplit
 
 import accounts as A
@@ -236,6 +236,8 @@ class MeetupRoutes:
             self.meetups_page(q); return True
         if path == "/meetups/new":
             self.meetup_form_page(None, q=q); return True
+        if path in ("/meetups/calendar", "/meetups/calendar/"):
+            self.meetups_calendar(q); return True
         mt = re.fullmatch(r"/meetups/(\d+)\.ics", path)
         if mt:
             self.meetup_ics(int(mt.group(1))); return True
@@ -400,7 +402,9 @@ class MeetupRoutes:
                   for a in A.AREA_NAMES if a != "Westchester"]
         dchips = "".join(f'<li><a href="{e(link(when=k))}"{cur(when == k)}>{t}</a></li>'
                          for k, t in (("", "Any date"), ("week", "This week"), ("weekend", "This weekend")))
+        cal_qs = urlencode({k: v for k, v in (("region", region), ("area", area), ("ns", "1" if ns else "")) if v})
         vchips = (f'<li><a href="{e(link(view=""))}"{cur(not view)}>List</a></li>'
+                  f'<li><a href="/meetups/calendar{"?" + cal_qs if cal_qs else ""}">Calendar</a></li>'
                   f'<li><a href="{e(link(view="map"))}"{cur(view == "map")}>Map</a></li>')
         host_href = "/meetups/new" if self.user() else self.signin_href("/meetups/new")
         scripts = ""
@@ -434,6 +438,100 @@ class MeetupRoutes:
                          canonical=canon, scripts=scripts, flash=self.flash_from(q),
                          desc="Find and host dog meetups at dog runs across NYC, Long Island and Westchester. RSVP with your dogs on BarksBuds.",
                          og={"title": "Dog meetups on BarksBuds", "image": self._base() + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630})
+
+    def meetups_calendar(self, q):
+        """Month calendar of upcoming meetups, with the same area filters as the list."""
+        region = q.get("region", [""])[0]
+        area = q.get("area", [""])[0]
+        ns = q.get("ns", [""])[0] == "1"
+        if region in A.REGIONS:
+            areas, label = A.REGIONS[region]
+            area = ""
+        elif area in A.AREA_NAMES:
+            areas, label = [area], area_label(area)
+        else:
+            areas, label, area, region = None, "the area", "", ""
+            if ns:
+                label = "the North Shore"
+        year, month = M.parse_year_month(q.get("y", [""])[0], q.get("m", [""])[0])
+        start, end = M.month_range(year, month)
+        ms = M.upcoming(areas, start, end, north_shore=ns)
+        today = M.to_et(A.now()).date()
+        by_day = {}
+        for m in ms:
+            by_day.setdefault(M.to_et(m["starts_at"]).date(), []).append(m)
+
+        def cal_link(y, mo, **kw):
+            p = {"region": region, "area": area, "ns": "1" if ns else "", "y": str(y), "m": str(mo)}
+            p.update(kw)
+            qs = urlencode({k: v for k, v in p.items() if v})
+            return "/meetups/calendar" + ("?" + qs if qs else "")
+
+        def list_link(**kw):
+            p = {"region": region, "area": area, "ns": "1" if ns else ""}
+            p.update(kw)
+            qs = urlencode({k: v for k, v in p.items() if v})
+            return "/meetups" + ("?" + qs if qs else "")
+
+        cur = lambda on: ' aria-current="page"' if on else ""
+        chips = [f'<li><a href="{e(cal_link(year, month, region="", area="", ns=""))}"{cur(not areas and not ns)}>All areas</a></li>',
+                 f'<li><a href="{e(cal_link(year, month, region="", area="", ns="1"))}"{cur(ns)}>North Shore</a></li>']
+        chips += [f'<li><a href="{e(cal_link(year, month, region=k, area="", ns=""))}"{cur(region == k)}>{e(v[0])}</a></li>' for k, v in A.REGIONS.items()]
+        chips.append('<li class="sep" aria-hidden="true"></li>')
+        chips += [f'<li><a href="{e(cal_link(year, month, area=a, region="", ns=""))}"{cur(area == a)}>{e(area_label(a))}</a></li>'
+                  for a in A.AREA_NAMES if a != "Westchester"]
+        vchips = (f'<li><a href="{e(list_link())}">List</a></li>'
+                  f'<li><a href="{e(cal_link(year, month))}" aria-current="page">Calendar</a></li>'
+                  f'<li><a href="{e(list_link(view="map"))}">Map</a></li>')
+        prev_y, prev_m = (year - 1, 12) if month == 1 else (year, month - 1)
+        next_y, next_m = (year + 1, 1) if month == 12 else (year, month + 1)
+        label_month = datetime(year, month, 1).strftime("%B %Y")
+        # Sunday-first weeks (US)
+        first = datetime(year, month, 1).date()
+        lead = (first.weekday() + 1) % 7  # Mon=0 -> Sun=0
+        days = (datetime(year if month < 12 else year + 1, month + 1 if month < 12 else 1, 1).date() - first).days
+        cells, d = [], first - timedelta(days=lead)
+        for _ in range(0, lead + days, 7):
+            week = []
+            for _wd in range(7):
+                items = by_day.get(d, []) if d.month == month else []
+                evs = []
+                for m in items:
+                    evs.append(f'<li><a href="{e(meetup_path(m))}"><time datetime="{e(M.to_et(m["starts_at"]).strftime("%Y-%m-%dT%H:%M"))}">'
+                               f'{e(M._hour(M.to_et(m["starts_at"])))}</time> {e(m["title"])}</a></li>')
+                more = ""
+                shown, rest = evs[:3], evs[3:]
+                if rest:
+                    more = f'<p class="calmore">+ {len(rest)} more</p>'
+                cls = " ".join(x for x in ("in" if d.month == month else "out", "today" if d == today else "", "has" if items else "") if x)
+                week.append(f'<td class="{cls}"><div class="calday"><time datetime="{d.isoformat()}"><span class="sr-only">{d.strftime("%A, %B %-d, %Y")}</span>'
+                            f'<span aria-hidden="true">{d.day}</span></time>'
+                            + (f'<ul>{"".join(shown)}</ul>{more}' if shown else "") + "</div></td>")
+                d = d + timedelta(days=1)
+            cells.append("<tr>" + "".join(week) + "</tr>")
+        dow = "".join(f'<th scope="col">{h}</th>' for h in ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"))
+        n = len(ms)
+        host_href = "/meetups/new" if self.user() else self.signin_href("/meetups/new")
+        empty = (f'<p class="muted" style="margin:12px 0 0">No meetups in {e(label_month)}'
+                 + (f" in {e('the North Shore' if ns else label)}" if areas or ns else "")
+                 + '.</p>') if not ms else ""
+        body = f"""<section class="phead"><div class="wrap"><div class="mehead"><div><span class="eyebrow">meet the pack</span><h1>Dog meetups</h1>
+<p class="lead">A month-by-month look at park hangs, group romps and playdates. All times are Eastern (ET).</p></div>
+<a class="btn" href="{host_href}"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Host a meetup</a></div></div></section>
+<section class="section"><div class="wrap">
+<nav aria-label="Filter by area"><ul class="filters">{''.join(chips)}</ul></nav>
+<div class="mbar"><nav aria-label="View"><ul class="filters">{vchips}</ul></nav></div>
+<div class="calnav"><a class="btn btn-ghost btn-sm" href="{e(cal_link(prev_y, prev_m))}" rel="prev">Previous</a>
+<h2>{e(label_month)}</h2>
+<a class="btn btn-ghost btn-sm" href="{e(cal_link(next_y, next_m))}" rel="next">Next</a></div>
+<p class="small muted mcount">{n} meetup{"s" if n != 1 else ""} in {e(label_month)}{" in " + e("the North Shore" if ns else label) if areas or ns else ""}.</p>
+<div class="calwrap"><table class="cal" aria-label="Meetups in {e(label_month)}"><thead><tr>{dow}</tr></thead>
+<tbody>{"".join(cells)}</tbody></table></div>{empty if not ms else ""}</div></section>"""
+        canon = "/meetups/calendar" + (f"?y={year}&m={month}" if (year, month) != (today.year, today.month) else "")
+        return self.page("Meetup calendar" + (f" · {label_month}" if (year, month) != (today.year, today.month) else ""),
+                         body, index=not (areas or ns or (year, month) != (today.year, today.month)),
+                         active="meetups", canonical=canon or "/meetups/calendar",
+                         desc="A calendar of dog meetups at runs across NYC, Long Island and Westchester, on BarksBuds.")
 
     def meetups_api(self):
         """Upcoming meetups keyed by run id, for the dog run finder."""

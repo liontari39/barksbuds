@@ -134,6 +134,25 @@ def weekend_window(now=None):
     return max(int(start.timestamp()), n - 6 * 3600), int(end.timestamp())
 
 
+def month_range(year, month):
+    """[start, end) Unix timestamps covering the calendar month in America/New_York."""
+    start = datetime(int(year), int(month), 1, tzinfo=ET)
+    end = datetime(int(year) + (1 if int(month) == 12 else 0), 1 if int(month) == 12 else int(month) + 1, 1, tzinfo=ET)
+    return int(start.timestamp()), int(end.timestamp())
+
+
+def parse_year_month(year, month, now=None):
+    """A valid (year, month), or the current month in America/New_York if the values are missing or out of range."""
+    n = to_et(now or A.now())
+    try:
+        y, mo = int(year), int(month)
+        if 2000 <= y <= 2100 and 1 <= mo <= 12:
+            return y, mo
+    except (TypeError, ValueError):
+        pass
+    return n.year, n.month
+
+
 # ---------------------------------------------------------------- meetups
 def _m(r):
     if not r:
