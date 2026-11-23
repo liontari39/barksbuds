@@ -658,10 +658,14 @@ class MeetupRoutes:
                 rid = (q or {}).get("run", [""])[0]
                 pk = (q or {}).get("pack", [""])[0]
                 pack = P.get(int(pk)) if pk.isdigit() and P.is_member(int(pk), u["id"]) else None
-                if pack and not rid:
+                import puppypods as PP
+                is_pup = PP.is_puppy_pack(pack) if pack else False
+                if pack and not rid and not is_pup:
                     rid = pack["run_id"]
-                vals = dict(title="", date="", time="10:00", duration="60", loc="run", run_id=rid if rid in W.run_index() else "",
-                            place_name="", address="", area=u.get("area") or "", town="", description="", fit="", capacity="",
+                vals = dict(title="", date="", time="10:00", duration="60", loc="custom" if is_pup else "run",
+                            run_id="" if is_pup else (rid if rid in W.run_index() else ""),
+                            place_name=(pack.get("place") or "") if is_pup else "",
+                            address="", area=u.get("area") or "", town="", description="", fit="", capacity="",
                             pack_id=str(pack["id"]) if pack else "", members_only="", visibility="public")
         v = lambda k: e(vals.get(k) or "")
         err = lambda k: f'<span class="err" id="{k}-err">{e(errs.get(k, ""))}</span>'
@@ -811,6 +815,12 @@ class MeetupRoutes:
             vis = "public"
         out["visibility"] = vis
         out["members_only"] = 1 if vis == "pack" and out["pack_id"] else 0
+        if out.get("pack_id"):
+            import puppypods as PP
+            pkp = P.get(out["pack_id"])
+            if PP.is_puppy_pack(pkp) and (out.get("run_id") or f.get("loc") != "custom"):
+                errs["run_id"] = "Puppy Pod meetups are home or backyard playdates only — pick a place that isn't a dog run."
+                out.update(run_id="", lat=None, lng=None)
         return out, vals, errs
 
     def post_meetup(self, mid=None):

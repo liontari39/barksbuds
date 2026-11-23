@@ -26,11 +26,20 @@ W.FLASH.update({
     "p_posted": "Posted to the pack board.", "p_post_deleted": "Post deleted.", "p_pinned": "Post pinned.", "p_unpinned": "Post unpinned.",
     "p_commented": "Comment posted.", "p_comment_deleted": "Comment deleted.", "p_cover_removed": "Cover photo removed.",
     "p_deleted": "Pack deleted.", "pack_emails_on": "Pack emails are on.", "pack_emails_off": "Pack emails are off.",
+    "p_created_puppy": "Your Puppy Pod is set up. The exact place stays hidden until someone joins.",
+    "p_graduated": "This Puppy Pod is now a regular pack. Members, the board and meetup history are still here.",
+    "p_check": "Checklist saved.",
 })
 ERRS = {"slow": "That's a lot of activity. Please wait a few minutes and try again.", "nodogs": "Pick at least one of your dogs.",
         "adddog": "Add your dog's profile first, then join.", "empty": "Write something first.", "members": "Join the pack to do that.",
         "photo": "We couldn't use that photo. Try a JPEG, PNG, WebP or HEIC under 15 MB.", "owner": "Transfer the pack to another member before leaving.",
-        "toomany": "This pack has a lot of photos already. Post without a photo, or ask an organizer to tidy up."}
+        "toomany": "This pack has a lot of photos already. Post without a photo, or ask an organizer to tidy up.",
+        "vaccine": "Please confirm the first DHPP and that vaccines are age-appropriate.",
+        "puppy": "Pick a puppy under 16 weeks with a birthday on file.",
+        "full": "This Puppy Pod is full.",
+        "size": "This pod is for a different size of puppy.",
+        "blocked": "You can't join this pod.",
+        "limit": "That's a lot of Puppy Pods today. Please try again tomorrow."}
 FIT_ICON = {"small": "i-dog", "big": "i-dog", "puppies": "i-heart", "seniors": "i-heart", "all": "i-paw"}
 
 
@@ -162,6 +171,8 @@ class PackRoutes:
                   (r"/packs/(\d+)/comments/(\d+)/(delete|report)", self.post_pcomment_action),
                   (r"/packs/(\d+)/report", self.post_pack_report), (r"/packs/(\d+)/delete", self.post_pack_delete),
                   (r"/packs/(\d+)/cover/remove", self.post_cover_remove),
+                  (r"/packs/(\d+)/graduate", self.post_graduate),
+                  (r"/packs/(\d+)/check", self.post_puppy_check),
                   (r"/me/pack-emails", self.post_pack_email_prefs), (r"/emails/packs", self.post_pack_unsub),
                   (r"/admin/packs", self.post_admin_packs), (r"/admin/packs/test-email", self.post_admin_pack_test_email)]
         for pat, fn in routes:
@@ -182,6 +193,14 @@ class PackRoutes:
         if not p or (p["hidden"] and not (u and P.is_member(pid, u["id"]))):
             self.not_found_pack()
             return None
+        import puppypods as PP
+        if PP.is_puppy_pack(p):
+            if not u:
+                self.need_login()
+                return None
+            if PP.hidden_from(p, u["id"]):
+                self.not_found_pack()
+                return None
         return p
 
     def org_pack(self, pid, owner_only=False):
@@ -262,6 +281,8 @@ class PackRoutes:
         tags = []
         if p["is_sample"]:
             tags.append('<span class="badge sample">Sample</span>')
+        if (p.get("kind") or "regular") == "puppy":
+            tags.append('<span class="badge">Puppy Pod</span>')
         tags.append('<span class="badge">' + ("Open" if p["visibility"] == "open" else "Request to join") + '</span>')
         if p.get("fit") and p["fit"] != "all":
             tags.append(f'<span class="badge">{e(P.FIT_LABEL.get(p["fit"], ""))}</span>')
@@ -272,12 +293,17 @@ class PackRoutes:
         else:
             ndogs = p.get("ndogs", 0)
         stats = f'{members} member{"s" if members != 1 else ""} · {ndogs} dog{"s" if ndogs != 1 else ""}'
-        home = f'<p class="phome"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Home run: {e(r["name"])}</p>' if r else ""
+        home = f'<p class="phome"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>Home run: {e(r["name"])}</p>' if r and (p.get("kind") or "regular") != "puppy" else ""
         return (f'<a class="pcard" href="{e(pack_path(p))}"><span class="pcover">{cover}</span><span class="pbody">'
                 f'<span class="ptags">{"".join(tags)}</span><strong>{e(p["name"])}</strong>'
                 f'<span class="pwhere">{e(where_line(p))}</span>{home}<span class="pstats">{stats}</span></span></a>')
 
     def packs_page(self, q):
+        import puppypods as PP
+        puppy = q.get("kind", [""])[0] == "puppy"
+        u = self.user()
+        if puppy and not u:
+            return self.need_login()
         region = q.get("region", [""])[0]
         area = q.get("area", [""])[0]
         if area not in A.AREA_NAMES:
@@ -285,36 +311,68 @@ class PackRoutes:
         if region not in A.REGIONS and region != "northshore":
             region = ""
         areas = [area] if area else (A.REGIONS[region][1] if region in A.REGIONS else None)
-        ps = P.browse(areas=areas, north_shore=region == "northshore")
-        ns = [p for p in P.browse(north_shore=True)][:3] if not (area or region) else []
+        kind = "puppy" if puppy else "regular"
+        ps = P.browse(areas=areas, north_shore=region == "northshore", kind=kind)
+        if puppy and u:
+            ps = [p for p in ps if not PP.hidden_from(p, u["id"])]
+        ns = [p for p in P.browse(north_shore=True, kind="regular")][:3] if not (area or region or puppy) else []
 
         def link(**kw):
+            if puppy:
+                kw = dict(kw)
+                kw.setdefault("kind", "puppy")
             return "/packs" + (("?" + urlencode(kw)) if kw else "")
-        chips = [(link(), "All", not (area or region)), (link(region="northshore"), "North Shore", region == "northshore")]
-        chips += [(link(region=r), A.REGIONS[r][0], region == r) for r in A.REGIONS]
-        chips += [(link(area=a), area_label(a), area == a) for a in A.AREA_NAMES
-                  if area_label(a) not in {A.REGIONS[r][0] for r in A.REGIONS}]   # no second "Westchester" chip
+        chips = [(link() if not puppy else "/packs", "All", not puppy and not (area or region)),
+                 ("/packs?kind=puppy" if not (area or region) else link(), "Puppy Pods", puppy and not (area or region)),
+                 (link(region="northshore") if not puppy else "/packs?region=northshore", "North Shore", (not puppy) and region == "northshore")]
+        chips += [(link(region=r) if not puppy else f"/packs?region={quote(r)}", A.REGIONS[r][0], (not puppy) and region == r) for r in A.REGIONS]
+        chips += [(link(area=a) if not puppy else f"/packs?area={quote(a)}", area_label(a), (not puppy) and area == a) for a in A.AREA_NAMES
+                  if area_label(a) not in {A.REGIONS[r][0] for r in A.REGIONS}]
+        # area chips on the puppy list should keep kind=puppy
+        if puppy:
+            chips = [("/packs", "All", False), (link(), "Puppy Pods", not (area or region)),
+                     (link(region="northshore"), "North Shore", region == "northshore")]
+            chips += [(link(region=r), A.REGIONS[r][0], region == r) for r in A.REGIONS]
+            chips += [(link(area=a), area_label(a), area == a) for a in A.AREA_NAMES
+                      if area_label(a) not in {A.REGIONS[r][0] for r in A.REGIONS}]
         filt = "".join(f'<a class="chip{" on" if on else ""}" href="{e(h)}"{" aria-current=true" if on else ""}>{e(t)}</a>' for h, t, on in chips)
-        u = self.user()
-        start = "/packs/new" if u else self.signin_href("/packs/new")
+        start = ("/packs/new?kind=puppy" if puppy else "/packs/new")
+        start = start if u else self.signin_href(start)
         ns_html = ""
         if ns:
             ns_html = (f'<div class="pshore"><div class="mehead"><div><span class="eyebrow">starting on the north shore</span>'
                        f'<h2 style="margin:4px 0 6px">Our first packs are forming around Manhasset</h2>'
                        f'<p class="muted" style="margin:0">Join a crew that meets at the same run, so your dog sees familiar friends every week.</p></div>'
-                       f'<a class="btn btn-gold btn-sm" href="{e(link(region="northshore"))}">See North Shore packs</a></div>'
+                       f'<a class="btn btn-gold btn-sm" href="{e("/packs?region=northshore")}">See North Shore packs</a></div>'
                        f'<div class="pgrid sm" style="margin-top:16px">{"".join(self.pack_card(p) for p in ns)}</div></div>')
+        sug_html = ""
+        if puppy and u:
+            sugg = PP.suggestions(u["id"])
+            if sugg:
+                sug_html = (f'<div class="panel" id="matches"><h2>Good fits for your puppy</h2>'
+                            f'<div class="pgrid sm">{"".join(self.pack_card(p) for p in sugg)}</div></div>')
         if ps:
             content = f'<div class="pgrid">{"".join(self.pack_card(p) for p in ps)}</div>'
+        elif puppy:
+            content = '<p class="muted">No Puppy Pods yet in this area. Start one for a backyard playdate.</p>'
         else:
             import emptystate as ES
             content = ES.first_in_town_html("packs", start, "Start a pack", areas=areas, runs=W.RUNS(),
                                             where=area_label(area) if area else (A.REGIONS[region][0] if region in A.REGIONS else ""),
                                             second=("/meetups", "See meetups"))
         label = area_label(area) if area else ("the North Shore" if region == "northshore" else (A.REGIONS[region][0] if region else ""))
+        if puppy:
+            body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">under 16 weeks</span><h1>Puppy Pods</h1>
+<p class="lead">{e(PP.BANNER)} Small groups of 3–5 puppies, matched by size, age and vaccine status, for home or backyard playdates. They use the same pack board and pack-only meetups.</p>
+<div class="formfoot"><a class="btn" href="{e(start)}">Start a Puppy Pod</a><a class="btn btn-ghost" href="/packs">All packs</a></div></div></section>
+<section class="section"><div class="wrap">{sug_html}
+<nav class="filters" aria-label="Filter Puppy Pods">{filt}</nav>
+<h2 class="sr-only">Puppy Pods{" in " + e(label) if label else ""}</h2>{content}</div></section>"""
+            return self.page("Puppy Pods" + (f" in {label}" if label else ""), body, active="packs", index=False,
+                             canonical="/packs?kind=puppy", desc=PP.BANNER, flash=self.flash_from(q))
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">find your crew</span><h1>Dog packs</h1>
 <p class="lead">Packs are friendly regular groups of dogs and their people who meet at the same runs. Join one with your dogs, see the next pack meetup and chat on the pack board.</p>
-<div class="formfoot"><a class="btn" href="{e(start)}">Start a pack</a><a class="btn btn-ghost" href="/meetups">See meetups</a></div></div></section>
+<div class="formfoot"><a class="btn" href="{e(start)}">Start a pack</a><a class="btn btn-ghost" href="/packs?kind=puppy">Puppy Pods</a></div></div></section>
 <section class="section"><div class="wrap">{ns_html}
 <nav class="filters" aria-label="Filter packs by area">{filt}</nav>
 <h2 class="sr-only">Packs{" in " + e(label) if label else ""}</h2>{content}</div></section>"""
@@ -337,6 +395,10 @@ class PackRoutes:
         u = self.user()
         if not u:
             return self.need_login()
+        import puppypods as PP
+        puppy = bool(p and PP.is_puppy_pack(p)) or (vals or {}).get("kind") == "puppy" or (q or {}).get("kind", [""])[0] == "puppy"
+        if puppy:
+            return self.puppy_pack_form(p, vals=vals, errs=errs, code=code, q=q)
         errs = errs or {}
         mydogs = [d for d in A.dogs_for_user(u["id"]) if not d["hidden"]]
         if vals is None:
@@ -400,10 +462,80 @@ class PackRoutes:
 {remove_cover}{danger}</div></section>"""
         return self.page(title, body, code=code, active="packs", flash=self.flash_from(q or {}))
 
-    def parse_pack(self, f, creating):
+    def puppy_pack_form(self, p, vals=None, errs=None, code=200, q=None):
+        import puppypods as PP
+        u = self.user()
+        errs = errs or {}
+        pups = PP.eligible_puppies(u["id"])
+        if vals is None:
+            if p:
+                vals = {k: p[k] or "" for k in ("name", "area", "town", "place", "description", "visibility", "capacity")}
+                vals["kind"] = "puppy"
+            else:
+                vals = dict(name="", area=u.get("area") or "", town=u.get("town") or "", place="",
+                            description="", visibility="open", capacity=4, kind="puppy",
+                            dogs=[d["id"] for d in pups])
+        v = lambda k: e(str(vals.get(k) or ""))
+        err = lambda k: f'<span class="err" id="{k}-err">{e(errs.get(k, ""))}</span>'
+        inv = lambda k: ' aria-invalid="true"' if k in errs else ""
+        vis = "".join(f'<label class="tick"><input type="radio" name="visibility" value="{k}"{" checked" if (vals.get("visibility") or "open") == k else ""}><span>{e(t)}</span></label>'
+                      for k, t in P.VISIBILITY)
+        dogs_html = ""
+        if not p:
+            chosen = {int(x) for x in vals.get("dogs") or [] if str(x).isdigit()}
+            if pups:
+                ticks = "".join(f'<label class="tick"><input type="checkbox" name="dogs" value="{d["id"]}"{" checked" if d["id"] in chosen else ""}><span>{e(d["name"])} · {PP.age_weeks(d)} weeks · {e(A.SIZE_SHORT.get(d.get("size") or "", ""))}</span></label>'
+                                for d in pups)
+                dogs_html = f'<fieldset class="field"><legend class="lab">Which puppy</legend><div class="checks-grid">{ticks}</div>{err("dogs")}</fieldset>'
+            else:
+                dogs_html = ('<p class="notice">To start a Puppy Pod, add a puppy under 16 weeks with a birthday '
+                             'on <a href="/me/dogs/new">your dogs</a> page.</p>')
+        caps = "".join(f'<option value="{n}"{" selected" if str(vals.get("capacity") or 4) == str(n) else ""}>{n} puppies</option>'
+                       for n in range(PP.MIN_CAP, PP.MAX_CAP + 1))
+        attest = ""
+        if not p:
+            attest = (f'<p class="small muted">{e(PP.VET_NOTE)}</p>'
+                      '<label class="switch"><input type="checkbox" name="dhpp_first" value="1" required>'
+                      "<span><b>This puppy has had at least the first DHPP vaccine</b><br>"
+                      "<span class=\"small muted\">Owner-reported. We don't verify veterinary records.</span></span></label>"
+                      '<label class="switch"><input type="checkbox" name="vaccines_age_ok" value="1" required>'
+                      "<span><b>This puppy's vaccines are age-appropriate, as advised by our vet</b></span></label>")
+            attest += err("vaccine") + err("dogs") + err("capacity")
+        action = f"/packs/{p['id']}/edit" if p else "/packs/new?kind=puppy"
+        top = '<div class="formerr" role="alert">Please fix the highlighted fields.</div>' if errs else ""
+        title = "Edit Puppy Pod" if p else "Start a Puppy Pod"
+        area_sel = self.area_select(vals.get("area"), "area")
+        danger = ""
+        if p and u["id"] == p["owner_user_id"]:
+            danger = f'<p class="small" style="margin-top:22px"><a class="danger" href="/packs/{p["id"]}/delete">Delete this pack</a></p>'
+        body = f"""<section class="phead"><div class="wrap narrow"><span class="eyebrow">puppy pods</span><h1>{title}</h1>
+<p class="lead">{e(PP.BANNER)}</p></div></section>
+<section class="section"><div class="wrap narrow"><form class="panel mform" method="post" action="{action}" enctype="multipart/form-data" novalidate>{self.csrf_field()}
+<input type="hidden" name="kind" value="puppy">{top}
+<p class="notice">{e(PP.BANNER)} We'll show the town or neighborhood to members browsing pods. The exact place stays hidden until someone joins.</p>
+<div class="field"><label for="name">Name</label><input type="text" id="name" name="name" maxlength="{P.MAX_NAME}" required value="{v("name")}" placeholder="Saturday backyard play"{inv("name")}>{err("name")}</div>
+{dogs_html}
+<div class="row2"><div class="field"><label for="area">Area</label>{area_sel}{err("area")}</div>
+<div class="field"><label for="town">Town or neighborhood</label><input type="text" id="town" name="town" maxlength="60" required value="{v("town")}" placeholder="Manhasset"{inv("town")}>{err("town")}</div></div>
+<div class="field"><label for="place">Exact place (shown only after someone joins)</label>
+<input type="text" id="place" name="place" maxlength="200" value="{v("place")}" placeholder="Our backyard on a quiet street"></div>
+<div class="field"><label for="description">About this pod</label><textarea id="description" name="description" maxlength="{P.MAX_DESC}" rows="4" required placeholder="A shady backyard, water out, and a short, calm play window."{inv("description")}>{v("description")}</textarea>{err("description")}</div>
+<div class="field"><label for="capacity">How many puppies, including yours</label><select id="capacity" name="capacity">{caps}</select></div>
+<fieldset class="field"><legend class="lab">Who can join</legend><div class="checks-grid" style="grid-template-columns:1fr">{vis}</div></fieldset>
+{attest}
+<div class="formfoot"><button class="btn" type="submit">{"Save changes" if p else "Start this pod"}</button>
+<a class="small" href="{e(pack_path(p)) if p else "/packs?kind=puppy"}">Cancel</a></div>
+</form>{danger}</div></section>"""
+        return self.page(title, body, code=code, active="packs", index=False, flash=self.flash_from(q or {}))
+
+    def parse_pack(self, f, creating, puppy=False):
+        import puppypods as PP
         errs = {}
         vals = {k: f.get(k) for k in ("name", "area", "town", "run_id", "description", "fit", "visibility")}
         vals["dogs"] = f.getlist("dogs")
+        vals["kind"] = "puppy" if puppy else "regular"
+        vals["place"] = f.get("place") or ""
+        vals["capacity"] = f.get("capacity") or ("4" if puppy else "0")
         name = clean(f.get("name"), P.MAX_NAME)
         if len(name) < 3:
             errs["name"] = "Give your pack a name (at least 3 characters)."
@@ -414,9 +546,12 @@ class PackRoutes:
         if not town:
             errs["town"] = "Add the town or neighborhood."
         rid = f.get("run_id")
-        if rid and rid not in W.run_index():
+        if puppy:
+            rid = ""
+        elif rid and rid not in W.run_index():
             errs["run_id"] = "Pick a run from the list."
             rid = ""
+        vals["run_id"] = rid or ""
         desc = clean(f.get("description"), P.MAX_DESC, multiline=True)
         if len(desc) < 10:
             errs["description"] = "Tell people a little about the pack."
@@ -426,7 +561,24 @@ class PackRoutes:
         if creating:
             mine = {d["id"] for d in A.dogs_for_user(self.user()["id"]) if not d["hidden"]}
             dogs = [int(x) for x in f.getlist("dogs") if x.isdigit() and int(x) in mine]
-        out = dict(name=name, area=area, town=town, run_id=rid or "", description=desc, fit=fit, visibility=visv, dogs=dogs)
+        cap, place = 0, ""
+        if puppy:
+            try:
+                cap = int(f.get("capacity") or 0)
+            except ValueError:
+                cap = 0
+            if cap not in range(PP.MIN_CAP, PP.MAX_CAP + 1):
+                errs["capacity"] = f"Pick a size from {PP.MIN_CAP} to {PP.MAX_CAP} puppies."
+            place = clean(f.get("place"), 200)
+            if creating:
+                pups = {d["id"] for d in PP.eligible_puppies(self.user()["id"])}
+                dogs = [i for i in dogs if i in pups]
+                if not dogs:
+                    errs["dogs"] = "Pick a puppy under 16 weeks with a birthday on file."
+                if not f.get("dhpp_first") or not f.get("vaccines_age_ok"):
+                    errs["vaccine"] = "Please confirm the first DHPP and that vaccines are age-appropriate."
+        out = dict(name=name, area=area, town=town, run_id=rid or "", description=desc, fit=fit, visibility=visv,
+                   dogs=dogs, kind="puppy" if puppy else "regular", place=place, capacity=cap)
         return out, vals, errs
 
     def post_pack(self, pid=None):
@@ -441,11 +593,22 @@ class PackRoutes:
         f = self._form_or_fail(W.MAX_UPLOAD_REQUEST)
         if f is None:
             return
-        out, vals, errs = self.parse_pack(f, creating=not p)
+        import puppypods as PP
+        puppy = bool(p and PP.is_puppy_pack(p)) or (f.get("kind") == "puppy")
+        out, vals, errs = self.parse_pack(f, creating=not p, puppy=puppy)
+        if p and not puppy:
+            out["kind"] = p.get("kind") or "regular"
+            out["place"] = p.get("place") or ""
+            out["capacity"] = p.get("capacity") or 0
+        if puppy:
+            out["run_id"] = ""
+            out["kind"] = "puppy"
         if not p:
             if P.created_by(u["id"]) >= P.MAX_PACKS_PER_USER:
                 errs["name"] = f"You can start up to {P.MAX_PACKS_PER_USER} packs."
-            elif not errs and not A.LIMITER.allow(f"pack-create:{u['id']}", 3, 86400):
+            elif puppy and PP.at_create_limit(u["id"]):
+                errs["name"] = "That's a lot of Puppy Pods today. Please try again tomorrow."
+            elif not puppy and not errs and not A.LIMITER.allow(f"pack-create:{u['id']}", 3, 86400):
                 errs["name"] = "You've started a few packs today. Please try again tomorrow."
         processed = None
         up = [x for x in f.files if x[0] == "cover" and x[2]]
@@ -459,8 +622,11 @@ class PackRoutes:
         new_id = P.save(u["id"], out, pid=pid)
         if processed:
             P.set_cover(new_id, None, processed)
+        if not pid and puppy:
+            PP.set_attestation(new_id, u["id"], True)
         print(f"packs: {'updated' if pid else 'created'} pack {new_id}", flush=True)
-        return self.redirect(pack_path(P.get(new_id)) + ("?m=p_saved" if pid else "?m=p_created"))
+        created = "p_created_puppy" if puppy else "p_created"
+        return self.redirect(pack_path(P.get(new_id)) + ("?m=p_saved" if pid else f"?m={created}"))
 
     def post_cover_remove(self, pid):
         p = self.org_pack(pid)
@@ -468,6 +634,36 @@ class PackRoutes:
             return
         P.remove_cover(pid)
         return self.redirect(f"/packs/{pid}/edit?m=p_cover_removed")
+
+    def post_graduate(self, pid):
+        import puppypods as PP
+        u = self.user()
+        if not u:
+            return self.need_login()
+        p = self.org_pack(pid, owner_only=True)
+        if not p or self._form_or_fail() is None:
+            return
+        if PP.graduate(pid, u["id"]):
+            return self.redirect(pack_path(P.get(pid)) + "?m=p_graduated")
+        return self.redirect(pack_path(p))
+
+    def post_puppy_check(self, pid):
+        import puppypods as PP
+        u = self.user()
+        if not u:
+            return self.need_login()
+        p, u = self.member_pack(pid)
+        if not p:
+            return
+        f = self._form_or_fail()
+        if f is None:
+            return
+        week = f.get("week") or ""
+        item = f.get("item") or ""
+        on = f.get("on") != "0"
+        if week.isdigit():
+            PP.set_check(p["id"], u["id"], int(week), item, on)
+        return self.redirect(pack_path(p) + "?m=p_check#checklist")
 
     def pack_delete_page(self, p):
         body = (f'<p class="sub">This deletes <b>{e(p["name"])}</b> with its members list, board posts and photos. '
@@ -490,7 +686,15 @@ class PackRoutes:
         if not u:
             return (f'<p>Sign in to join with your dogs.</p><a class="btn" href="{e(self.signin_href(path + "#join"))}">'
                     + ("Sign in to join" if p["visibility"] == "open" else "Sign in to request to join") + '</a>')
-        mydogs = [d for d in A.dogs_for_user(u["id"]) if not d["hidden"]]
+        import puppypods as PP
+        puppy = PP.is_puppy_pack(p)
+        if puppy and not (mem and mem["status"] == "active"):
+            mydogs = PP.eligible_puppies(u["id"])
+            if not mydogs:
+                return ('<p>To join a Puppy Pod, add a puppy under 16 weeks with a birthday on file.</p>'
+                        '<a class="btn" href="/me/dogs/new">Add your puppy</a>')
+        else:
+            mydogs = [d for d in A.dogs_for_user(u["id"]) if not d["hidden"]]
         if not mydogs and not (mem and mem["status"] == "active"):
             return (f'<p>Add your dog\'s profile first, then join with them.</p>'
                     f'<a class="btn" href="/me/dogs/new">Add your dog</a>')
@@ -517,8 +721,15 @@ class PackRoutes:
         if p["visibility"] == "request":
             msg = (f'<div class="field"><label for="jmsg">Note to the organizers <span class="opt">(optional)</span></label>'
                    f'<textarea id="jmsg" name="message" maxlength="{P.MAX_MSG}" rows="2" placeholder="Hi! We\'re at the run most mornings."></textarea></div>')
+        attest = ""
+        if puppy:
+            attest = (f'<p class="small muted">{e(PP.VET_NOTE)}</p>'
+                      '<label class="switch"><input type="checkbox" name="dhpp_first" value="1" required>'
+                      "<span><b>This puppy has had at least the first DHPP vaccine</b></span></label>"
+                      '<label class="switch"><input type="checkbox" name="vaccines_age_ok" value="1" required>'
+                      "<span><b>This puppy's vaccines are age-appropriate, as advised by our vet</b></span></label>")
         return (f'<form method="post" action="/packs/{p["id"]}/join">{self.csrf_field()}'
-                f'<fieldset class="checks-grid" style="margin-bottom:12px"><legend>Which dogs are joining?</legend>{ticks}</fieldset>{msg}'
+                f'<fieldset class="checks-grid" style="margin-bottom:12px"><legend>Which dogs are joining?</legend>{ticks}</fieldset>{msg}{attest}'
                 f'<button class="btn" type="submit">{"Join the pack" if p["visibility"] == "open" else "Request to join"}</button>'
                 + ('<p class="small muted" style="margin:10px 0 0">An organizer approves each new member.</p>' if p["visibility"] == "request" else "")
                 + '</form>')
@@ -573,6 +784,24 @@ class PackRoutes:
         feed = f'<ul class="posts">{"".join(items)}</ul>' if items else '<p class="muted">No posts yet. Start the conversation!</p>'
         return form + feed
 
+
+    def puppy_checklist_html(self, p, u):
+        import puppypods as PP
+        done = PP.checks_of(p["id"], u["id"]) if u else set()
+        weeks = []
+        for week, label, items in PP.CHECKLIST:
+            lis = []
+            for it in items:
+                on = (week, it) in done
+                lis.append(f'<li><form method="post" action="/packs/{p["id"]}/check" class="pod-week">{self.csrf_field()}'
+                           f'<input type="hidden" name="week" value="{week}">'
+                           f'<input type="hidden" name="item" value="{e(it)}">'
+                           f'<input type="hidden" name="on" value="{"0" if on else "1"}">'
+                           f'<button class="check-btn{" on" if on else ""}" type="submit">{"✓ " if on else ""}{e(it)}</button></form></li>')
+            weeks.append(f'<div class="pod-week"><h3>{e(label)}</h3><ul>{"".join(lis)}</ul></div>')
+        return (f'<div class="panel" id="checklist"><h2>Weekly socialization checklist</h2>'
+                f'<p class="small muted">{e(PP.VET_NOTE)}</p>{"".join(weeks)}</div>')
+
     def pack_page(self, pid, slugpart, q):
         p = self.visible_pack(pid)
         if not p:
@@ -581,7 +810,9 @@ class PackRoutes:
             qs = ("?" + urlencode({k: v[0] for k, v in q.items()})) if q else ""
             return self.redirect(pack_path(p) + qs, 301)
         import meetweb
+        import puppypods as PP
         u = self.user()
+        puppy = PP.is_puppy_pack(p)
         base = self._base()
         path = pack_path(p)
         mem = P.membership(pid, u["id"]) if u else None
@@ -600,9 +831,16 @@ class PackRoutes:
                  fact("i-lock" if p["visibility"] == "request" else "i-heart", "Request to join" if p["visibility"] == "request" else "Open to everyone")]
         if p["fit"]:
             facts.append(fact(FIT_ICON.get(p["fit"], "i-paw"), e(P.FIT_LABEL[p["fit"]])))
-        if r:
+        if r and not puppy:
             facts.append(fact("i-nav", f'Home run: {e(r["name"])}'))
+        if puppy:
+            cap = int(p.get("capacity") or 0)
+            if cap:
+                facts.append(fact("i-paw", f"Up to {cap} puppies"))
+            facts.append(fact("i-heart", "Home or backyard playdates only"))
         banners = []
+        if puppy:
+            banners.append(f'<p class="notice small" style="margin:0 0 16px"><b>Puppy Pod.</b> {e(PP.BANNER)}</p>')
         if p["is_sample"]:
             banners.append('<p class="notice small" style="margin:0 0 16px"><b>Sample pack.</b> An example to show how BarksBuds packs work. '
                            'It may be removed before launch, and it doesn\'t send email notifications.</p>')
@@ -626,10 +864,11 @@ class PackRoutes:
         ms = P.meetups(pid, 6, viewer=(self.user() or {}).get("id"))
         mlist = "".join(self.meetup_row(m, "Members only" if m.get("members_only") else M.to_et(m["starts_at"]).strftime("%a")) for m in ms)
         host_btn = (f'<a class="btn btn-sm" href="/meetups/new?pack={pid}">Host a pack meetup</a>' if is_mem else "")
-        meet_html = (f'<ul class="mrows">{mlist}</ul>' if ms else '<p class="muted" style="margin:0 0 12px">No pack meetups on the calendar yet.</p>') + \
+        meet_note = f'<p class="notice small">{e(PP.BANNER)}</p>' if puppy else ""
+        meet_html = meet_note + (f'<ul class="mrows">{mlist}</ul>' if ms else '<p class="muted" style="margin:0 0 12px">No pack meetups on the calendar yet.</p>') + \
                     (f'<div class="formfoot">{host_btn}</div>' if host_btn else "")
         run_html = ""
-        if r:
+        if r and not puppy:
             rbits = [x for x in ((r.get("type") or "").capitalize(), r.get("hours")) if x]
             dest = quote(f'{r["name"]}, {r.get("address") or r.get("town_or_neighborhood") or ""}')
             run_html = (f'<div class="panel"><h2>Home run</h2><p style="margin:0 0 4px"><b>{e(r["name"])}</b></p>'
@@ -643,19 +882,34 @@ class PackRoutes:
             mem_groups.append(f'<li><b>{e(x["name"])}</b>' + (f' <span class="badge">{e(role)}</span>' if x["role"] != "member" else "")
                               + (f' <span class="small muted">with {e(", ".join(d["name"] for d in x["dogs"]))}</span>' if x["dogs"] else "")
                               + self.message_link(x["user_id"], x["name"]) + '</li>')
-        reasons = "".join(f"<option>{e(x)}</option>" for x in A.REPORT_REASONS)
+        reasons = "".join(f"<option>{e(x)}</option>" for x in (list(A.REPORT_REASONS) + (["Meeting at a dog run"] if puppy else [])))
         report = (f'<details class="report"><summary>Report this pack</summary><form method="post" action="/packs/{pid}/report">{self.csrf_field()}'
                   f'<div class="field"><label for="reason">What\'s wrong?</label><select id="reason" name="reason">{reasons}</select></div>'
                   f'<div class="field"><label for="details">Details <span class="opt">(optional)</span></label><textarea id="details" name="details" maxlength="1000" rows="3"></textarea></div>'
                   f'<button class="btn btn-sm" type="submit">Send report</button><p class="small muted" style="margin:10px 0 0">Reports go to the BarksBuds team, not to the organizers.</p></form></details>')
         sample_b = ' · <span class="badge sample">Sample</span>' if p["is_sample"] else ""
-        body = f"""<section class="dhero phero"><div class="wrap"><div>{"".join(banners)}<span class="eyebrow">dog pack{sample_b}</span><h1 class="dname mtitle">{e(p["name"])}</h1>
+        place_html = ""
+        if puppy:
+            if is_mem and (p.get("place") or ""):
+                place_html = f'<p style="margin:12px 0 0"><b>Exact place:</b> {e(p["place"])}</p>'
+            elif not is_mem:
+                place_html = '<p class="muted" style="margin:12px 0 0">The exact place is shared after you join.</p>'
+        check_html = self.puppy_checklist_html(p, u) if puppy and is_mem else ""
+        grad_html = ""
+        if puppy and u and u["id"] == p["owner_user_id"] and PP.can_graduate(p):
+            grad_html = (f'<div class="panel" id="graduate"><h2>Graduate to a regular pack</h2>'
+                         f'<p>{e(PP.GRAD_COPY)}</p>'
+                         f'<form method="post" action="/packs/{pid}/graduate">{self.csrf_field()}'
+                         f'<button class="btn" type="submit">Graduate to a regular pack</button></form></div>')
+        eyebrow = "puppy pod" if puppy else "dog pack"
+        body = f"""<section class="dhero phero"><div class="wrap"><div>{"".join(banners)}<span class="eyebrow">{eyebrow}{sample_b}</span><h1 class="dname mtitle">{e(p["name"])}</h1>
 <ul class="facts">{"".join(facts)}</ul>
 {f'<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-heart"/></svg><span>Organized by <b>{e(owner["name"])}</b></span></p>' if owner else ""}
 <div class="formfoot" style="margin-top:14px">{cta}</div>{tools}</div>
 <div class="pcover-lg">{cover}</div></div></section>
 <section class="section" style="padding-top:36px"><div class="wrap">{errhtml}<div class="dgrid2"><div>
-<div class="panel"><h2>About the pack</h2><p class="bio">{e(p["description"])}</p></div>
+<div class="panel"><h2>About the pack</h2><p class="bio">{e(p["description"])}</p>{place_html}</div>
+{grad_html}{check_html}
 <div class="panel"><h2>Member dogs <span class="small muted" style="font-weight:600">{ndogs}</span></h2>
 {f'<ul class="mdogs">{dog_tiles(dogs)}</ul>' if dogs else ('' if more else '<p class="muted" style="margin:0">No dogs listed yet.</p>')}
 {f'<p class="small muted" style="margin:10px 0 0">{"Plus " if dogs else ""}{more} dog{"s" if more != 1 else ""} with a private profile.</p>' if more else ''}
@@ -676,7 +930,7 @@ class PackRoutes:
                   "alt": f"{p['name']} cover photo", "desc": og_desc}
         else:
             og = {"title": f"{p['name']} · BarksBuds pack", "image": base + "/img/og-image.jpg?v=jack3", "w": 1200, "h": 630, "desc": og_desc}
-        return self.page(p["name"], body, canonical=path, desc=og_desc, og=og, index=not (p["hidden"] or p["is_sample"]), active="packs",
+        return self.page(p["name"], body, canonical=path, desc=og_desc, og=og, index=not (p["hidden"] or p["is_sample"] or puppy), active="packs",
                          flash=self.flash_from(q))
 
     # ------------------------------------------------------------ members (organizers)
@@ -777,7 +1031,19 @@ class PackRoutes:
         dogs = [int(x) for x in f.getlist("dogs") if x.isdigit() and int(x) in mine]
         if not dogs:
             return self.redirect(path + ("?e=nodogs" if mine else "?e=adddog") + "#join")
+        import puppypods as PP
         cur = P.membership(pid, u["id"])
+        if PP.is_puppy_pack(p):
+            dog_objs = [d for d in (A.dog_by_id(i) for i in dogs) if d]
+            dhpp, vax = bool(f.get("dhpp_first")), bool(f.get("vaccines_age_ok"))
+            if cur and cur["status"] == "active":
+                row = P.one("SELECT dhpp_first, vaccines_age_ok FROM pack_members WHERE pack_id=:p AND user_id=:u",
+                            p=pid, u=u["id"])
+                dhpp = dhpp or bool(row and row[0])
+                vax = vax or bool(row and row[1])
+            err = PP.join_ok(p, u["id"], dog_objs, dhpp, vax)
+            if err:
+                return self.redirect(path + f"?e={err}#join")
         if cur and cur["status"] == "active":
             P.set_dogs(pid, u["id"], dogs)
             return self.redirect(path + "?m=p_dogs#join")
@@ -785,6 +1051,8 @@ class PackRoutes:
             return self.redirect(path + "?e=slow#join")
         msg = clean(f.get("message"), P.MAX_MSG, multiline=True) if p["visibility"] == "request" else ""
         st = P.join(pid, u["id"], dogs, p["visibility"], msg)
+        if PP.is_puppy_pack(p) and st in ("active", "pending"):
+            PP.set_attestation(pid, u["id"], True)
         if st == "pending" and not (cur and cur["status"] == "pending"):
             notify_join_request(self._base(), p, u["id"], dogs, msg)
         return self.redirect(path + ("?m=p_joined#board" if st == "active" else "?m=p_requested#join"))
@@ -909,7 +1177,9 @@ class PackRoutes:
         f = self._form_or_fail()
         if f is None:
             return
-        reason = f.get("reason") if f.get("reason") in A.REPORT_REASONS else "Something else"
+        import puppypods as PP
+        allowed = list(A.REPORT_REASONS) + (["Meeting at a dog run"] if PP.is_puppy_pack(p) else [])
+        reason = f.get("reason") if f.get("reason") in allowed else "Something else"
         if A.LIMITER.allow("report:" + self._client_ip(), 10, 3600):
             u = self.user()
             P.add_report(p["id"], post_id, cid, u["id"] if u else None, reason, clean(f.get("details"), 1000, multiline=True), self._client_ip())
@@ -999,7 +1269,7 @@ class PackRoutes:
         if not key:
             return self._emit(404, b"Not found", "text/plain")
         tr = []
-        for p in P.browse(include_hidden=True):
+        for p in P.browse(include_hidden=True, kind=None):
             acts = []
             for act, lab in ((("unhide", "Unhide") if p["hidden"] else ("hide", "Hide")), ("delete", "Delete")):
                 conf = ' onclick="return confirm(\'Delete this pack with its members list and board?\')"' if act == "delete" else ""

@@ -190,7 +190,7 @@ def _community_home_html():
 <a class="commlink" href="/runs"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg><span><b>At the run now</b><small>{here}</small></span></a>
 <a class="commlink" href="/lost-found"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><span><b>Lost and found</b><small>{lost}</small></span></a>
 <a class="commlink" href="/picks"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><span><b>Local picks</b><small>Vets, groomers and walkers members use</small></span></a>
-<a class="commlink" href="/puppy-pods"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><span><b>Puppy Pods</b><small>Backyard playdates for puppies under 16 weeks</small></span></a>
+<a class="commlink" href="/packs?kind=puppy"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><span><b>Puppy Pods</b><small>Backyard playdates for puppies under 16 weeks</small></span></a>
 </div></div></section>"""
 
 

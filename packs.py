@@ -20,7 +20,8 @@ MAX_PACKS_PER_USER = 10        # packs a member can create
 MAX_POST_PHOTOS_PER_PACK = 500
 
 P_COLS = ("id,slug,name,area,town,run_id,description,fit,visibility,cover_photo_id,owner_user_id,is_sample,hidden,"
-          "seed_key,seed_rev,created_at,updated_at")
+          "seed_key,seed_rev,created_at,updated_at,kind,place,capacity")
+KINDS = ("regular", "puppy")
 
 
 def q(sql, **kw):
@@ -80,6 +81,23 @@ def init_schema(store):
         store.q(f"ALTER TABLE meetups ADD COLUMN seed_rev {INT} NOT NULL DEFAULT 0")
     import meetups as M
     M.backfill_pack_visibility(store)
+    pc = cols("packs")
+    if "kind" not in pc:
+        store.q("ALTER TABLE packs ADD COLUMN kind TEXT NOT NULL DEFAULT 'regular'")
+    if "place" not in pc:
+        store.q("ALTER TABLE packs ADD COLUMN place TEXT NOT NULL DEFAULT ''")
+    if "capacity" not in pc:
+        store.q(f"ALTER TABLE packs ADD COLUMN capacity {INT} NOT NULL DEFAULT 0")
+    mc2 = cols("pack_members")
+    if "dhpp_first" not in mc2:
+        store.q(f"ALTER TABLE pack_members ADD COLUMN dhpp_first {INT} NOT NULL DEFAULT 0")
+    if "vaccines_age_ok" not in mc2:
+        store.q(f"ALTER TABLE pack_members ADD COLUMN vaccines_age_ok {INT} NOT NULL DEFAULT 0")
+    if "attested_at" not in mc2:
+        store.q(f"ALTER TABLE pack_members ADD COLUMN attested_at {INT}")
+    store.q(f"""CREATE TABLE IF NOT EXISTS puppy_pack_checks(id {ID}, pack_id {INT} NOT NULL, user_id {INT} NOT NULL,
+                week {INT} NOT NULL, item_key TEXT NOT NULL, done_at {INT} NOT NULL,
+                UNIQUE(pack_id, user_id, week, item_key))""")
 
 
 # ---------------------------------------------------------------- packs
@@ -94,15 +112,20 @@ def get(pid):
 def save(owner_id, f, pid=None, seed_key=None, is_sample=0):
     """Create (owner becomes the first member, with the dogs in f['dogs']) or update a pack. Returns the id."""
     t = A.now()
+    kind = f.get("kind") if f.get("kind") in KINDS else "regular"
+    try:
+        cap = int(f.get("capacity") or 0)
+    except (TypeError, ValueError):
+        cap = 0
     vals = dict(n=f["name"], sl=A.slugify(f["name"], 60), ar=f["area"], tw=f["town"], ru=f["run_id"], de=f["description"],
-                fi=f["fit"], vi=f["visibility"], t=t)
+                fi=f["fit"], vi=f["visibility"], pl=f.get("place") or "", ca=cap, t=t)
     if pid:
         q("""UPDATE packs SET name=:n, slug=:sl, area=:ar, town=:tw, run_id=:ru, description=:de, fit=:fi, visibility=:vi,
-             updated_at=:t WHERE id=:i""", i=pid, **vals)
+             place=:pl, capacity=:ca, updated_at=:t WHERE id=:i""", i=pid, **vals)
         return pid
-    r = one("""INSERT INTO packs(name,slug,area,town,run_id,description,fit,visibility,owner_user_id,is_sample,seed_key,created_at,updated_at)
-               VALUES(:n,:sl,:ar,:tw,:ru,:de,:fi,:vi,:o,:sa,:sk,:t,:t) RETURNING id""",
-            o=owner_id, sa=1 if is_sample else 0, sk=seed_key, **vals)
+    r = one("""INSERT INTO packs(name,slug,area,town,run_id,description,fit,visibility,owner_user_id,is_sample,seed_key,created_at,updated_at,kind,place,capacity)
+               VALUES(:n,:sl,:ar,:tw,:ru,:de,:fi,:vi,:o,:sa,:sk,:t,:t,:k,:pl,:ca) RETURNING id""",
+            o=owner_id, sa=1 if is_sample else 0, sk=seed_key, k=kind, **vals)
     q("""INSERT INTO pack_members(pack_id,user_id,role,status,dogs,created_at,updated_at) VALUES(:p,:u,'owner','active',:d,:t,:t)""",
       p=r[0], u=owner_id, d=json.dumps(f.get("dogs") or []), t=t)
     return r[0]
@@ -124,6 +147,7 @@ def delete(pid):
     q("DELETE FROM pack_photos WHERE pack_id=:p", p=pid)
     q("DELETE FROM pack_members WHERE pack_id=:p", p=pid)
     q("DELETE FROM reports WHERE pack_id=:p", p=pid)
+    q("DELETE FROM puppy_pack_checks WHERE pack_id=:p", p=pid)
     q("DELETE FROM packs WHERE id=:p", p=pid)
 
 
@@ -138,7 +162,7 @@ def member_counts(ids=None):
     return out
 
 
-def browse(areas=None, north_shore=False, run_id=None, include_hidden=False):
+def browse(areas=None, north_shore=False, run_id=None, include_hidden=False, kind="regular"):
     rows = [_p(r) for r in q(f"SELECT {P_COLS} FROM packs ORDER BY is_sample DESC, created_at DESC, id DESC")]
     out = []
     for p in rows:
@@ -149,6 +173,8 @@ def browse(areas=None, north_shore=False, run_id=None, include_hidden=False):
         if north_shore and not is_north_shore(p):
             continue
         if run_id and p["run_id"] != run_id:
+            continue
+        if kind and (p.get("kind") or "regular") != kind:
             continue
         out.append(p)
     counts = member_counts({p["id"] for p in out})
@@ -452,4 +478,5 @@ def purge_user(uid):
     for (post_id,) in q("SELECT id FROM pack_posts WHERE user_id=:u", u=uid):
         delete_post(post_id)
     q("DELETE FROM pack_comments WHERE user_id=:u", u=uid)
+    q("DELETE FROM puppy_pack_checks WHERE user_id=:u", u=uid)
     q("DELETE FROM pack_members WHERE user_id=:u", u=uid)
