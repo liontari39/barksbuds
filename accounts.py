@@ -139,6 +139,8 @@ def init_schema(store):
     import feed
     feed.init_schema(store)  # photo feed (photo_posts, feed_photos, likes, comments; reports.photo_*)
     portraits.init_schema(store)
+    import push
+    push.init_schema(store)
 
 
 # ---------------------------------------------------------------- rate limiting (in-memory, per process)
@@ -271,6 +273,8 @@ def delete_user(user_id):
     messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
     meetups.purge_user(user_id)
+    import push
+    push.drop_subscription(user_id)
     import coowners
     coowners.purge_user(user_id)  # dogs with a co-owner pass to them; the rest are deleted below
     for (dog_id,) in q("SELECT id FROM dogs WHERE user_id=:u", u=user_id):

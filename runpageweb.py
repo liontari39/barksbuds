@@ -21,6 +21,7 @@ from email.utils import formatdate
 from urllib.parse import quote
 
 import accounts as A
+import push
 import community as C
 import coowners as CO
 import mailer
@@ -307,8 +308,18 @@ class RunPageRoutes:
             return self.redirect(run_path(r) + "?m=wait#here")
         if not A.LIMITER.allow(f"checkin:{u['id']}", C.CHECKINS_PER_HOUR, 3600):
             return self.redirect(run_path(r) + "?m=slow#here")
-        C.check_in(u["id"], rid, picked, anon=f.get("anon") == "1")
+        anon = f.get("anon") == "1"
+        C.check_in(u["id"], rid, picked, anon=anon)
         print(f"checkins: user {u['id']} at {rid} with {len(picked)} dog(s)", flush=True)
+        if not anon:
+            dogs = {d["id"]: d["name"] for d in A.dogs_for_user(u["id"])}
+            names = [dogs[i] for i in picked if i in dogs]
+            who = names[0] if len(names) == 1 else (f"{len(names)} dogs" if names else "A dog")
+            body = f"{who} arrived at {r['name']}."
+            href = run_path(r)
+            for row in C.here_now(rid):
+                if row["user_id"] != u["id"]:
+                    push.notify_async(row["user_id"], "checkins", "At the run", body, href)
         return self.redirect(run_path(r) + "?m=here#here")
 
     def post_run_leave(self, rid):

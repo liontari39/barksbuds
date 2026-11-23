@@ -21,8 +21,14 @@
 <meta name="theme-color" content="#FBB321">
 <link rel="icon" href="/favicon.ico?v=jack4" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/img/icon-32.png?v=jack4">
-<link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3">
+<link rel="apple-touch-icon" href="/img/icon-180-touch.png?v=jack5">
 <link rel="manifest" href="/site.webmanifest">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="BarksBuds">
+<link rel="apple-touch-startup-image" href="/img/splash-750x1334.png?v=jack5" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="/img/splash-1170x2532.png?v=jack5" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="/img/splash-1284x2778.png?v=jack5" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preload" as="fetch" href="/api/runs" crossorigin="anonymous">
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -345,6 +351,8 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 <script src="/vendor/leaflet/leaflet.js" defer></script>
 <script src="/vendor/markercluster/leaflet.markercluster.js" defer></script>
 <script src="/runs.js?v=7" defer></script>
-<script>if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>
+<style>.a2hs{position:fixed;z-index:40;left:16px;right:16px;bottom:16px;max-width:480px;margin:0 auto;padding:14px 16px;background:#fff;border:1px solid #EADBB9;border-radius:16px;box-shadow:0 10px 30px rgba(42,38,34,.12)}.a2hs p{margin:0 0 10px}.a2hs-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0}@media (display-mode: standalone){.a2hs{display:none}}</style>
+<script src="/pwa.js?v=1" defer></script>
+<script>if('serviceWorker' in navigator&&!window.Capacitor&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>
 </body>
 </html>

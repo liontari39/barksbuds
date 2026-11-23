@@ -65,6 +65,17 @@ Tests (SQLite, and Postgres when `TEST_DATABASE_URL` is set):
 
     python3 -m unittest discover -s tests -v
 
+## App (PWA)
+
+BarksBuds is installable from the browser: `public/site.webmanifest` (standalone display, `start_url=/?src=pwa`,
+maskable and Apple icons generated from the Jack logo, shortcuts for Dog run map / Meetups / My dogs).
+`public/sw.js` keeps the existing waking-up page for Render cold starts, adds an offline fallback, and never
+caches authenticated HTML or API responses. The “Add BarksBuds to your home screen” prompt uses
+`beforeinstallprompt` on Android and Share-sheet instructions on iOS; it is dismissible and hidden in standalone
+or Capacitor. Web Push (meetup reminders and check-ins at a run where you already are) is opt-in, off by default,
+and only armed when `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and optionally `VAPID_CONTACT` are set in the
+environment. The private key is never committed or logged.
+
 ## Meetups
 
 Members can host meetups at a dog run from the runs data (pinned, with directions) or at a custom address, and RSVP

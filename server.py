@@ -298,7 +298,7 @@ CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'
        "connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'self'; base-uri 'self'; "
        "form-action 'self'; object-src 'none'")
 VERSIONED_RE = re.compile(r"(^|&)v=[^&]+")
-STATIC_EXT = (".css", ".js", ".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2")
+STATIC_EXT = (".css", ".js", ".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".webmanifest")
 
 
 def static_cache_control(raw_path):

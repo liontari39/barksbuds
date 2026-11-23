@@ -3,7 +3,7 @@
 Mixed into server.H. Every page is server-rendered with escaped output; every POST checks a CSRF token
 (an HMAC of the bb_csrf cookie) plus the Origin header when the browser sends one.
 """
-import hashlib, hmac, html, io, re, secrets, threading, unicodedata
+import hashlib, hmac, html, io, json, re, secrets, threading, unicodedata
 from collections import OrderedDict
 from datetime import date, datetime, timezone
 from email.parser import BytesParser
@@ -15,6 +15,7 @@ import accounts as A
 import coowners as CO
 import privacy as PV
 import mailer
+import push
 
 e = html.escape
 RUNS = lambda: []       # set by server.py: returns the dog run list
@@ -152,7 +153,7 @@ def unread_count(user):
 
 
 # Registers public/sw.js (the "waking up" page for Render free-tier cold starts). HTTPS only.
-SW_REGISTER = "<script>if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>"
+SW_REGISTER = "<script>if('serviceWorker' in navigator&&!window.Capacitor&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>"
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -374,10 +375,16 @@ class AppRoutes:
 {chr(10).join(meta)}
 <meta name="theme-color" content="#FBB321">
 <link rel="icon" href="/favicon.ico?v=jack4" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/img/icon-32.png?v=jack4">
-<link rel="apple-touch-icon" href="/img/icon-180.png?v=jack3"><link rel="manifest" href="/site.webmanifest">
+<link rel="apple-touch-icon" href="/img/icon-180-touch.png?v=jack5"><link rel="manifest" href="/site.webmanifest">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="BarksBuds">
+<link rel="apple-touch-startup-image" href="/img/splash-750x1334.png?v=jack5" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="/img/splash-1170x2532.png?v=jack5" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="/img/splash-1284x2778.png?v=jack5" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=27"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=28"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -392,7 +399,7 @@ class AppRoutes:
 <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
-{scripts}{SW_REGISTER}
+{scripts}<script src="/pwa.js?v=1" defer></script>{self._pwa_boot()}{SW_REGISTER}
 </body></html>"""
         cache = "no-store" if (u or code != 200 or not index) else "no-cache"
         headers = {"Cache-Control": cache, "Vary": "Cookie"}
@@ -466,7 +473,7 @@ class AppRoutes:
                   (r"/me/dogs/(\d+)/delete", self.post_delete_dog), (r"/me/dogs/(\d+)/photos", self.post_photos),
                   (r"/me/dogs/(\d+)/photos/(\d+)/(delete|avatar)", self.post_photo_action),
                   (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports),
-                  (r"/admin/seed", self.post_admin_seed)]
+                  (r"/admin/seed", self.post_admin_seed), (r"/me/push/subscribe", self.post_push_subscribe), (r"/me/push/unsubscribe", self.post_push_unsubscribe)]
         for pat, fn in routes:
             m = re.fullmatch(pat, path)
             if m:
@@ -645,11 +652,73 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
 <div class="panel"><h2>Account</h2>
 <dl class="kv"><dt>Email</dt><dd>{e(u["email"])}</dd></dl>
 <p class="small muted">Only you can see your email. It's never shown on your profile or your dogs' pages.</p>
-{self.email_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}{self.community_prefs_html(u)}
+{self.email_prefs_html(u)}{self.push_prefs_html(u)}{self.pack_email_prefs_html(u)}{self.message_email_prefs_html(u)}{self.community_prefs_html(u)}
 <div class="formfoot"><form method="post" action="/signout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
 <a class="small" href="/me/delete">Delete my account</a></div></div>
 </div>{self.packs_dashboard(u)}{self.meetups_dashboard(u)}</div></section>"""
         return self.page("My dogs", body, flash=self.flash_from(q))
+
+
+    def _pwa_boot(self):
+        """Public VAPID key and CSRF token for pwa.js. The private key is never sent."""
+        u = self.user()
+        bits = [f'window.BB_CSRF={json.dumps(self.csrf_token())};']
+        if u and push.enabled():
+            bits.append(f'window.BB_VAPID={json.dumps(push.vapid_public())};')
+        return "<script>" + "".join(bits) + "</script>"
+
+    def push_prefs_html(self, u):
+        if not push.enabled():
+            return ""
+        flags = push.user_flags(u["id"])
+        on = flags["meetups"] or flags["checkins"]
+        kinds = ",".join(k for k in ("meetups", "checkins") if flags[k]) or "meetups,checkins"
+        if on:
+            return (f'<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> On'
+                    f'{" for meetup reminders" if flags["meetups"] else ""}{" and" if flags["meetups"] and flags["checkins"] else ""}'
+                    f'{" for check-ins at a run where you already are" if flags["checkins"] else ""}.'
+                    ' Off by default; you can turn them off any time.</p>'
+                    '<button class="btn btn-ghost btn-sm" type="button" data-push="off">Turn off notifications</button></div>')
+        return ('<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> Off. '
+                'Get a reminder the day before a meetup you RSVPed to, and a note when a dog arrives at a run where you already are. '
+                'Opt in only — we never turn this on for you. On iPhone, add BarksBuds to your home screen first.</p>'
+                '<button class="btn btn-ghost btn-sm" type="button" data-push="on" data-kinds="meetups,checkins">Turn on notifications</button></div>')
+
+    def _read_json(self, limit=8000):
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = 0
+        if n <= 0 or n > limit:
+            return None
+        try:
+            return json.loads(self.rfile.read(n).decode("utf-8") or "{}")
+        except (ValueError, UnicodeDecodeError):
+            return None
+
+    def post_push_subscribe(self):
+        u = self.user()
+        if not u:
+            return self._emit(401, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
+        if not push.enabled():
+            return self._emit(404, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
+        data = self._read_json()
+        if data is None or not self.csrf_ok({"csrf": data.get("csrf")}):
+            return self._emit(403, b'{"ok":false,"error":"csrf"}', "application/json", {"Cache-Control": "no-store"})
+        kinds = [k for k in (data.get("kinds") or []) if k in push.KINDS] or ["meetups"]
+        if not push.save_subscription(u["id"], data.get("subscription") or {}, kinds):
+            return self._emit(400, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
+        return self._emit(200, b'{"ok":true}', "application/json", {"Cache-Control": "no-store"})
+
+    def post_push_unsubscribe(self):
+        u = self.user()
+        if not u:
+            return self._emit(401, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
+        data = self._read_json() or {}
+        if not self.csrf_ok({"csrf": data.get("csrf")}):
+            return self._emit(403, b'{"ok":false,"error":"csrf"}', "application/json", {"Cache-Control": "no-store"})
+        push.drop_subscription(u["id"], data.get("endpoint") or None)
+        return self._emit(200, b'{"ok":true}', "application/json", {"Cache-Control": "no-store"})
 
     def area_select(self, current, name="area"):
         opts = ['<option value="">Choose your area</option>']

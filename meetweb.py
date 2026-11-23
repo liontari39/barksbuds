@@ -14,6 +14,7 @@ import mailer
 import meetups as M
 import packs as P
 import privacy as PV
+import push
 import webapp as W
 from webapp import clean, area_label, where_text
 
@@ -220,6 +221,8 @@ def send_reminders(base):
             r = M.rsvp_of(mid, uid)
             if send_meetup_mail(base, uid, "reminder", m, status=st, dogs=M.dog_names(r["dogs"] if r else [])):
                 ne += 1
+            push.notify_async(uid, "meetups", "Meetup reminder",
+                              f"{m['title']} — {M.when_text(m['starts_at'], short=True)}", meetup_path(m))
     if nm:
         print(f"meetups: reminders for {nm} meetup(s), {ne} email(s) queued", flush=True)
     return nm, ne
