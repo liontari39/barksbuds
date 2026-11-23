@@ -1,8 +1,11 @@
 """BarksBuds community features: data layer (Oct 2026).
 
   * "At the run now" check-ins: a member taps "We're here" on a run page and picks the dogs with them. A check-in
-    ends after CHECKIN_TTL (2 hours) or when they tap "Leaving". A member is at one run at a time (a new check-in ends
-    the old one). Privacy: a check-in can be anonymous (counted in "N dogs here now", dogs not shown); the account
+    ends after CHECKIN_TTL (2 hours) or when they tap "Check out". A member is at one run at a time (a new check-in ends
+    the old one). After leaving or expiry, CHECKIN_COOLDOWN seconds must pass before checking in at the same run again
+    (plus CHECKINS_PER_HOUR). The run page also lists "Recently here" for the last RECENT_HERE_DAYS days, with fuzzy
+    times (earlier today / yesterday / this week) and dogs only — no owner names, no exact clock times on past visits.
+    Privacy: a check-in can be anonymous (counted in "N dogs here now", dogs not shown); the account
     default lives in users.checkins_hidden.
   * Park announcements: the site admin gives a member a "verified park account" role for specific runs
     (park_roles). Those members post announcements (closure, maintenance, rule, event, other) with an optional end
@@ -33,6 +36,9 @@ except Exception:  # pragma: no cover
 
 CHECKIN_TTL = 2 * 3600
 CHECKINS_PER_HOUR = 12
+CHECKIN_COOLDOWN = 60  # seconds after leave/expiry before a new check-in at the same run
+RECENT_HERE_DAYS = 7
+RECENT_HERE_LIMIT = 12
 ANN_KINDS = [("closure", "Closure"), ("maintenance", "Maintenance"), ("rule", "Rule change"), ("event", "Event"), ("other", "Notice")]
 ALERT_TTL = 14 * 86400
 ALERT_NEAR_MILES = 3.0
@@ -227,6 +233,60 @@ def here_counts(t=None):
     for rid, dids in q("SELECT run_id, dog_ids FROM checkins WHERE left_at IS NULL AND expires_at>:t", t=t):
         out[rid] = out.get(rid, 0) + len(json.loads(dids or "[]"))
     return {k: v for k, v in out.items() if v}
+
+def fuzzy_when(ts, now_ts=None):
+    """Privacy-safe label for a past check-in: no clock times. 'earlier today' / 'yesterday' / 'this week'."""
+    now_ts = now_ts if now_ts is not None else now()
+    today = datetime.fromtimestamp(now_ts, ET).date()
+    then = datetime.fromtimestamp(ts, ET).date()
+    if then == today:
+        return "earlier today"
+    if then == today - timedelta(days=1):
+        return "yesterday"
+    return "this week"
+
+
+def cooldown_remaining(uid, run_id, t=None):
+    """Seconds until this member may check in at this run again (0 if they may).
+    An active check-in at this run does not count — a new check-in just replaces it."""
+    t = t or now()
+    r = one("""SELECT left_at, expires_at FROM checkins WHERE user_id=:u AND run_id=:r
+               ORDER BY id DESC LIMIT 1""", u=uid, r=run_id)
+    if not r:
+        return 0
+    left_at, expires_at = r
+    if left_at is None and expires_at > t:
+        return 0
+    ended = left_at if left_at is not None else expires_at
+    return max(0, ended + CHECKIN_COOLDOWN - t)
+
+
+def recently_here(run_id, t=None, days=None, limit=None):
+    """Dogs who left or whose check-in expired recently, excluding anyone still here.
+    One row per member, most recent departure first: [{user_id, anon, ndogs, dogs, left_at, when}]."""
+    t = t or now()
+    days = RECENT_HERE_DAYS if days is None else days
+    limit = RECENT_HERE_LIMIT if limit is None else limit
+    since = t - int(days) * 86400
+    active = {r[0] for r in q("SELECT user_id FROM checkins WHERE run_id=:r AND left_at IS NULL AND expires_at>:t",
+                               r=run_id, t=t)}
+    rows = q("""SELECT c.user_id, c.dog_ids, c.anon, c.left_at, c.expires_at FROM checkins c
+                WHERE c.run_id=:r AND COALESCE(c.left_at, c.expires_at) <= :t
+                  AND COALESCE(c.left_at, c.expires_at) > :since
+                ORDER BY COALESCE(c.left_at, c.expires_at) DESC""", r=run_id, t=t, since=since)
+    seen, out = set(), []
+    for uid, dids, anon, left_at, expires in rows:
+        if uid in active or uid in seen:
+            continue
+        seen.add(uid)
+        ended = left_at if left_at is not None else expires
+        ids = json.loads(dids or "[]")
+        out.append(dict(user_id=uid, anon=bool(anon), ndogs=len(ids),
+                        dogs=[] if anon else dog_tiles(ids), left_at=ended, when=fuzzy_when(ended, t)))
+        if len(out) >= int(limit):
+            break
+    return out
+
 
 
 def set_checkins_hidden(uid, on):

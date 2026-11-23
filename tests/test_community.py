@@ -120,7 +120,7 @@ class CheckinTests(unittest.TestCase):
         r = c.post(f"/runs/{RUN_ID}/checkin", {"dogs": [str(lid)]})
         self.assertEqual(r.status, 303)
         page = c.get(r.headers["Location"].split("#")[0]).text
-        self.assertIn("Leaving", page)
+        self.assertIn("Check out", page)
         self.assertIn("Lily", page)
         live = json.loads(Client("10.77.251.1").get("/api/runs/live").body)
         self.assertGreaterEqual(live["here"].get(RUN_ID, 0), 1)

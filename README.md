@@ -173,9 +173,12 @@ There's no in-browser maker. Members request a pixel-art portrait and the team m
 Hub: `/community`. Code: `community.py` (data), `communityweb.py` (pages, emails, daily job), `runpageweb.py` (run pages).
 
 - **Run pages and check-ins**: every run has a page at `/runs/<id>-<slug>` (`/runs/<id>` redirects). Members tap
-  "We're here" with their dogs; check-ins expire after 2 hours or when they tap "Leaving". The map and list on `/runs`
-  show "N dogs here now" from `GET /api/runs/live` (no-cache). Check-ins are rate limited (12 per hour). Members can
-  check in privately (counted, no names or photos) per check-in, or by default from the "Check-in privacy" switch on `/me`.
+  "We're here" with their dogs; check-ins expire after 2 hours or when they tap "Check out". The page lists dogs here
+  now (name + photo) and a short "Recently here" list for the past week, with fuzzy times (earlier today / yesterday /
+  this week) — dogs only, no owner surnames, no exact clock times on past visits. The map and list on `/runs`
+  show "N dogs here now" from `GET /api/runs/live` (no-cache). Check-ins are rate limited (12 per hour, plus a 60-second
+  cooldown after leaving the same run). Members can check in privately (counted, no names or photos) per check-in, or
+  by default from the "Check-in privacy" switch on `/me`.
 - **Park announcements**: verified park accounts are assigned by the admin at `/admin/parks?key=...` (member email,
   comma-separated run ids, organization name). They post closures, maintenance, rule changes and events from the run page
   (10 per day); posts show an "Official" badge and drop off after their optional end date. Members follow a run and get

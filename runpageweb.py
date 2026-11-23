@@ -4,7 +4,7 @@ follow / unfollow, nearby lost and found alerts and the run's details.
 Routes:
   GET  /runs/<run id>[-slug]                 the run page (e.g. /runs/n-006-manhasset-dog-park)
   POST /runs/<run id>/checkin                "We're here": dogs (ids, owner or co-owner), anon=1 hides the dogs; 2-hour expiry
-  POST /runs/<run id>/leave                  "Leaving"
+  POST /runs/<run id>/leave                  "Check out" (alias: /checkout)
   POST /runs/<run id>/follow                 on=1 follow / on=0 unfollow (followers get announcement emails)
   POST /runs/<run id>/announce               verified park account only: kind, title, body, until (YYYY-MM-DD, optional)
   POST /runs/<run id>/announce/<id>/remove   verified park account (or admin) removes an announcement
@@ -13,7 +13,7 @@ Routes:
   GET  /api/runs/live                        {"here": {run id: dogs here now}, "news": {run id: current announcements}}
   GET  /admin/parks?key=KEY                  admin: verified park accounts (grant by member email + run ids) and announcements
   POST /admin/parks                          admin: action=grant|revoke|remove_announcement
-Check-ins are rate limited (CHECKINS_PER_HOUR per member) and a member is at one run at a time.
+Check-ins are rate limited (CHECKINS_PER_HOUR per member, plus CHECKIN_COOLDOWN after leaving the same run) and a member is at one run at a time. Past visits appear under "Recently here" with fuzzy times.
 """
 import html, re
 from datetime import datetime, time as dtime
@@ -90,7 +90,7 @@ class RunPageRoutes:
         return False
 
     def runpage_post(self, path, q):
-        m = re.fullmatch(r"/runs/" + RUN_RE + r"/(checkin|leave|follow|announce)", path)
+        m = re.fullmatch(r"/runs/" + RUN_RE + r"/(checkin|leave|checkout|follow|announce)", path)
         if m:
             self._app_reset()
             getattr(self, "post_run_" + m.group(2))(m.group(1)); return True
@@ -127,7 +127,8 @@ class RunPageRoutes:
         flash = {"here": "You're checked in. Have fun!", "left": "Checked out. See you next time!",
                  "followed": "You're following this run.", "unfollowed": "You're no longer following this run.",
                  "posted": "Announcement posted.", "removed": "Announcement removed.",
-                 "slow": "That's a lot of check-ins. Please try again in a bit.", "nodogs": "Pick at least one dog."}.get(q.get("m", [""])[0], "")
+                 "slow": "That's a lot of check-ins. Please try again in a bit.",
+                 "wait": "You just checked out. Please try again in a minute.", "nodogs": "Pick at least one dog."}.get(q.get("m", [""])[0], "")
         # announcements: prominent, above everything else
         ann_html = ""
         if anns:
@@ -170,6 +171,21 @@ class RunPageRoutes:
                     if ndogs else '<p class="muted" style="margin:0 0 12px">Nobody has checked in yet. Heading over? Let the regulars know.</p>')
         here_html = f'{now_line}{f"<ul class=mdogs>{chr(10).join(tiles)}</ul>" if tiles else ""}{more}'
         here_form = self._checkin_form(r, u)
+        recent = C.recently_here(rid)
+        hid_recent = PV.checkin_hidden_users([x["user_id"] for x in recent])
+        for x in recent:
+            if x["user_id"] in hid_recent:
+                x["anon"] = True
+        PV.filter_people([x for x in recent if not x["anon"]], self.pv())
+        recent_tiles = []
+        for x in recent:
+            if x["anon"]:
+                continue
+            for d in x["dogs"]:
+                recent_tiles.append(f'<li><a href="/dogs/{e(d["slug"])}">{A.tile_img(d, 72)}'
+                                    f'<span>{e(d["name"])}</span><small>{e(x["when"])}</small></a></li>')
+        recent_html = (f'<div class="recently" id="recently"><h3>Recently here</h3>'
+                       f'<ul class="mdogs">{chr(10).join(recent_tiles)}</ul></div>' if recent_tiles else "")
         # follow
         nf = C.follower_count(rid)
         if u:
@@ -200,7 +216,7 @@ class RunPageRoutes:
 <p class="small muted" style="margin:10px 0 0">{nf} member{"s" if nf != 1 else ""} follow{"s" if nf == 1 else ""} this run · {news_link}</p></div></section>
 <section class="section"><div class="wrap">{ann_html}
 <div class="dgrid2"><div>
-<div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}</div>
+<div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}{recent_html}</div>
 {photos_html}{lost_html}
 <div class="panel"><h2>About this run</h2><dl class="amen">{dl}</dl><dl class="facts">{dl2}</dl>
 <p class="small muted" style="margin:14px 0 0">Know this run? <a href="/runs/suggest?edit={quote(rid)}">Suggest an edit</a></p></div>
@@ -226,7 +242,7 @@ class RunPageRoutes:
             priv = " (privately)" if mine["anon"] else ""
             return (f'<div class="mine-in"><p style="margin:0 0 10px"><b>You\'re here with {e(names)}{priv}.</b> '
                     f'<span class="muted">Checked in at {e(fmt_time(mine["created_at"]))}, ends at {e(fmt_time(mine["expires_at"]))}.</span></p>'
-                    f'<form method="post" action="/runs/{rid}/leave">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Leaving</button></form></div>')
+                    f'<form method="post" action="/runs/{rid}/checkout">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Check out</button></form></div>')
         dogs = A.dogs_for_user(u["id"])
         if not dogs:
             return '<p style="margin:14px 0 0" class="small">Add your dog to check in. <a href="/me/dogs/new">Add a dog</a></p>'
@@ -287,6 +303,8 @@ class RunPageRoutes:
                 picked.append(int(x))
         if not picked:
             return self.redirect(run_path(r) + "?m=nodogs#here")
+        if C.cooldown_remaining(u["id"], rid):
+            return self.redirect(run_path(r) + "?m=wait#here")
         if not A.LIMITER.allow(f"checkin:{u['id']}", C.CHECKINS_PER_HOUR, 3600):
             return self.redirect(run_path(r) + "?m=slow#here")
         C.check_in(u["id"], rid, picked, anon=f.get("anon") == "1")
@@ -299,6 +317,9 @@ class RunPageRoutes:
             return
         C.leave(u["id"])
         return self.redirect(run_path(r) + "?m=left#here")
+
+    def post_run_checkout(self, rid):
+        return self.post_run_leave(rid)
 
     def post_run_follow(self, rid):
         u, r, f = self._run_member(rid)
