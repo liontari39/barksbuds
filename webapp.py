@@ -166,7 +166,7 @@ APP_SHELL_BOOT = (
     'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
     '<link rel="stylesheet" href="/app-shell.css?v=2">'
 )
-APP_SHELL_JS = '<script src="/app-shell.js?v=4" defer></script>'
+APP_SHELL_JS = '<script src="/app-shell.js?v=5" defer></script>'
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -399,7 +399,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=34"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=35"><link rel="stylesheet" href="/search.css?v=2">
 {APP_SHELL_BOOT}
 </head><body>
 {ICONS}
@@ -412,7 +412,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy" decoding="async">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/puppy-pods">Puppy Pods</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}<script src="/pwa.js?v=1" defer></script><script src="/native.js?v=1" defer></script>{APP_SHELL_JS}{self._pwa_boot()}{SW_REGISTER}
@@ -689,6 +689,7 @@ It comes from hello@barksbuds.app.</div>
 <a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a>
 <a class="btn btn-ghost btn-sm" href="{H.card_path(u["id"])}" data-bb="your-card">See your card</a>
 <a class="btn btn-ghost btn-sm" href="/me/run-alerts">Run alerts</a>
+<a class="btn btn-ghost btn-sm" href="/puppy-pods">Puppy Pods</a>
 <div class="emailpref" id="privacy-settings"><p class="small" style="margin:0;flex:1 1 220px"><b>Privacy</b>: who can see your dogs, how findable they are,
 what details show and who can message you.</p><a class="btn btn-sm" href="/me/privacy">Privacy settings</a></div></div>
 <div class="panel"><h2>Account</h2>
@@ -1578,6 +1579,7 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                        f'<td>{e(r["reason"])}</td><td style="white-space:pre-line">{e((r.get("body") or r.get("details") or "")[:200])}</td><td>{e(r["status"])}</td><td>{" · ".join(acts)}</td></tr>')
         import community as C
         import runhealthweb as RHW
+        import podweb as PW
         ltr = []
         for r in C.list_lost_reports():
             hid = f'<input type="hidden" name="key" value="{e(key)}"><input type="hidden" name="kind" value="lost"><input type="hidden" name="id" value="{r["id"]}">'
@@ -1606,7 +1608,9 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
 <h2 style="margin-top:28px">Lost-dog alerts</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Posted by</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>{''.join(ltr) or '<tr><td colspan="9">No lost-dog reports yet.</td></tr>'}</tbody></table></div>
 <h2 style="margin-top:28px">Run health heads-ups</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody>{RHW.review_rows_html(key) or '<tr><td colspan="8">No health-report flags yet.</td></tr>'}</tbody></table></div></div></section>"""
+<tbody>{RHW.review_rows_html(key) or '<tr><td colspan="8">No health-report flags yet.</td></tr>'}</tbody></table></div>
+<h2 style="margin-top:28px">Puppy Pods</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{PW.review_rows_html(key) or '<tr><td colspan="8">No Puppy Pod reports yet.</td></tr>'}</tbody></table></div></div></section>"""
         return self.page("Admin: review queue", body)
 
     def post_admin_reports(self):
@@ -1615,7 +1619,8 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             return self._emit(404, b"Not found", "text/plain")
         act, rid, dog = f.get("action"), f.get("id"), f.get("dog")
         import runhealthweb as RHW
-        if RHW.handle_review_action(f):
+        import podweb as PW
+        if RHW.handle_review_action(f) or PW.handle_review_action(f):
             pass
         elif act in ("resolve", "dismiss", "reopen") and rid and rid.isdigit():
             if f.get("kind") == "message":
