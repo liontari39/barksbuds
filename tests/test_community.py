@@ -272,6 +272,66 @@ class LostFoundTests(unittest.TestCase):
         self.assertNotIn(aid, [a["id"] for a in C.live_alerts()])
         C.set_alert_status(aid, "removed")
 
+
+    def test_lost_alert_is_reportable(self):
+        c, email, uid, (lid,) = member("Owner", dogs=[lily()])
+        seen = datetime.now(C.ET).strftime("%Y-%m-%dT%H:%M")
+        r = c.post("/lost-found/new", {"kind": "lost", "dog": str(lid), "dog_name": "", "run": RUN_ID, "area": "", "town": "",
+                                       "seen": seen, "description": "Cream poodle mix, red collar, very friendly."})
+        self.assertEqual(r.status, 303, r.text[:500])
+        path = r.headers["Location"].split("?")[0]
+        aid = int(path.rsplit("/", 1)[1])
+        anon = Client("10.77.253.1")
+        page = anon.get(path)
+        self.assertEqual(page.status, 200)
+        self.assertNotIn(email, page.text)
+        self.assertIn("report this alert", page.text.lower())
+        self.assertEqual(anon.post(f"/lost-found/{aid}/report", {"reason": C.ALERT_REPORT_REASONS[0]}).status, 303)
+        self.assertEqual(c.post(f"/lost-found/{aid}/report", {"reason": C.ALERT_REPORT_REASONS[0]}).status, 404)
+        viewer, _, vid, _ = member("Viewer", town="Roslyn")
+        page = viewer.get(path)
+        self.assertIn("Report this alert", page.text)
+        r = viewer.post(f"/lost-found/{aid}/report", {"reason": C.ALERT_REPORT_REASONS[0], "details": "looks fake"})
+        self.assertEqual(r.status, 303)
+        self.assertIn("alert_reported", r.headers["Location"])
+        review = Client().get("/admin/review?key=test-admin-key")
+        self.assertIn("looks fake", review.text)
+        self.assertIn("Lost-dog alerts", review.text)
+        rid = C.list_lost_reports()[0]["id"]
+        Client().post("/admin/review", {"key": "test-admin-key", "kind": "lost", "id": rid, "alert": str(aid), "action": "hide_alert"}, csrf=False)
+        self.assertEqual(C.alert(aid)["status"], "removed")
+        self.assertEqual(Client("10.77.253.2").get(path).status, 404)
+
+    def test_lost_push_notifies_opted_in_neighbors_only(self):
+        import push, communityweb
+        c, email, uid, (lid,) = member("Poster", dogs=[lily()])
+        nb, nemail, nuid, _ = member("Near", town="Roslyn")
+        far, _, fuid, _ = member("Faraway", area="Queens", town="Astoria")
+        self.assertTrue(push.save_subscription(nuid, {"endpoint": f"https://push.example.com/lost-{nuid}",
+                                                      "keys": {"p256dh": "A" * 88, "auth": "B" * 24}}, ["lost"]))
+        self.assertTrue(push.save_subscription(fuid, {"endpoint": f"https://push.example.com/lost-{fuid}",
+                                                      "keys": {"p256dh": "A" * 88, "auth": "B" * 24}}, ["lost"]))
+        self.assertTrue(push.user_flags(nuid)["lost"])
+        seen = datetime.now(C.ET).strftime("%Y-%m-%dT%H:%M")
+        r = c.post("/lost-found/new", {"kind": "lost", "dog": str(lid), "dog_name": "", "run": RUN_ID, "area": "", "town": "",
+                                       "seen": seen, "description": "Cream poodle mix, red collar, very friendly."})
+        self.assertEqual(r.status, 303, r.text[:500])
+        aid = int(r.headers["Location"].split("?")[0].rsplit("/", 1)[1])
+        calls = []
+        orig = push.notify
+        push.notify = lambda *a, **k: calls.append((a, k)) or 0
+        try:
+            communityweb.notify_alert(C.alert(aid), "http://example.test")
+        finally:
+            push.notify = orig
+        uids = [a[0] for a, _ in calls]
+        self.assertIn(nuid, uids)
+        self.assertNotIn(fuid, uids)
+        self.assertNotIn(uid, uids)
+        self.assertTrue(all(a[1] == "lost" for a, _ in calls))
+        self.assertTrue(all(email not in (a[3] or "") for a, _ in calls))
+        self.assertTrue(all(f"/lost-found/{aid}" in (a[4] if len(a) > 4 else "/") for a, _ in calls))
+
     def test_lost_needs_login_and_description(self):
         r = Client("10.77.255.9").get("/lost-found/new")
         self.assertEqual(r.status, 303)

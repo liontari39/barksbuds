@@ -1,4 +1,4 @@
-"""Push for meetup reminders and run check-ins (opt-in, off by default).
+"""Push for meetup reminders, run check-ins and lost-dog alerts (opt-in, off by default).
 
 Web Push uses VAPID keys from env (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_CONTACT).
 Native iOS/Android push uses APNs/FCM env vars (see native_* helpers). If a channel's
@@ -11,7 +11,7 @@ import base64
 
 import accounts as A
 
-KINDS = ("meetups", "checkins")
+KINDS = ("meetups", "checkins", "lost")
 
 
 def _b64u(data):
@@ -59,6 +59,11 @@ def init_schema(store):
         meetups {INT} NOT NULL DEFAULT 0, checkins {INT} NOT NULL DEFAULT 0,
         created_at {INT} NOT NULL, updated_at {INT} NOT NULL)""")
     store.q("CREATE INDEX IF NOT EXISTS push_devices_user_idx ON push_devices(user_id)")
+    cols = lambda tbl: ({r[0] for r in store.q(f"SELECT column_name FROM information_schema.columns WHERE table_name='{tbl}'")} if pg
+                        else {r[1] for r in store.q(f"PRAGMA table_info({tbl})")})
+    for tbl in ("push_subscriptions", "push_devices"):
+        if "lost" not in cols(tbl):
+            store.q(f"ALTER TABLE {tbl} ADD COLUMN lost {INT} NOT NULL DEFAULT 0")
 
 
 def q(sql, **kw):
@@ -72,11 +77,12 @@ def one(sql, **kw):
 
 def user_flags(uid):
     """Whether this member has any live subscription or device token for each kind."""
-    r = one("SELECT COALESCE(MAX(meetups),0), COALESCE(MAX(checkins),0) FROM push_subscriptions WHERE user_id=:u", u=uid)
-    d = one("SELECT COALESCE(MAX(meetups),0), COALESCE(MAX(checkins),0) FROM push_devices WHERE user_id=:u", u=uid)
+    r = one("SELECT COALESCE(MAX(meetups),0), COALESCE(MAX(checkins),0), COALESCE(MAX(lost),0) FROM push_subscriptions WHERE user_id=:u", u=uid)
+    d = one("SELECT COALESCE(MAX(meetups),0), COALESCE(MAX(checkins),0), COALESCE(MAX(lost),0) FROM push_devices WHERE user_id=:u", u=uid)
     return {
         "meetups": bool((r and r[0]) or (d and d[0])),
         "checkins": bool((r and r[1]) or (d and d[1])),
+        "lost": bool((r and r[2]) or (d and d[2])),
     }
 
 
@@ -94,17 +100,18 @@ def save_subscription(uid, sub, kinds=None):
     kinds = set(kinds or [])
     meetups = 1 if "meetups" in kinds else 0
     checkins = 1 if "checkins" in kinds else 0
+    lost = 1 if "lost" in kinds else 0
     t = A.now()
     existing = one("SELECT id, user_id FROM push_subscriptions WHERE endpoint=:e", e=endpoint)
     if existing:
         if existing[1] != uid:
             q("DELETE FROM push_subscriptions WHERE id=:i", i=existing[0])
         else:
-            q("""UPDATE push_subscriptions SET p256dh=:p, auth=:a, meetups=:m, checkins=:c, updated_at=:t
-                 WHERE endpoint=:e""", p=p256dh, a=auth, m=meetups, c=checkins, t=t, e=endpoint)
+            q("""UPDATE push_subscriptions SET p256dh=:p, auth=:a, meetups=:m, checkins=:c, lost=:l, updated_at=:t
+                 WHERE endpoint=:e""", p=p256dh, a=auth, m=meetups, c=checkins, l=lost, t=t, e=endpoint)
             return True
-    q("""INSERT INTO push_subscriptions(user_id,endpoint,p256dh,auth,meetups,checkins,created_at,updated_at)
-         VALUES(:u,:e,:p,:a,:m,:c,:t,:t)""", u=uid, e=endpoint, p=p256dh, a=auth, m=meetups, c=checkins, t=t)
+    q("""INSERT INTO push_subscriptions(user_id,endpoint,p256dh,auth,meetups,checkins,lost,created_at,updated_at)
+         VALUES(:u,:e,:p,:a,:m,:c,:l,:t,:t)""", u=uid, e=endpoint, p=p256dh, a=auth, m=meetups, c=checkins, l=lost, t=t)
     return True
 
 
@@ -312,17 +319,18 @@ def save_device(uid, platform, token, kinds=None):
     kinds = set(kinds or [])
     meetups = 1 if "meetups" in kinds else 0
     checkins = 1 if "checkins" in kinds else 0
+    lost = 1 if "lost" in kinds else 0
     t = A.now()
     existing = one("SELECT id, user_id FROM push_devices WHERE token=:t", t=token)
     if existing:
         if existing[1] != uid:
             q("DELETE FROM push_devices WHERE id=:i", i=existing[0])
         else:
-            q("""UPDATE push_devices SET platform=:p, meetups=:m, checkins=:c, updated_at=:t
-                 WHERE token=:tok""", p=platform, m=meetups, c=checkins, t=t, tok=token)
+            q("""UPDATE push_devices SET platform=:p, meetups=:m, checkins=:c, lost=:l, updated_at=:t
+                 WHERE token=:tok""", p=platform, m=meetups, c=checkins, l=lost, t=t, tok=token)
             return True
-    q("""INSERT INTO push_devices(user_id,platform,token,meetups,checkins,created_at,updated_at)
-         VALUES(:u,:p,:tok,:m,:c,:t,:t)""", u=uid, p=platform, tok=token, m=meetups, c=checkins, t=t)
+    q("""INSERT INTO push_devices(user_id,platform,token,meetups,checkins,lost,created_at,updated_at)
+         VALUES(:u,:p,:tok,:m,:c,:l,:t,:t)""", u=uid, p=platform, tok=token, m=meetups, c=checkins, l=lost, t=t)
     return True
 
 

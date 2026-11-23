@@ -12,8 +12,9 @@
     date. Members can follow a run (run_follows); followers get announcement emails unless users.follow_emails=0.
   * Lost and found alerts: LOST or FOUND, photo or one of the poster's dogs, last seen at a run or a town/area, time
     and description. Contact goes through BarksBuds messages. One alert per member per day, auto-expire after 14
-    days, the poster can mark Reunited, the admin can remove. Alert emails go to followers of nearby runs and to
-    members in the same area/town (users.alert_emails), at most ALERT_MAILS_PER_DAY per recipient.
+    days, the poster can mark Reunited, the admin can remove, and any member can report an alert. Alert emails go to
+    followers of nearby runs and to members in the same area/town (users.alert_emails), at most ALERT_MAILS_PER_DAY
+    per recipient. Opted-in members nearby also get a Web Push (native APNs/FCM stays off until those env vars are set).
   * Dog compatibility notes: dogs.energy and dogs.compat (JSON list), see accounts.SIZES / ENERGY / COMPAT.
   * Vaccination and license reminders (PRIVATE, owners and co-owners only): dog_care rows (rabies, license, other
     vaccines with due dates). Reminder emails 30 and 7 days before (care_sent keeps them once-only).
@@ -90,6 +91,10 @@ def init_schema(store):
             photo_w {INT}, photo_h {INT}, created_at {INT} NOT NULL, expires_at {INT} NOT NULL, closed_at {INT})""",
         "CREATE INDEX IF NOT EXISTS lost_alerts_status_idx ON lost_alerts(status, expires_at)",
         "CREATE INDEX IF NOT EXISTS lost_alerts_user_idx ON lost_alerts(user_id, created_at)",
+        f"""CREATE TABLE IF NOT EXISTS lost_reports(id {ID}, alert_id {INT} NOT NULL, reporter_user_id {INT},
+            reason TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'open',
+            created_at {INT} NOT NULL, ip_hash TEXT NOT NULL DEFAULT '')""",
+        "CREATE INDEX IF NOT EXISTS lost_reports_alert_idx ON lost_reports(alert_id, status)",
         f"""CREATE TABLE IF NOT EXISTS alert_mail(id {ID}, alert_id {INT} NOT NULL, user_id {INT} NOT NULL, sent_at {INT} NOT NULL,
             UNIQUE(alert_id, user_id))""",
         "CREATE INDEX IF NOT EXISTS alert_mail_user_idx ON alert_mail(user_id, sent_at)",
@@ -483,6 +488,55 @@ def claim_alert_mail(aid, uid):
     return True
 
 
+def nearby_member_ids(a, runs):
+    """Members near a last-seen spot (run followers and same area/town), excluding the poster."""
+    near = [r["id"] for r in runs if a["lat"] is not None and (miles(a["lat"], a["lng"], r.get("lat"), r.get("lng")) or 99) <= ALERT_NEAR_MILES]
+    if a["run_id"] and a["run_id"] not in near:
+        near.append(a["run_id"])
+    ids = set(followers(near))
+    if a["area"]:
+        rows = q("SELECT id, town FROM users WHERE area=:a", a=a["area"])
+        idx = {r["id"]: r for r in runs}
+        names = [a["town"]] + [idx[i].get("town_or_neighborhood") or "" for i in near if i in idx]
+        towns = {key(p) for n in names for p in re.split(r"[/,]", n or "") if key(p)}
+        ids |= {r[0] for r in rows if not towns or key(r[1]) in towns}
+    ids.discard(a["user_id"])
+    return ids
+
+
+def alert_push_recipients(a, runs):
+    """Nearby members who turned on lost-dog push, capped at ALERT_MAX_RECIPIENTS. The poster is never included."""
+    import push
+    ids = nearby_member_ids(a, runs)
+    return sorted(i for i in ids if push.user_flags(i).get("lost"))[:ALERT_MAX_RECIPIENTS]
+
+
+ALERT_REPORT_REASONS = ("Fake or spam", "Not a real missing dog", "Safety concern", "Something else")
+
+
+def add_lost_report(aid, uid, reason, details, ip):
+    q("""INSERT INTO lost_reports(alert_id, reporter_user_id, reason, details, created_at, ip_hash)
+         VALUES(:a,:u,:r,:d,:t,:ip)""",
+      a=aid, u=uid, r=reason, d=details or "", t=now(), ip=A.ip_hash(ip or ""))
+    return one("SELECT id FROM lost_reports WHERE alert_id=:a AND reporter_user_id=:u ORDER BY id DESC LIMIT 1", a=aid, u=uid)[0]
+
+
+def list_lost_reports(limit=300):
+    return [dict(id=r[0], alert_id=r[1], reporter=r[2], reason=r[3], details=r[4], status=r[5], created_at=r[6],
+                 reporter_name=r[7] or "", dog_name=r[8] or "", kind=r[9] or "", poster=r[10], poster_name=r[11] or "")
+            for r in q("""SELECT r.id, r.alert_id, r.reporter_user_id, r.reason, r.details, r.status, r.created_at,
+                                 a.display_name, l.dog_name, l.kind, l.user_id, p.display_name
+                          FROM lost_reports r
+                          LEFT JOIN users a ON a.id=r.reporter_user_id
+                          LEFT JOIN lost_alerts l ON l.id=r.alert_id
+                          LEFT JOIN users p ON p.id=l.user_id
+                          ORDER BY CASE WHEN r.status='open' THEN 0 ELSE 1 END, r.id DESC LIMIT :n""", n=limit)]
+
+
+def set_lost_report_status(rid, status):
+    q("UPDATE lost_reports SET status=:s WHERE id=:i", s=status, i=rid)
+
+
 # ---------------------------------------------------------------- recommendations
 def _rec(r):
     return dict(id=r[0], category=r[1], name=r[2], town=r[3], area=r[4], contact=r[5], created_by=r[6], hidden=bool(r[7]),
@@ -730,6 +784,8 @@ def purge_user(uid):
     q("DELETE FROM park_roles WHERE user_id=:u", u=uid)
     q("UPDATE announcements SET user_id=NULL WHERE user_id=:u", u=uid)
     q("DELETE FROM alert_mail WHERE user_id=:u OR alert_id IN (SELECT id FROM lost_alerts WHERE user_id=:u)", u=uid)
+    q("UPDATE lost_reports SET reporter_user_id=NULL, ip_hash='' WHERE reporter_user_id=:u", u=uid)
+    q("DELETE FROM lost_reports WHERE alert_id IN (SELECT id FROM lost_alerts WHERE user_id=:u)", u=uid)
     q("DELETE FROM lost_alerts WHERE user_id=:u", u=uid)
     for (rid,) in q("SELECT rec_id FROM rec_votes WHERE user_id=:u", u=uid):
         unvote(rid, uid)

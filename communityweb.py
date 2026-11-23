@@ -46,6 +46,7 @@ PHONE_RE = re.compile(r"^\+?1?[\s.-]?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})$"
 
 W.FLASH.update({
     "alert_posted": "Your alert is live. We're letting members nearby know.", "alert_reunited": "So happy for you! The alert is marked reunited.",
+    "alert_reported": "Thanks. The BarksBuds team will take a look.",
     "alert_removed": "Alert removed.", "rec_added": "Thanks! Your recommendation is up.", "rec_voted": "Thanks! We counted you in.",
     "rec_unvoted": "Removed your recommendation.", "rec_reported": "Thanks. The BarksBuds team will take a look.",
     "care_saved": "Saved. We'll email you 30 and 7 days before it's due.", "care_deleted": "Reminder removed.",
@@ -377,7 +378,7 @@ class CommunityRoutes:
         return self._cdispatch(routes, path, q)
 
     def community_post(self, path, q):
-        routes = [(r"/lost-found/new", self.post_lost), (r"/lost-found/(\d+)/(reunited|remove)", self.post_lost_close),
+        routes = [(r"/lost-found/new", self.post_lost), (r"/lost-found/(\d+)/(reunited|remove)", self.post_lost_close), (r"/lost-found/(\d+)/report", self.post_lost_report),
                   (r"/admin/lost", self.post_admin_lost), (r"/recommendations/new", self.post_rec),
                   (r"/recommendations/(\d+)/(vote|unvote|report)", self.post_rec_action), (r"/admin/recs", self.post_admin_recs),
                   (r"/me/dogs/(\d+)/care", self.post_care), (r"/me/community-emails", self.post_community_prefs),
@@ -567,6 +568,16 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
             owner = (f'<div class="racts"><form method="post" action="/lost-found/{a["id"]}/reunited">{self.csrf_field()}<button class="btn btn-gold btn-sm" type="submit">'
                      f'<svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg>Mark reunited</button></form>'
                      f'<form method="post" action="/lost-found/{a["id"]}/remove">{self.csrf_field()}<button class="btn btn-ghost btn-sm" type="submit">Remove alert</button></form></div>')
+        report = ""
+        if u and not mine and a["status"] != "removed":
+            reasons = "".join(f'<option value="{e(r)}">{e(r)}</option>' for r in C.ALERT_REPORT_REASONS)
+            report = (f'<details class="rep" style="margin-top:16px"><summary>Report this alert</summary>'
+                      f'<form method="post" action="/lost-found/{a["id"]}/report">{self.csrf_field()}'
+                      f'<div class="field"><label for="reason">Why?</label><select id="reason" name="reason" required><option value="">Choose a reason</option>{reasons}</select></div>'
+                      f'<div class="field"><label for="details">Details (optional)</label><textarea id="details" name="details" rows="2" maxlength="500"></textarea></div>'
+                      f'<button class="btn btn-ghost btn-sm" type="submit">Send report</button></form></details>')
+        elif not u and a["status"] != "removed":
+            report = f'<p class="small"><a href="/signin?next={quote("/lost-found/" + str(a["id"]))}">Sign in</a> to report this alert.</p>'
         share = base + alert_path(a)
         stext = quote(f"{alert_headline(a)} ({alert_where(a)}). Please share: {share}")
         h1 = alert_name(a) if a["dog_name"] else ("Have you seen this dog?" if a["kind"] == "lost" else "A dog was found")
@@ -580,7 +591,7 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
 <div class="racts">{contact}<a class="btn btn-ghost btn-sm" href="sms:?&amp;body={stext}">Text this alert</a>
 <a class="btn btn-ghost btn-sm" href="mailto:?subject={quote(alert_headline(a))}&amp;body={stext}">Email it</a></div>
 <div class="field" style="margin-top:14px"><label for="sharelink">Share link</label><input id="sharelink" type="text" readonly onfocus="this.select()" value="{e(share)}"></div>
-<p class="small muted">Contact happens through BarksBuds messages. Never send money to anyone claiming to have a dog.</p>{owner}
+<p class="small muted">Contact happens through BarksBuds messages. Never send money to anyone claiming to have a dog. The poster's email and exact address are never shown.</p>{owner}{report}
 </div></div></div></section>"""
         desc = f"{alert_headline(a)}. Last seen {alert_where(a)}, {when_et(a['seen_at'])}. {a['description'][:140]}"
         self.page(alert_headline(a), body, index=a["live"], canonical=alert_path(a), desc=desc, active="community", flash=self.flash_from(q),
@@ -621,6 +632,24 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
         C.set_alert_status(aid, "reunited" if what == "reunited" else "removed")
         print(f"lostfound: alert {aid} {what}", flush=True)
         return self.redirect(alert_path(a) + "?m=alert_reunited" if what == "reunited" else "/lost-found?m=alert_removed")
+
+    def post_lost_report(self, aid, q):
+        u = self.user()
+        if not u:
+            return self.need_login()
+        f = self._form_or_fail()
+        if f is None:
+            return
+        a = C.alert(aid)
+        if not a or a["status"] == "removed" or a["user_id"] == u["id"]:
+            return self.msg_page("Alert not found", "", code=404, icon="i-alert")
+        reason = (f.get("reason") or "").strip()
+        if reason not in C.ALERT_REPORT_REASONS:
+            return self.redirect(alert_path(a) + "?m=alert_reported")
+        if A.LIMITER.allow(f"lostreport:{u['id']}", 5, 86400):
+            C.add_lost_report(a["id"], u["id"], reason, clean(f.get("details"), 500, multiline=True), self._client_ip())
+            print(f"lostfound: alert {a['id']} reported", flush=True)
+        return self.redirect(alert_path(a) + "?m=alert_reported")
 
     def _admin_doc(self, title, inner, flash=""):
         doc = (f'<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -1160,5 +1189,17 @@ def notify_alert(a, base):
                 n += 1
     except Exception as ex:
         print(f"lostfound: notify failed: {type(ex).__name__}", flush=True)
-    print(f"lostfound: alert {a['id']} emailed {n} member(s)", flush=True)
+    pcount = 0
+    try:
+        import push
+        lost = a["kind"] == "lost"
+        title = f"{'Lost dog' if lost else 'Found dog'} near you"
+        body = f"{alert_name(a)} — last seen {alert_where(a)}"
+        url = alert_path(a)
+        for uid in C.alert_push_recipients(a, W.RUNS()):
+            push.notify(uid, "lost", title, body, url)
+            pcount += 1
+    except Exception as ex:
+        print(f"lostfound: push failed: {type(ex).__name__}", flush=True)
+    print(f"lostfound: alert {a['id']} emailed {n} member(s), pushed {pcount}", flush=True)
     return n

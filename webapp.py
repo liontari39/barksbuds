@@ -699,19 +699,21 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
         if not (push.enabled() or self.is_native_app()):
             return ""
         flags = push.user_flags(u["id"])
-        on = flags["meetups"] or flags["checkins"]
-        kinds = ",".join(k for k in ("meetups", "checkins") if flags[k]) or "meetups,checkins"
+        bits = [lab for k, lab in (("meetups", "meetup reminders"), ("checkins", "check-ins at a run where you already are"),
+                                   ("lost", "lost-dog alerts nearby")) if flags.get(k)]
+        on = bool(bits)
+        kinds = ",".join(k for k in ("meetups", "checkins", "lost") if flags.get(k)) or "meetups,checkins,lost"
         if on:
-            return (f'<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> On'
-                    f'{" for meetup reminders" if flags["meetups"] else ""}{" and" if flags["meetups"] and flags["checkins"] else ""}'
-                    f'{" for check-ins at a run where you already are" if flags["checkins"] else ""}.'
+            joined = bits[0] if len(bits) == 1 else (", ".join(bits[:-1]) + " and " + bits[-1])
+            return (f'<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> On for {joined}.'
                     ' Off by default; you can turn them off any time.</p>'
                     '<button class="btn btn-ghost btn-sm" type="button" data-push="off">Turn off notifications</button></div>')
         ios_hint = "" if self.is_native_app() else " On iPhone, add BarksBuds to your home screen first."
         return ('<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> Off. '
-                'Get a reminder the day before a meetup you RSVPed to, and a note when a dog arrives at a run where you already are. '
+                'Get a reminder the day before a meetup you RSVPed to, a note when a dog arrives at a run where you already are, '
+                'and an alert when a dog is reported missing nearby. '
                 f'Opt in only — we never turn this on for you.{ios_hint}</p>'
-                '<button class="btn btn-ghost btn-sm" type="button" data-push="on" data-kinds="meetups,checkins">Turn on notifications</button></div>')
+                '<button class="btn btn-ghost btn-sm" type="button" data-push="on" data-kinds="meetups,checkins,lost">Turn on notifications</button></div>')
 
     def _read_json(self, limit=8000):
         try:
@@ -1539,12 +1541,34 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             mtr.append(f'<tr><td>{r["id"]}</td><td>{when_m}</td><td>{e(who)}</td>'
                        f'<td>{e(r["reporter_name"] or "deleted")}</td><td>{e(r["reported_name"] or "deleted")}</td>'
                        f'<td>{e(r["reason"])}</td><td style="white-space:pre-line">{e((r.get("body") or r.get("details") or "")[:200])}</td><td>{e(r["status"])}</td><td>{" · ".join(acts)}</td></tr>')
+        import community as C
+        ltr = []
+        for r in C.list_lost_reports():
+            hid = f'<input type="hidden" name="key" value="{e(key)}"><input type="hidden" name="kind" value="lost"><input type="hidden" name="id" value="{r["id"]}">'
+            acts = []
+            if r["status"] == "open":
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="action" value="dismiss"><button class="linkbtn" type="submit">Dismiss</button></form>')
+            else:
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="action" value="reopen"><button class="linkbtn" type="submit">Reopen</button></form>')
+            if r.get("alert_id"):
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="alert" value="{r["alert_id"]}"><input type="hidden" name="action" value="hide_alert"><button class="linkbtn" type="submit">Hide alert</button></form>')
+            if r.get("poster"):
+                sus = A.is_suspended(r["poster"])
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="user" value="{r["poster"]}">'
+                            f'<input type="hidden" name="action" value="{"unsuspend" if sus else "suspend"}"><button class="linkbtn" type="submit">{"Unsuspend" if sus else "Suspend"} user</button></form>')
+            when_l = datetime.fromtimestamp(r["created_at"], timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            what = f'<a href="/lost-found/{r["alert_id"]}">{e((r["kind"] or "alert") + " — " + (r["dog_name"] or "a dog"))}</a>'
+            ltr.append(f'<tr><td>{r["id"]}</td><td>{when_l}</td><td>{what}</td><td>{e(r["reporter_name"] or "deleted")}</td>'
+                       f'<td>{e(r["poster_name"] or "deleted")}</td><td>{e(r["reason"])}</td><td style="white-space:pre-line">{e((r["details"] or "")[:200])}</td>'
+                       f'<td>{e(r["status"])}</td><td>{" · ".join(acts)}</td></tr>')
         body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">admin</span><h1>Review queue</h1>
 <p class="lead">{users} member{'s' if users != 1 else ''} · {ndogs} dog profile{'s' if ndogs != 1 else ''} · {st['photos']} photos using {st['bytes'] / 1048576:.1f} MB of database storage.</p></div></section>
 <section class="section"><div class="wrap"><h2>Content reports</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>{''.join(tr) or '<tr><td colspan="7">No reports yet.</td></tr>'}</tbody></table></div>
 <h2 style="margin-top:28px">Member and message reports</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody>{''.join(mtr) or '<tr><td colspan="9">No member or message reports yet.</td></tr>'}</tbody></table></div></div></section>"""
+<tbody>{''.join(mtr) or '<tr><td colspan="9">No member or message reports yet.</td></tr>'}</tbody></table></div>
+<h2 style="margin-top:28px">Lost-dog alerts</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Posted by</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{''.join(ltr) or '<tr><td colspan="9">No lost-dog reports yet.</td></tr>'}</tbody></table></div></div></section>"""
         return self.page("Admin: review queue", body)
 
     def post_admin_reports(self):
@@ -1556,11 +1580,19 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             if f.get("kind") == "message":
                 import messages as MS
                 MS.set_report_status(int(rid), "open" if act == "reopen" else "resolved")
+            elif f.get("kind") == "lost":
+                import community as C
+                C.set_lost_report_status(int(rid), "open" if act == "reopen" else "resolved")
             else:
                 A.set_report_status(int(rid), "resolved" if act in ("resolve", "dismiss") else "open")
         elif act == "hide_message" and rid and rid.isdigit():
             import messages as MS
             MS.delete_reported_message(int(rid))
+        elif act == "hide_alert" and (f.get("alert") or "").isdigit():
+            import community as C
+            C.set_alert_status(int(f.get("alert")), "removed")
+            if rid and rid.isdigit():
+                C.set_lost_report_status(int(rid), "resolved")
         elif act in ("suspend", "unsuspend"):
             uid = int(f.get("user")) if (f.get("user") or "").isdigit() else None
             if uid is None and dog and dog.isdigit():
