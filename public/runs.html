@@ -237,6 +237,13 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 .newsb{display:inline-flex;align-items:center;gap:4px;background:#141414;color:#fff;border-radius:999px;padding:2px 10px;font-weight:800;text-decoration:none}.newsb .ico{width:13px;height:13px}
 .runpg{font-weight:800;color:var(--red);text-decoration:none;display:inline-flex;align-items:center;min-height:32px}.runpg:hover{text-decoration:underline}
 .pinx{position:relative}.pinn{position:absolute;top:-6px;right:-8px;min-width:18px;height:18px;border-radius:9px;background:#2BA84A;color:#fff;border:2px solid #fff;font:800 11px/14px system-ui,sans-serif;text-align:center;padding:0 3px;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.pinx.busy .pinn{background:#C8201E;min-width:20px;height:20px;border-radius:10px;font-size:12px;line-height:16px}
+@keyframes pinn-pulse{0%{box-shadow:0 0 0 0 rgba(200,32,30,.45)}70%{box-shadow:0 0 0 8px rgba(200,32,30,0)}100%{box-shadow:0 0 0 0 rgba(200,32,30,0)}}
+.pinx.busy .pinn{animation:pinn-pulse 2s ease-out infinite}
+@media (prefers-reduced-motion:reduce){.pinx.busy .pinn{animation:none}}
+.hereb.busy{background:#FDE8E8;color:#8A1210;border-color:#C8201E}
+.pinpop .pinmix{margin:8px 0;font-size:.9rem;line-height:1.35}
+.pinpop button{margin-top:6px}
 </style>
 <link rel="stylesheet" href="/search.css?v=2">
 </head>
@@ -352,11 +359,11 @@ footer .fine{margin:16px 0 0;color:#A99F90;font-size:.84rem;max-width:70em}
 
 <script src="/vendor/leaflet/leaflet.js" defer></script>
 <script src="/vendor/markercluster/leaflet.markercluster.js" defer></script>
-<script src="/runs.js?v=8" defer></script>
+<script src="/runs.js?v=9" defer></script>
 <style>.a2hs{position:fixed;z-index:40;left:16px;right:16px;bottom:16px;max-width:480px;margin:0 auto;padding:14px 16px;background:#fff;border:1px solid #EADBB9;border-radius:16px;box-shadow:0 10px 30px rgba(42,38,34,.12)}.a2hs p{margin:0 0 10px}.a2hs-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0}@media (display-mode: standalone){.a2hs{display:none}}</style>
 <script src="/pwa.js?v=1" defer></script>
 <script src="/native.js?v=1" defer></script>
-<script src="/app-shell.js?v=3" defer></script>
+<script src="/app-shell.js?v=4" defer></script>
 <script>if('serviceWorker' in navigator&&!window.Capacitor&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})</script>
 </body>
 </html>

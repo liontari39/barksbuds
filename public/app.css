@@ -704,3 +704,10 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .rcond.on{background:#fff4d6;border-color:#e0b94a}
 .rcond.mine{box-shadow:0 0 0 2px #fbb321}
 .rcond-in{background:transparent}
+
+.mixline{margin:8px 0 0;font-size:.92rem}
+.quiet-list,.plan-list,.pack-sugg,.favdogs{margin:0 0 12px;padding-left:1.1em}
+.quiet-form .row3,.plan-form .row2{margin-bottom:10px}
+.plan-list.mine li,.favdogs li{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+form.inline,form.favform{display:inline}
+form.favform{margin-left:8px}

@@ -11,6 +11,7 @@ import test_app as T  # noqa: E402
 from test_app import Client, RUN, new_dog  # noqa: E402
 import accounts as A  # noqa: E402
 import community as C  # noqa: E402
+import runsafety as RS  # noqa: E402
 import communityweb  # noqa: E402
 from test_community import member, lily, follow_redirect, RUN_ID  # noqa: E402
 
@@ -96,7 +97,10 @@ class RecentlyHereTests(unittest.TestCase):
         c.post(f"/runs/{RUN_ID}/checkin", {"dogs": [str(lid)]})
         o.post(f"/runs/{RUN_ID}/checkin", {"dogs": [str(did)]})
         c.post(f"/runs/{RUN_ID}/checkout", {})
-        # Daisy is still here now; Lily should be in recently here
+        # Daisy is still here now (after the short display delay); Lily should be in recently here
+        C.q("UPDATE checkins SET created_at=:t WHERE user_id=:u AND left_at IS NULL",
+            t=C.now() - RS.DISPLAY_DELAY - 1, u=ouid)
+        RS.clear_cache()
         pub = follow_redirect(Client("10.90.1.1"), f"/runs/{RUN_ID}").text
         rec = recently_section(pub)
         self.assertIn("Recently here", rec)

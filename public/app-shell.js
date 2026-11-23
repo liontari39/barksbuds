@@ -195,6 +195,7 @@
     var html = '<div class="bb-more">';
     MORE.forEach(function (x) { html += '<a href="' + x[0] + '">' + x[1] + "</a>"; });
     if (window.BB_CARD) html += '<a href="' + window.BB_CARD + '">Your card</a>';
+    if (signed) html += '<a href="/me/run-alerts">Run alerts</a>';
     html += signed
       ? '<a href="/me">My dogs</a>'
       : '<a href="/signin">Sign in</a><a href="/signin">Join BarksBuds</a>';
@@ -258,7 +259,7 @@
         '<input type="hidden" name="csrf" value="' + csrf() + '">' +
         (rname ? "<p><b>" + String(rname).replace(/</g, "&lt;") + "</b></p>" : "") +
         '<fieldset class="checks-grid" style="margin-bottom:10px"><legend>Who\'s with you?</legend>' + ticks + "</fieldset>" +
-        '<label class="switch small" style="margin-bottom:12px"><input type="checkbox" name="anon" value="1"><span>Count us, but don\'t show our dogs</span></label>' +
+        '<label class="switch small" style="margin-bottom:12px"><input type="checkbox" name="anon" value="1"><span>Don\'t show or count us on the map or the run page</span></label>' +
         '<button class="btn" type="submit">We\'re here</button>' +
         '<p class="small muted" style="margin:8px 0 0">Check-ins end on their own after 2 hours.</p></form>';
     }
@@ -467,4 +468,70 @@
       else if (Plugins.App.exitApp) Plugins.App.exitApp();
     });
   }
+
+  // Arrival check-in prompt: only while the app or home-screen version is open and visible.
+  // Never asks for location permission on its own; never tracks in the background.
+  (function arrivePrompt() {
+    var htmlEl = document.documentElement;
+    if (!htmlEl.classList.contains("bb-app")) return;
+    if (!navigator.geolocation) return;
+    var NEAR_M = 150, COOL_MS = 2 * 60 * 60 * 1000;
+    function km(a, b) {
+      var r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+      var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 6371 * 2 * Math.asin(Math.sqrt(h));
+    }
+    function dismissed(id) {
+      try { return Date.now() - Number(localStorage.getItem("bb-arrive-dismiss:" + id) || 0) < COOL_MS; } catch (e) { return false; }
+    }
+    function dismiss(id) {
+      try { localStorage.setItem("bb-arrive-dismiss:" + id, String(Date.now())); } catch (e) {}
+    }
+    var runsCache = null;
+    function loadRuns(cb) {
+      if (runsCache) return cb(runsCache);
+      fetch("/api/runs", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (d) {
+        runsCache = (d && d.runs) || [];
+        cb(runsCache);
+      }).catch(function () {});
+    }
+    function consider(pos) {
+      if (document.visibilityState !== "visible") return;
+      loadRuns(function (runs) {
+        var me = { lat: pos.coords.latitude, lng: pos.coords.longitude }, best = null, bestM = NEAR_M;
+        runs.forEach(function (r) {
+          if (r.lat == null || r.lng == null) return;
+          var m = km(me, { lat: r.lat, lng: r.lng }) * 1000;
+          if (m < bestM) { bestM = m; best = r; }
+        });
+        if (!best || dismissed(best.id)) return;
+        if (path.indexOf("/runs/" + best.id) === 0 && document.querySelector("form[action$='/checkout']")) return;
+        if (document.querySelector(".bb-sheet")) return;
+        dismiss(best.id);
+        var name = String(best.name || "the dog run").replace(/</g, "&lt;");
+        openSheet("Check in?", "<p>Looks like you're at <b>" + name + "</b>. Want to check in?</p>" +
+          "<p class=\"small muted\">We only checked because this app is open. We don't track you in the background.</p>" +
+          "<p><button type=\"button\" class=\"btn\" data-arrive-go>Check in</button></p>");
+        var btn = document.querySelector("[data-arrive-go]");
+        if (btn) btn.addEventListener("click", function () {
+          location.href = "/runs/" + encodeURIComponent(best.id) + "?m=gate#here";
+        });
+      });
+    }
+    function maybe() {
+      if (document.visibilityState !== "visible") return;
+      function loc() {
+        navigator.geolocation.getCurrentPosition(consider, function () {}, { enableHighAccuracy: false, timeout: 4000, maximumAge: 120000 });
+      }
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: "geolocation" }).then(function (p) {
+          if (p.state === "granted") loc();
+        }).catch(function () {});
+      }
+    }
+    maybe();
+    setInterval(maybe, 120000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") maybe(); });
+  })();
+
 })();

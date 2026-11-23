@@ -1047,7 +1047,7 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
                 f'<p class="small" style="margin:0 0 8px"><b>Community emails</b></p><div class="prefgrid">{ticks}</div>'
                 f'<p class="small" style="margin:12px 0 8px" id="privacy"><b>Check-in privacy</b></p>'
                 f'<label class="switch small"><input type="checkbox" name="checkins_hidden" value="1"{" checked" if hid else ""}>'
-                f'<span>When I check in at a run, count my dogs but don\'t show their names or photos</span></label>'
+                f'<span>When I check in at a run, don\'t show or count my dogs on the map or the run page</span></label>'
                 f'<button class="btn btn-ghost btn-sm" type="submit" style="margin-top:10px">Save</button></form>')
 
     def post_community_prefs(self, q):

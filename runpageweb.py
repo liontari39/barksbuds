@@ -29,6 +29,7 @@ import community as C
 import coowners as CO
 import mailer
 import webapp as W
+import privacy as PV
 
 e = html.escape
 RUN_RE = r"([a-z]-\d{1,5})"
@@ -79,7 +80,12 @@ class RunPageRoutes:
     def runpage_get(self, path, q):
         if path == "/api/runs/live":
             self._app_reset()
-            return self._json_nc({"here": C.here_counts(), "news": C.announcement_counts()}) or True
+            import json, runsafety as RS
+            payload = RS.live_payload(self.pv())
+            cc = "private, max-age=30" if self.user() else "public, max-age=60"
+            self._emit(200, json.dumps(payload).encode(), "application/json; charset=utf-8",
+                       headers={"Cache-Control": cc})
+            return True
         m = re.fullmatch(r"/runs/" + RUN_RE + r"/feed\.xml", path)
         if m:
             self._app_reset(); self.run_feed(m.group(1)); return True
@@ -132,15 +138,21 @@ class RunPageRoutes:
         u = self.user()
         base = self._base()
         anns = C.announcements(rid)
-        here = C.here_now(rid)
-        ndogs = sum(x["ndogs"] for x in here)
         flash = {"here": "You're checked in. Have fun!", "left": "Checked out. See you next time!",
                  "followed": "You're following this run.", "unfollowed": "You're no longer following this run.",
                  "posted": "Announcement posted.", "removed": "Announcement removed.",
                  "slow": "That's a lot of check-ins. Please try again in a bit.",
                  "wait": "You just checked out. Please try again in a minute.", "nodogs": "Pick at least one dog.",
                  "cond": "Thanks — that will show for a few hours.", "cond_already": "You already reported that.",
-                 "cond_slow": "That's a lot of condition reports today. Please try again tomorrow."}.get(q.get("m", [""])[0], "")
+                 "cond_slow": "That's a lot of condition reports today. Please try again tomorrow.",
+                 "quiet": "Quiet hour posted.", "quiet_bad": "Pick a future window up to 8 hours long.",
+                 "quiet_slow": "That's a lot of quiet hours today. Please try again tomorrow.",
+                 "quiet_off": "Quiet hour removed.",
+                 "plan": "Thanks — your planned arrival is posted as a count and a time, not a name.",
+                 "plan_bad": "Pick at least one dog and a time at least a few minutes from now.",
+                 "plan_slow": "That's a lot of planned arrivals today. Please try again tomorrow.",
+                 "plan_off": "Planned arrival cancelled.",
+                 "gate": "Scanned the gate sticker. Check in below when you're ready."}.get(q.get("m", [""])[0], "")
         # announcements: prominent, above everything else
         ann_html = ""
         if anns:
@@ -162,26 +174,9 @@ class RunPageRoutes:
                          '<p class="small" style="margin:12px 0 0"><a href="/lost-found">All lost and found alerts</a></p></div>')
         import photoweb
         photos_html = photoweb.run_strip(rid, self.pv())
-        # at the run now
-        tiles, anon_dogs = [], 0
-        import privacy as PV
-        hid_users = PV.checkin_hidden_users([x["user_id"] for x in here])
-        for x in here:  # "don't show my dogs at check-ins" applies to every check-in; others' dogs follow profile visibility
-            if x["user_id"] in hid_users:
-                x["anon"] = True
-        PV.filter_people([x for x in here if not x["anon"]], self.pv())
-        for x in here:
-            if x["anon"]:
-                anon_dogs += x["ndogs"]
-                continue
-            for d in x["dogs"]:
-                tiles.append(f'<li><a href="/dogs/{e(d["slug"])}">{A.tile_img(d, 72)}<span>{e(d["name"])}</span></a></li>')
-            anon_dogs += x["ndogs"] - len(x["dogs"])
-        more = f'<p class="small muted" style="margin:6px 0 0">+ {anon_dogs} more dog{"s" if anon_dogs != 1 else ""} checked in privately.</p>' if anon_dogs and tiles else (
-            f'<p class="small muted" style="margin:6px 0 0">Checked in privately, so their names aren\'t shown.</p>' if anon_dogs else "")
-        now_line = (f'<p class="herenow"><span class="livedot" aria-hidden="true"></span><b>{ndogs} dog{"s" if ndogs != 1 else ""} here now</b></p>'
-                    if ndogs else '<p class="muted" style="margin:0 0 12px">Nobody has checked in yet. Heading over? Let the regulars know.</p>')
-        here_html = f'{now_line}{f"<ul class=mdogs>{chr(10).join(tiles)}</ul>" if tiles else ""}{more}'
+        # at the run now (delayed + privacy-filtered; owners never listed)
+        import runsafetyweb as RSW
+        here_html, quiet_html, packs_html, plan_html = RSW.presence_html(self, r, u)
         here_form = self._checkin_form(r, u)
         recent = C.recently_here(rid)
         hid_recent = PV.checkin_hidden_users([x["user_id"] for x in recent])
@@ -237,7 +232,7 @@ class RunPageRoutes:
         dl = "".join(f"<div><dt>{k}</dt><dd>{val(v)}</dd></div>" for k, v in amen)
         dl2 = "".join(f"<div><dt>{k}</dt><dd>{e(str(v))}</dd></div>" for k, v in facts if str(v or "").strip())
         dest = quote(f'{r["lat"]},{r["lng"]}' if isinstance(r.get("lat"), (int, float)) else (r.get("address") or r.get("name")))
-        news_link = f'<a href="/runs/{rid}/news">All announcements</a> · <a href="/runs/{rid}/feed.xml">RSS feed</a> · <a href="/runs/{rid}/flyer">Print a flyer</a>'
+        news_link = (f'<a href="/runs/{rid}/news">All announcements</a> · <a href="/runs/{rid}/feed.xml">RSS feed</a> · <a href="/runs/{rid}/flyer">Print a flyer</a> · <a href="/runs/{rid}/sticker">Print a gate sticker</a>')
         body = f"""<section class="phead rhead"><div class="wrap"><span class="eyebrow">dog run</span><h1>{e(r["name"])}</h1>
 <p class="lead">{e(run_where(r))}</p>
 <div class="racts">{follow}<a class="btn btn-ghost btn-sm" href="/runs?q={quote(r["name"])}"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg>See it on the map</a>
@@ -246,7 +241,7 @@ class RunPageRoutes:
 <section class="section"><div class="wrap">{ann_html}
 <div class="dgrid2"><div>
 <div class="panel herepanel" id="here"><h2>At the run now</h2>{here_html}{here_form}{recent_html}</div>
-{cond_html}{photos_html}{lost_html}
+{plan_html}{quiet_html}{packs_html}{cond_html}{photos_html}{lost_html}
 <div class="panel"><h2>About this run</h2><dl class="amen">{dl}</dl><dl class="facts">{dl2}</dl>
 <p class="small muted" style="margin:14px 0 0">Know this run? <a href="/runs/suggest?edit={quote(rid)}">Suggest an edit</a></p></div>
 </div><div>{park_html}

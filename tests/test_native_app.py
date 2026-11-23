@@ -57,7 +57,7 @@ class CapacitorProject(unittest.TestCase):
         home = Client().get("/").text
         self.assertIn("/native.js?v=1", home)
         self.assertEqual(Client().get("/native.js?v=1").status, 200)
-        self.assertIn("/runs.js?v=8", Client().get("/runs").text)
+        self.assertIn("/runs.js?v=9", Client().get("/runs").text)
 
 
 

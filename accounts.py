@@ -41,7 +41,8 @@ TEMPERAMENT = ["Friendly with big dogs", "Friendly with small dogs", "Loves peop
                "Shy at first", "Gentle", "Chill", "High energy", "Puppy energy", "Ball obsessed",
                "Loves water", "Loves a good sniff", "Vocal", "Prefers a small group", "Still learning manners",
                "Smart", "Loyal", "Speedy", "Snuggler", "Food motivated"]
-PLAY_STYLES = ["Chaser", "Wrestler", "Fetcher", "Tug-of-war fan", "Explorer and sniffer",
+PLAY_STYLES = ["Gentle", "Rough-and-tumble", "Ball-focused", "Shy", "Still learning",
+               "Chaser", "Wrestler", "Fetcher", "Tug-of-war fan", "Explorer and sniffer",
                "Social butterfly", "Gentle player", "Watcher (likes to observe)", "Zoomies", "Toy lover"]
 SIZES = [("toy", "Toy (under 10 lb)"), ("small", "Small (10–20 lb)"), ("medium", "Medium (20–50 lb)"),
          ("large", "Large (50–90 lb)"), ("giant", "XL (90+ lb)")]  # "giant" is the stored key for XL (older profiles)
@@ -135,6 +136,8 @@ def init_schema(store):
     import community, coowners, meetups, messages, packs, portraits
     coowners.init_schema(store)
     community.init_schema(store)  # also adds dogs.energy/compat/gotcha_day and users email/privacy columns
+    import runsafety
+    runsafety.init_schema(store)
     import privacy
     privacy.init_schema(store)    # dogs.visibility + users.priv_* (legacy defaults keep existing profiles unchanged)
     messages.init_schema(store)
@@ -308,9 +311,10 @@ def waitlist_dog_name(waitlist_id):
 
 
 def delete_user(user_id):
-    import community, feed, meetups, messages, packs
+    import community, feed, meetups, messages, packs, runsafety
     feed.purge_user(user_id)  # their photo posts, comments and likes
     community.purge_user(user_id)  # check-ins, follows, alerts, recommendations, reminder logs
+    runsafety.purge_user(user_id)
     messages.purge_user(user_id)  # conversations, messages, blocks; reports about them are anonymized
     packs.purge_user(user_id)
     meetups.purge_user(user_id)

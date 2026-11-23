@@ -41,6 +41,8 @@ import packweb
 import photoweb
 import pixelweb
 import runpageweb
+import runsafety
+import runsafetyweb
 import runsugg
 import runsweb
 import search
@@ -345,7 +347,7 @@ def render_index(host_url):
     return INDEX_CACHE[base]
 
 
-class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, humansweb.HumanRoutes, SimpleHTTPRequestHandler):
+class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privacyweb.PrivacyRoutes, search.SearchRoutes, webapp.AppRoutes, communityweb.CommunityRoutes, runpageweb.RunPageRoutes, runsafetyweb.RunSafetyRoutes, coownweb.CoownerRoutes, msgweb.MessageRoutes, meetweb.MeetupRoutes, packweb.PackRoutes, pixelweb.PixelRoutes, runsweb.RunRoutes, tipsweb.TipRoutes, trailsweb.TrailRoutes, humansweb.HumanRoutes, SimpleHTTPRequestHandler):
     server_version = "BarksBuds"
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp",
                       ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
@@ -499,6 +501,7 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
             return self._json(200, {"enabled": True, "partners": sorted(invites.partners()), "signups": invites.counts()})
         meetweb.tick(SITE_URL or self._host_url())
         communityweb.tick(SITE_URL or self._host_url())
+        runsafety.tick(SITE_URL or self._host_url())
         if u.path == "/healthz":
             try:
                 STORE.ping(); return self._json(200, {"ok": True, "store": STORE.kind})
@@ -578,7 +581,7 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
                 self.end_headers()
                 return
             return self._send_maybe_gz(c["body"], c["gz"], "application/json; charset=utf-8", hdr)
-        if self.maint_get(u.path, q) or self.photo_get(u.path, q) or self.search_get(u.path, q) or self.msg_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.human_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
+        if self.maint_get(u.path, q) or self.photo_get(u.path, q) or self.search_get(u.path, q) or self.msg_get(u.path, q) or self.safety_get(u.path, q) or self.runpage_get(u.path, q) or self.community_get(u.path, q) or self.tips_get(u.path, q) or self.trails_get(u.path, q) or self.runs_get(u.path, q) or self.pixel_get(u.path, q) or self.human_get(u.path, q) or self.app_get(u.path, q) or self.meetup_get(u.path, q) or self.pack_get(u.path, q):
             return
         if u.path == "/admin/export.csv":
             if not self._admin_ok(q):
@@ -597,7 +600,7 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
     def do_POST(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
-        if self.maint_post(u.path, q) or self.photo_post(u.path, q) or self.msg_post(u.path, q) or self.runpage_post(u.path, q) or self.community_post(u.path, q) or self.tips_post(u.path, q) or self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.human_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
+        if self.maint_post(u.path, q) or self.photo_post(u.path, q) or self.msg_post(u.path, q) or self.safety_post(u.path, q) or self.runpage_post(u.path, q) or self.community_post(u.path, q) or self.tips_post(u.path, q) or self.runs_post(u.path, q) or self.pixel_post(u.path, q) or self.human_post(u.path, q) or self.app_post(u.path, q) or self.meetup_post(u.path, q) or self.pack_post(u.path, q):
             return
         if u.path == "/admin/delete":
             if not self._admin_ok(q):

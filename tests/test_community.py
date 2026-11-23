@@ -15,6 +15,7 @@ from test_app import Client, sign_in, new_dog, jpeg_with_exif, RUN  # noqa: E402
 import accounts as A  # noqa: E402
 import community as C  # noqa: E402
 import communityweb  # noqa: E402
+import runsafety as RS  # noqa: E402
 
 KEY = "test-admin-key"
 RUN_ID = "n-006"  # Christopher Morley Park Dog Run (Nassau)
@@ -121,23 +122,33 @@ class CheckinTests(unittest.TestCase):
         self.assertEqual(r.status, 303)
         page = c.get(r.headers["Location"].split("#")[0]).text
         self.assertIn("Check out", page)
-        self.assertIn("Lily", page)
+        self.assertIn("Lily", page)  # the owner sees their own dog immediately
         live = json.loads(Client("10.77.251.1").get("/api/runs/live").body)
-        self.assertGreaterEqual(live["here"].get(RUN_ID, 0), 1)
-        # anonymous check-in: counted, but not shown by name
+        n_before = live["here"].get(RUN_ID, 0)
+        # public counts wait for the display delay
+        self.assertEqual(live["here"].get(RUN_ID, 0), n_before)
+        C.q("UPDATE checkins SET created_at=:t WHERE user_id=:u", t=C.now() - RS.DISPLAY_DELAY - 1, u=uid)
+        RS.clear_cache()
+        live = json.loads(Client("10.77.251.1").get("/api/runs/live").body)
+        self.assertEqual(live["here"].get(RUN_ID, 0), n_before + 1)
+        # anonymous check-in: not counted and not shown by name
         o.post(f"/runs/{RUN_ID}/checkin", {"dogs": [str(mid)], "anon": "1"})
+        C.q("UPDATE checkins SET created_at=:t WHERE user_id=:u", t=C.now() - RS.DISPLAY_DELAY - 1, u=ouid)
+        RS.clear_cache()
         pub = follow_redirect(Client("10.77.251.2"), f"/runs/{RUN_ID}").text
         self.assertIn("Lily", pub)
         self.assertNotIn("Maggie", pub)
         n = json.loads(Client("10.77.251.1").get("/api/runs/live").body)["here"][RUN_ID]
-        self.assertGreaterEqual(n, 2)
+        self.assertEqual(n, n_before + 1)
         # leaving drops the count
         c.post(f"/runs/{RUN_ID}/leave", {})
+        RS.clear_cache()
         n2 = json.loads(Client("10.77.251.1").get("/api/runs/live").body)["here"].get(RUN_ID, 0)
-        self.assertEqual(n2, n - 1)
+        self.assertEqual(n2, n_before)
         # check-ins expire after two hours
         C.q("UPDATE checkins SET expires_at=:t WHERE user_id=:u", t=C.now() - 1, u=ouid)
-        self.assertEqual(json.loads(Client("10.77.251.1").get("/api/runs/live").body)["here"].get(RUN_ID, 0), n - 2)
+        RS.clear_cache()
+        self.assertEqual(json.loads(Client("10.77.251.1").get("/api/runs/live").body)["here"].get(RUN_ID, 0), n_before)
 
     def test_checkin_needs_login_and_rate_limit(self):
         r = Client("10.77.252.1").post(f"/runs/{RUN_ID}/checkin", {"dogs": ["1"]}, csrf=False)

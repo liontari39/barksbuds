@@ -166,7 +166,7 @@ APP_SHELL_BOOT = (
     'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
     '<link rel="stylesheet" href="/app-shell.css?v=2">'
 )
-APP_SHELL_JS = '<script src="/app-shell.js?v=3" defer></script>'
+APP_SHELL_JS = '<script src="/app-shell.js?v=4" defer></script>'
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -399,7 +399,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=32"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=33"><link rel="stylesheet" href="/search.css?v=2">
 {APP_SHELL_BOOT}
 </head><body>
 {ICONS}
@@ -688,6 +688,7 @@ It comes from hello@barksbuds.app.</div>
 <dt>About</dt><dd>{e(u["bio"]) or "Not set"}</dd></dl>
 <a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a>
 <a class="btn btn-ghost btn-sm" href="{H.card_path(u["id"])}" data-bb="your-card">See your card</a>
+<a class="btn btn-ghost btn-sm" href="/me/run-alerts">Run alerts</a>
 <div class="emailpref" id="privacy-settings"><p class="small" style="margin:0;flex:1 1 220px"><b>Privacy</b>: who can see your dogs, how findable they are,
 what details show and who can message you.</p><a class="btn btn-sm" href="/me/privacy">Privacy settings</a></div></div>
 <div class="panel"><h2>Account</h2>
@@ -912,6 +913,10 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them. 
         errs = errs or {}
         src = vals or d or {}
         get = lambda k, dflt="": src.get(k, dflt) if src else dflt
+        import runsafety as RS
+        alerts_ok = (vals or {}).get("checkin_alerts_ok")
+        if alerts_ok is None and d:
+            alerts_ok = RS.checkin_alerts_ok(d["id"])
         age_val = vals.get("age", "") if vals else (A.age_years_value(d) if d else "")
 
         def ticks(name, options, chosen):
@@ -961,6 +966,7 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them. 
 <div class="field"><fieldset class="checks-grid"><legend>Personality <span class="opt">(pick up to 6)</span></legend>{ticks("temperament", A.TEMPERAMENT, get("temperament", []) or [])}</fieldset>{err("temperament")}</div>
 <div class="field"><fieldset class="checks-grid"><legend>Play style <span class="opt">(pick up to 3)</span></legend>{ticks("play_style", A.PLAY_STYLES, get("play_style", []) or [])}</fieldset>{err("play_style")}</div>
 <div class="field"><label class="switch"><input type="checkbox" name="vaccinated" value="1"{" checked" if get("vaccinated") else ""}><span><b>Vaccinations are up to date</b><br><span class="small muted">Self-reported by you. Shown as a badge on the public page.</span></span></label></div>
+<div class="field"><label class="switch"><input type="checkbox" name="checkin_alerts_ok" value="1"{" checked" if alerts_ok else ""}><span><b>Let friends get alerts when we check in</b><br><span class="small muted">Starts off. Members who favorite this dog can get a heads-up after a short wait. Hidden, private and anonymous check-ins never trigger an alert.</span></span></label></div>
 <div class="field"><span class="lab" id="runs-lab">Favorite dog runs <span class="opt">(up to {A.MAX_FAV_RUNS})</span></span>
 <div class="runpick" role="group" aria-labelledby="runs-lab"><input class="rp-search" type="search" placeholder="Search runs by name or town" aria-label="Search dog runs" hidden>
 <div class="rp-chosen" aria-live="polite"></div><div class="rp-list">{self.run_picker(set(get("fav_runs", []) or []))}</div></div>{err("runs")}</div>
@@ -1030,7 +1036,7 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
                  age=f.get("age").strip()[:3], sex=f.get("sex"), size=f.get("size"),
                  temperament=[t for t in A.TEMPERAMENT if t in f.getlist("temperament")],
                  play_style=[t for t in A.PLAY_STYLES if t in f.getlist("play_style")],
-                 vaccinated=f.get("vaccinated") == "1", bio=clean(f.get("bio"), 600, multiline=True),
+                 vaccinated=f.get("vaccinated") == "1", checkin_alerts_ok=f.get("checkin_alerts_ok") == "1", bio=clean(f.get("bio"), 600, multiline=True),
                  website=f.get("website").strip()[:300], energy=f.get("energy"),
                  compat=[k for k, _ in A.COMPAT if k in f.getlist("compat")], gotcha_day=f.get("gotcha_day").strip()[:10])
         if f.get("visibility") in PV.VIS_KEYS:
@@ -1106,6 +1112,8 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
         if errs:
             return self.dog_form_page(d, vals=v, errs=errs, code=422)
         new_id = A.save_dog(u["id"], v, dog_id=d["id"] if d else None)
+        import runsafety as RS
+        RS.set_checkin_alerts_ok(new_id, f.get("checkin_alerts_ok") == "1")
         if d:
             return self.redirect(f"/me/dogs/{new_id}/edit?m=saved")
         print(f"dogs: user {u['id']} created dog {new_id}", flush=True)
@@ -1394,6 +1402,13 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             btns = [b for b in btns if b]
             if btns:
                 edit = f'<p class="ownacts msgacts">{"".join(btns)}</p>'
+            if u:
+                import runsafety as RS
+                on = RS.is_favorite(u["id"], d["id"])
+                favbtn = (f'<form method="post" action="/dogs/{e(d["slug"])}/favorite" class="inline favform">{self.csrf_field()}'
+                          f'<input type="hidden" name="on" value="{0 if on else 1}">'
+                          f'<button class="btn btn-ghost btn-sm" type="submit">{"Favorited" if on else "Favorite"}</button></form>')
+                edit = (edit or "") + favbtn
         hidden_note = ('<div class="wrap" style="padding-top:20px"><p class="formerr">This profile is hidden from the public while our team reviews a report.</p></div>'
                        if d["hidden"] else "")
         reasons = "".join(f'<option>{e(r)}</option>' for r in A.REPORT_REASONS)

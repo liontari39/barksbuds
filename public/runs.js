@@ -139,17 +139,17 @@
     return out + '<a class="mu-host" href="/meetups/new?run=' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Host a meetup here</a>';
   }
   // Live check-ins + official park news (from /api/runs/live), and a link to the run's own page.
-  var LIVE = { here: {}, news: {} };
+  var LIVE = { here: {}, news: {}, runs: {} };
   function live(r) {
-    var n = LIVE.here[r.id] || 0, a = LIVE.news[r.id] || 0, out = '<p class="live">';
-    if (n) out += '<span class="hereb"><span class="livedot" aria-hidden="true"></span>' + n + " dog" + (n === 1 ? "" : "s") + " here now</span>";
+    var info = (LIVE.runs && LIVE.runs[r.id]) || {}, n = info.n || LIVE.here[r.id] || 0, a = LIVE.news[r.id] || 0, out = '<p class="live">';
+    if (n) out += '<span class="hereb' + (info.busy || n >= 3 ? ' busy' : '') + '"><span class="livedot" aria-hidden="true"></span>' + n + " dog" + (n === 1 ? "" : "s") + " here now</span>";
     if (a) out += '<a class="newsb" href="/runs/' + encodeURIComponent(r.id) + '"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>Official news</a>';
     return out + '<a class="runpg" href="/runs/' + encodeURIComponent(r.id) + '">Run page, check-ins &amp; news<span class="sr-only"> for ' + esc(r.name) + "</span></a></p>";
   }
   function getLive() {
-    return fetch("/api/runs/live", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    return fetch("/api/runs/live", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
       if (!d) return;
-      LIVE = { here: d.here || {}, news: d.news || {} };
+      LIVE = { here: d.here || {}, news: d.news || {}, runs: d.runs || {} };
       $$(".card[data-id]").forEach(function (li) {
         var r = runs.filter(function (x) { return x.id === li.getAttribute("data-id"); })[0], slot = li.querySelector(".live-slot");
         if (r && slot) slot.innerHTML = live(r);
@@ -169,13 +169,35 @@
     });
   }).catch(function () {});
 
+  function pinCount(r) {
+    var info = (LIVE.runs && LIVE.runs[r.id]) || {};
+    return info.n || LIVE.here[r.id] || 0;
+  }
   function pinIcon(r, sel) {
-    var c = isOff(r) ? "#C98A0C" : "#C8201E", w = SMALL ? 24 : 30, h = SMALL ? 32 : 40;
+    var info = (LIVE.runs && LIVE.runs[r.id]) || {}, n = pinCount(r);
+    var busy = !!(info.busy || n >= 3);
+    var c = isOff(r) ? "#C98A0C" : (busy ? "#17652C" : "#C8201E"), w = SMALL ? 24 : 30, h = SMALL ? 32 : 40;
     return L.divIcon({
-      className: "pinx" + (sel ? " sel" : ""), iconSize: [w, h], iconAnchor: [w / 2, h], popupAnchor: [0, -h + 4],
+      className: "pinx" + (sel ? " sel" : "") + (busy ? " busy" : "") + (n ? " has-dogs" : ""), iconSize: [w, h], iconAnchor: [w / 2, h], popupAnchor: [0, -h + 4],
       html: '<svg viewBox="0 0 30 40" aria-hidden="true"><path d="M15 1C7.3 1 1 7.1 1 14.7 1 25 15 39 15 39s14-14 14-24.3C29 7.1 22.7 1 15 1z" fill="' + c + '" stroke="#141414" stroke-width="2"/><circle cx="15" cy="14.5" r="5.5" fill="#FFF8EA"/></svg>' +
-        (LIVE.here[r.id] ? '<span class="pinn" title="Dogs here now">' + LIVE.here[r.id] + "</span>" : "")
+        (n ? '<span class="pinn" title="' + n + ' dog' + (n === 1 ? "" : "s") + ' here now">' + n + "</span>" : "")
     });
+  }
+  function mixLines(r) {
+    var info = (LIVE.runs && LIVE.runs[r.id]) || {}, n = pinCount(r), bits = [];
+    if (n) bits.push("<b>" + n + " dog" + (n === 1 ? "" : "s") + " here now</b>");
+    if (info.sizes) {
+      var sz = Object.keys(info.sizes).map(function (k) { return info.sizes[k] + " " + k.toLowerCase(); });
+      if (sz.length) bits.push("Size mix: " + sz.join(", "));
+    }
+    if (info.styles) {
+      var st = Object.keys(info.styles).map(function (k) { return info.styles[k] + " " + k.toLowerCase(); });
+      if (st.length) bits.push("Play style: " + st.join(", "));
+    }
+    (info.planned || []).forEach(function (p) {
+      bits.push(p.n + " dog" + (p.n === 1 ? "" : "s") + " plan to arrive around " + p.label);
+    });
+    return bits.length ? '<p class="pinmix">' + bits.join("<br>") + "</p>" : "";
   }
 
   function render() {
@@ -196,7 +218,8 @@
         var m = L.marker([r.lat, r.lng], { icon: pinIcon(r, r.id === state.sel), title: r.name, alt: r.name, riseOnHover: true, keyboard: true });
         m.bindPopup(function () {
           var el = document.createElement("div");
-          el.innerHTML = "<b>" + esc(r.name) + "</b><br>" + esc(r.town_or_neighborhood) + " · " + esc(r.county) + '<br><button type="button">See details</button>';
+          el.className = "pinpop";
+          el.innerHTML = "<b>" + esc(r.name) + "</b><br>" + esc(r.town_or_neighborhood) + " · " + esc(r.county) + mixLines(r) + '<button type="button">See details</button>';
           el.querySelector("button").addEventListener("click", function () { select(r.id, { scroll: true, open: true, fromMap: true }); });
           return el;
         });
@@ -353,6 +376,14 @@
     initMap(); setCtl();
     update(true);
     getLive();
+    if (!window._bbLiveTimer) {
+      window._bbLiveTimer = setInterval(function () {
+        if (document.visibilityState === "visible") getLive();
+      }, 60000);
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") getLive();
+      });
+    }
     document.body.setAttribute("data-ready", "1");
   }).catch(function () {
     countEl.textContent = "Sorry, we couldn't load the dog runs. Please refresh to try again.";
