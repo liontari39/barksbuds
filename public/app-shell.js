@@ -48,7 +48,7 @@
     if (path === "/runs" || path.indexOf("/runs/") === 0) return "runs";
     if (path.indexOf("/meetups") === 0) return "meetups";
     if (path.indexOf("/recommendations") === 0 || path.indexOf("/picks") === 0) return "picks";
-    if (path === "/me" || path.indexOf("/me/") === 0) return "me";
+    if (path === "/me" || path.indexOf("/me/") === 0 || path.indexOf("/humans/") === 0) return "me";
     return "";
   }
   function parentOf(p) {
@@ -58,6 +58,7 @@
     if (p.indexOf("/me/") === 0) return "/me";
     if (p.indexOf("/dogs/") === 0) return "/dogs";
     if (p.indexOf("/packs/") === 0) return "/packs";
+    if (p.indexOf("/humans/") === 0) return "/me";
     return "/runs";
   }
 
@@ -193,6 +194,7 @@
     var signed = !!document.querySelector('a[href="/me"], form[action="/signout"]');
     var html = '<div class="bb-more">';
     MORE.forEach(function (x) { html += '<a href="' + x[0] + '">' + x[1] + "</a>"; });
+    if (window.BB_CARD) html += '<a href="' + window.BB_CARD + '">Your card</a>';
     html += signed
       ? '<a href="/me">My dogs</a>'
       : '<a href="/signin">Sign in</a><a href="/signin">Join BarksBuds</a>';

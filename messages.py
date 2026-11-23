@@ -283,6 +283,14 @@ def contact(uid):
 
 
 # ---------------------------------------------------------------- reports
+
+def add_member_report(reporter, reported_id, reason, details, ip):
+    """Report a member from their owner card (no message body). Reuses message_reports."""
+    q("""INSERT INTO message_reports(message_id,conversation_id,reporter_user_id,reported_user_id,reason,details,body,ip_hash,created_at)
+         VALUES(NULL,NULL,:r,:s,:re,:d,'',:i,:t)""", r=reporter, s=reported_id, re=reason, d=details,
+      i=A.ip_hash(ip), t=A.now())
+
+
 def add_report(msg, reporter, reason, details, ip):
     q("""INSERT INTO message_reports(message_id,conversation_id,reporter_user_id,reported_user_id,reason,details,body,ip_hash,created_at)
          VALUES(:m,:c,:r,:s,:re,:d,:b,:i,:t)""", m=msg["id"], c=msg["conversation_id"], r=reporter, s=msg["sender_id"],

@@ -9,7 +9,8 @@ Model
       private  only the dog's owner and co-owners
   * users.priv_search     everyone | members | none            (does the owner's dogs show in search, /dogs, galleries)
   * users.priv_index      1/0  allow search engines to index public profiles (robots noindex when 0)
-  * users.priv_town / priv_birthday / priv_owner_name / priv_fav_runs / priv_celebrate   1 = show
+  * users.priv_town / priv_birthday / priv_owner_name / priv_fav_runs / priv_celebrate / priv_card   1 = show
+  * users.priv_card      1/0  show the members-only owner card (name, town, bio, dogs); off = private stub + Message
   * users.checkins_hidden (existing column, community.py) 1 = my check-ins only count as "a dog", never named
   * users.priv_msg        everyone | pack | none                (who can start a new conversation / write to me)
   * users.priv_default_vis  visibility for dogs this member adds later
@@ -44,7 +45,8 @@ FLAGS = [("priv_town", "Show my town and area", "On your dogs' profiles, cards a
          ("priv_birthday", "Show birthday, age and gotcha day", "Hiding this also hides the birthday cake on profiles."),
          ("priv_owner_name", "Show my first name on my dogs' profiles", "Otherwise we say \u201ca BarksBuds member\u201d."),
          ("priv_fav_runs", "Show the dog runs my dogs like", "The \u201cfavorite runs\u201d list on their profiles."),
-         ("priv_celebrate", "Include my dogs in birthday and gotcha-day shout-outs", "The \u201ccelebrating today\u201d cards on the homepage, Meet the dogs and Community pages.")]
+         ("priv_celebrate", "Include my dogs in birthday and gotcha-day shout-outs", "The \u201ccelebrating today\u201d cards on the homepage, Meet the dogs and Community pages."),
+         ("priv_card", "Show my card to members", "Signed-in members can open a small page with your first name, town, bio and dogs. When this is off, they only see that your card is private, plus Message.")]
 FLAG_KEYS = [k for k, _, _ in FLAGS]
 
 # what new accounts start with (privacy-friendly but still social); existing accounts keep the legacy column defaults

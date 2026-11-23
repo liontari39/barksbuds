@@ -1265,7 +1265,7 @@ class MeetupRoutes:
         body = f"""<section class="dhero mhero"><div class="wrap"><div>{''.join(banners)}
 <span class="eyebrow" style="margin:0">dog meetup{sample_b}</span>
 <h1 class="dname mtitle">{e(m["title"])}</h1><ul class="facts">{''.join(facts)}</ul>
-<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-user"/></svg><span>Hosted by <b>{e(m["host_name"])}</b></span></p>{pack_line}
+<p class="owner"><svg class="ico" aria-hidden="true" style="width:20px;height:20px;color:var(--red)"><use href="#i-user"/></svg><span>Hosted by <b>{self.human_link(m["host_user_id"], host_first_name(m))}</b></span></p>{pack_line}
 <div style="margin-top:18px">{cal}</div>{host_tools}</div><div>{mapbox}</div></div></section>
 <section class="section" style="padding-top:36px"><div class="wrap">{errhtml}<div class="dgrid2"><div>
 <div class="panel"><h2>About this meetup</h2><p class="bio">{e(desc_txt)}</p></div>

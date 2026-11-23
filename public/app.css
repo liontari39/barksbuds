@@ -675,3 +675,14 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .a2hs-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0}
 @media (display-mode: standalone){.a2hs{display:none}}
 .bb-native-photos{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+
+/* members-only owner card */
+.hcard{margin:0 auto}
+.hcard h1{margin:4px 0 8px}
+.hcard .eyebrow{margin:0 0 6px}
+.hcard-where{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:var(--muted);font-weight:700}
+.hcard-where .ico{width:18px;height:18px;flex:none}
+.hcard .bio{white-space:pre-wrap;margin:0 0 16px}
+.hcard-dogs{margin-top:4px}
+.hcard-tools{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0 0}
+.hlink{color:inherit}

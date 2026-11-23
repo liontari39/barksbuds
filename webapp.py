@@ -17,6 +17,7 @@ import privacy as PV
 import mailer
 import nativeapp
 import push
+import humans as H
 
 e = html.escape
 RUNS = lambda: []       # set by server.py: returns the dog run list
@@ -165,7 +166,7 @@ APP_SHELL_BOOT = (
     'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
     '<link rel="stylesheet" href="/app-shell.css?v=2">'
 )
-APP_SHELL_JS = '<script src="/app-shell.js?v=2" defer></script>'
+APP_SHELL_JS = '<script src="/app-shell.js?v=3" defer></script>'
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -398,7 +399,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=29"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=30"><link rel="stylesheet" href="/search.css?v=2">
 {APP_SHELL_BOOT}
 </head><body>
 {ICONS}
@@ -662,6 +663,7 @@ It comes from hello@barksbuds.app.</div>
 <dl class="kv"><dt>Name</dt><dd>{e(u["display_name"]) or "Not set"}</dd><dt>Area</dt><dd>{e(wh) or "Not set"}</dd>
 <dt>About</dt><dd>{e(u["bio"]) or "Not set"}</dd></dl>
 <a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a>
+<a class="btn btn-ghost btn-sm" href="{H.card_path(u["id"])}" data-bb="your-card">See your card</a>
 <div class="emailpref" id="privacy-settings"><p class="small" style="margin:0;flex:1 1 220px"><b>Privacy</b>: who can see your dogs, how findable they are,
 what details show and who can message you.</p><a class="btn btn-sm" href="/me/privacy">Privacy settings</a></div></div>
 <div class="panel"><h2>Account</h2>
@@ -681,6 +683,7 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
         if u:
             dogs = [{"id": d["id"], "name": d["name"]} for d in A.dogs_for_user(u["id"])[:12]]
             bits.append(f'window.BB_DOGS={json.dumps(dogs, separators=(",", ":"))};')
+            bits.append(f'window.BB_CARD={json.dumps(H.card_path(u["id"]))};')
         if u and push.enabled():
             bits.append(f'window.BB_VAPID={json.dumps(push.vapid_public())};')
         return "<script>" + "".join(bits) + "</script>"
@@ -1347,8 +1350,9 @@ var b=up.querySelector('button');b.disabled=true;b.textContent='Uploading…'})}
             host = host[4:] if host.startswith("www.") else host
             site_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-link"/></svg>'
                          f'<a href="{e(d["website"])}" rel="nofollow noopener noreferrer ugc" target="_blank">{e(host)}</a></p>')
+        shown = H.first_name(owner["display_name"]) or "a BarksBuds member"
         owner_line = (f'<p class="owner"><svg class="ico" aria-hidden="true" style="color:var(--red)"><use href="#i-user"/></svg>'
-                      f'<span>{e(d["name"])}\'s human: <b>{e(owner["display_name"] or "a BarksBuds member")}</b></span></p>')
+                      f'<span>{e(d["name"])}\'s human: <b>{self.human_link(d["user_id"], shown)}</b></span></p>')
         vis = d.get("visibility") or "public"
         edit = (f'<p class="ownacts"><a class="btn btn-gold btn-sm" href="/me/dogs/{d["id"]}/edit">Edit {e(d["name"])}\'s profile</a></p>'
                 f'<p class="small" style="margin:8px 0 0"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg> '
