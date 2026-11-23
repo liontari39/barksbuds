@@ -114,7 +114,7 @@ class CoownerRoutes:
         email = (f.get("email") or "").strip().lower()[:254]
         if not EMAIL_RE.match(email):
             return self._co_back(d["id"], coe="email")
-        if not A.LIMITER.allow(f"coinvite:{u['id']}", INVITES_PER_DAY, 86400):
+        if not A.LIMITER.allow(f"coinvite:{u['id']}", A.cap(u["id"], "invites_day"), 86400):
             return self._co_back(d["id"], coe="limit")
         try:
             raw = CO.create_invite(d, u["id"], email)

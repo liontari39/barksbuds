@@ -289,9 +289,10 @@ Never share passwords or payment details. Something wrong? Report a message or b
         import privacy as PV
         if not PV.can_message(u["id"], oid, self.pv()):
             return PV.MSG_CLOSED, 403
-        if new_conv and (MS.started_today(u["id"]) >= MS.NEW_PER_DAY or not A.LIMITER.allow(f"msg-new:{u['id']}", MS.NEW_PER_DAY, 86400)):
-            return f"You've started {MS.NEW_PER_DAY} new conversations today. Try again tomorrow, or reply in an existing one.", 429
-        if not A.LIMITER.allow(f"msg-send:{u['id']}", MS.SEND_PER_HOUR, 3600):
+        new_cap, hour_cap = A.cap(u["id"], "msg_new_day"), A.cap(u["id"], "msg_hour")
+        if new_conv and (MS.started_today(u["id"]) >= new_cap or not A.LIMITER.allow(f"msg-new:{u['id']}", new_cap, 86400)):
+            return f"You've started {new_cap} new conversations today. Try again tomorrow, or reply in an existing one.", 429
+        if not A.LIMITER.allow(f"msg-send:{u['id']}", hour_cap, 3600):
             return "You're sending messages quickly. Please wait a bit and try again.", 429
         return "", 200
 

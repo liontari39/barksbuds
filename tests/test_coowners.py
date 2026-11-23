@@ -119,6 +119,7 @@ class CoownerTests(unittest.TestCase):
 
     def test_signed_in_accept_revoke_remove_expire_and_cap(self):
         own, _, oid, (dog,) = member("own2")
+        A.q("UPDATE users SET created_at=:t WHERE id=:i", t=A.now() - 8 * 86400, i=oid)
         other, oemail, other_id, _ = member("other")
         path, _ = invite(own, dog, oemail)
         r = other.post(path, {})
@@ -171,7 +172,7 @@ class CoownerTests(unittest.TestCase):
         path, _ = invite(own, dog, cemail)
         co.post(path, {})
         # account deletion: the shared dog passes to the co-owner, the unshared one is deleted
-        own.post("/me/delete", {"confirm": "yes"})
+        own.post("/me/delete", {"confirm": "DELETE"})
         self.assertIsNone(A.one("SELECT id FROM users WHERE id=:u", u=oid))
         self.assertEqual(A.dog_by_id(dog)["user_id"], cid)
         self.assertEqual(CO.role(dog, cid), "owner")

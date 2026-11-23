@@ -128,6 +128,10 @@ def init_schema(store):
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_photo_id {INT}")
     if "pixel_primary" not in cols:   # 1 = show the sprite instead of the photo as the dog's avatar
         store.q(f"ALTER TABLE dogs ADD COLUMN pixel_primary {INT} NOT NULL DEFAULT 0")
+    ucols = ({r[0] for r in store.q("SELECT column_name FROM information_schema.columns WHERE table_name='users'")} if pg
+             else {r[1] for r in store.q("PRAGMA table_info(users)")})
+    if "suspended" not in ucols:
+        store.q(f"ALTER TABLE users ADD COLUMN suspended {INT} NOT NULL DEFAULT 0")
     import community, coowners, meetups, messages, packs, portraits
     coowners.init_schema(store)
     community.init_schema(store)  # also adds dogs.energy/compat/gotcha_day and users email/privacy columns
@@ -240,9 +244,12 @@ def session_user(raw):
     if not raw or len(raw) > 100:
         return None
     t = now()
-    r = one("""SELECT u.id,u.email,u.display_name,u.area,u.town,u.bio,u.waitlist_id,s.last_seen FROM sessions s
+    r = one("""SELECT u.id,u.email,u.display_name,u.area,u.town,u.bio,u.waitlist_id,s.last_seen,u.suspended FROM sessions s
                JOIN users u ON u.id=s.user_id WHERE s.token_hash=:h AND s.expires_at>:t""", h=sha(raw), t=t)
     if not r:
+        return None
+    if r[8]:
+        q("DELETE FROM sessions WHERE token_hash=:h", h=sha(raw))
         return None
     if t - r[7] > 3600:
         q("UPDATE sessions SET last_seen=:t WHERE token_hash=:h", t=t, h=sha(raw))
@@ -252,6 +259,39 @@ def session_user(raw):
 def end_session(raw):
     if raw:
         q("DELETE FROM sessions WHERE token_hash=:h", h=sha(raw))
+
+
+
+NEW_ACCOUNT_DAYS = 7  # tighter caps for accounts younger than this
+
+
+def is_new_account(uid, days=NEW_ACCOUNT_DAYS):
+    r = one("SELECT created_at FROM users WHERE id=:u", u=uid)
+    return bool(r and (now() - int(r[0] or 0)) < days * 86400)
+
+
+def cap(uid, kind):
+    """Per-action daily/hourly caps; tighter for accounts under NEW_ACCOUNT_DAYS old."""
+    import messages as MS
+    new = is_new_account(uid)
+    return {
+        "msg_hour": min(8, MS.SEND_PER_HOUR) if new else MS.SEND_PER_HOUR,
+        "msg_new_day": min(3, MS.NEW_PER_DAY) if new else MS.NEW_PER_DAY,
+        "meetups_day": 2 if new else 10,
+        "invites_day": 3 if new else 10,
+    }[kind]
+
+
+def is_suspended(uid):
+    r = one("SELECT suspended FROM users WHERE id=:u", u=uid)
+    return bool(r and r[0])
+
+
+def set_suspended(uid, on):
+    q("UPDATE users SET suspended=:v WHERE id=:i", v=1 if on else 0, i=int(uid))
+    if on:
+        q("DELETE FROM sessions WHERE user_id=:u", u=int(uid))
+
 
 
 def update_profile(user_id, display_name, area, town, bio):

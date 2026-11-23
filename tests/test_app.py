@@ -380,7 +380,7 @@ class ProfileTests(unittest.TestCase):
         new_dog(self.c, name="Bye")
         self.c.post("/me/delete", {})  # without the confirmation box nothing happens
         self.assertIsNotNone(A.one("SELECT id FROM users WHERE email=:e", e=self.email))
-        r = self.c.post("/me/delete", {"confirm": "yes"})
+        r = self.c.post("/me/delete", {"confirm": "DELETE"})
         self.assertIn("Your account is deleted", r.text)
         self.assertIsNone(A.one("SELECT id FROM users WHERE email=:e", e=self.email))
         self.assertEqual(self.c.get("/me").status, 303)

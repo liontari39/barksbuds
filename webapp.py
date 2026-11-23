@@ -475,7 +475,7 @@ class AppRoutes:
         m = re.fullmatch(r"/p/(\d+)(\.jpg|\.webp|-m\.webp)", path)
         if m:
             self.photo(int(m.group(1)), m.group(2).lstrip("."), q); return True
-        if path == "/admin/reports":
+        if path in ("/admin/reports", "/admin/review"):
             self.admin_reports(q); return True
         return False
 
@@ -488,7 +488,7 @@ class AppRoutes:
                   (r"/me/dogs/new", self.post_dog), (r"/me/dogs/(\d+)/edit", self.post_dog),
                   (r"/me/dogs/(\d+)/delete", self.post_delete_dog), (r"/me/dogs/(\d+)/photos", self.post_photos),
                   (r"/me/dogs/(\d+)/photos/(\d+)/(delete|avatar)", self.post_photo_action),
-                  (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports),
+                  (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports), (r"/admin/review", self.post_admin_reports),
                   (r"/admin/seed", self.post_admin_seed), (r"/me/push/subscribe", self.post_push_subscribe), (r"/me/push/unsubscribe", self.post_push_unsubscribe), (r"/me/push/device", self.post_push_device)]
         for pat, fn in routes:
             m = re.fullmatch(pat, path)
@@ -596,6 +596,10 @@ It comes from hello@barksbuds.app.</div>
         if not email:
             return self.auth_page(f.get("t"), nxt)
         uid, new = A.get_or_create_user(email)
+        if not new and A.is_suspended(uid):
+            return self.msg_page("This account is suspended",
+                                 '<p class="sub">This account has been suspended. If you think that\'s a mistake, write to hello@barksbuds.app.</p>',
+                                 code=403, icon="i-lock")
         old = self._cookies().get(SESSION_COOKIE)
         if old:
             A.end_session(old)
@@ -822,8 +826,9 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
         if not u:
             return self.need_login()
         return self.msg_page("Delete your account?", f"""<p class="sub">This permanently deletes your profile, all of your dogs' profiles and their photos.
-It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.</p><form method="post" action="/me/delete">{self.csrf_field()}
-<label class="switch" style="text-align:left;margin-bottom:16px"><input type="checkbox" name="confirm" value="yes" required><span>Yes, delete my account and all my dogs' profiles.</span></label>
+It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them. Other members' messages and posts are left in place.</p>
+<form method="post" action="/me/delete" class="stack" style="text-align:left">{self.csrf_field()}
+<label style="display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:left"><span>Type <strong>DELETE</strong> to confirm</span><input name="confirm" required autocomplete="off" placeholder="DELETE" aria-label="Type DELETE to confirm"></label>
 <button class="btn" type="submit">Delete my account</button></form><p class="small" style="margin-top:14px"><a href="/me">Keep my account</a></p>""", icon="i-alert")
 
     def post_delete_account(self):
@@ -833,7 +838,7 @@ It can't be undone. Dogs you share with a co-owner stay on BarksBuds with them.<
         f = self._form_or_fail()
         if f is None:
             return
-        if f.get("confirm") != "yes":
+        if (f.get("confirm") or "").strip().upper() != "DELETE":
             return self.delete_account_page()
         A.delete_user(u["id"])
         self._set_cookie(SESSION_COOKIE, "", max_age=0)
@@ -1462,7 +1467,10 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
              fpid, fpcap, fphidden, fcid, fcbody, fchidden, fcpost) in rows:
             when = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             acts = []
-            pairs = [("resolve", "Mark resolved") if status == "open" else ("reopen", "Reopen")]
+            pairs = [("dismiss", "Dismiss") if status == "open" else ("reopen", "Reopen")]
+            if dog_id:
+                sus = A.one("SELECT suspended FROM users u JOIN dogs d ON d.user_id=u.id WHERE d.id=:i", i=dog_id)
+                pairs.append(("unsuspend", "Unsuspend owner") if sus and sus[0] else ("suspend", "Suspend owner"))
             if fcid:
                 pairs.append(("unhide_fcomment", "Unhide comment") if fchidden else ("hide_fcomment", "Hide comment"))
             elif fpid:
@@ -1511,19 +1519,55 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
                 what = (f'<a href="/dogs/{e(slug)}">{e(name)}</a>' if slug else "(deleted)") + (" <b>(hidden)</b>" if hidden else "")
             tr.append(f"<tr><td>{rid}</td><td>{when}</td><td>{what}</td><td>{e(reason)}</td>"
                       f"<td style='white-space:pre-line'>{e(details)}</td><td>{e(status)}</td><td>{' · '.join(acts)}</td></tr>")
-        body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">admin</span><h1>Reports</h1>
+        import messages as MS
+        mtr = []
+        for r in MS.list_reports():
+            hid = f'<input type="hidden" name="key" value="{e(key)}"><input type="hidden" name="kind" value="message"><input type="hidden" name="id" value="{r["id"]}">'
+            acts = []
+            if r["status"] == "open":
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="action" value="dismiss"><button class="linkbtn" type="submit">Dismiss</button></form>')
+            else:
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="action" value="reopen"><button class="linkbtn" type="submit">Reopen</button></form>')
+            if r.get("message_id") and r.get("live"):
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="action" value="hide_message"><button class="linkbtn" type="submit">Hide message</button></form>')
+            if r.get("reported"):
+                sus = A.is_suspended(r["reported"])
+                acts.append(f'<form method="post" action="/admin/review" style="display:inline">{hid}<input type="hidden" name="user" value="{r["reported"]}">'
+                            f'<input type="hidden" name="action" value="{"unsuspend" if sus else "suspend"}"><button class="linkbtn" type="submit">{"Unsuspend" if sus else "Suspend"} user</button></form>')
+            who = "member card" if not r.get("message_id") else ("message" + ("" if r.get("live") else " (removed)"))
+            when_m = datetime.fromtimestamp(r["created_at"], timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            mtr.append(f'<tr><td>{r["id"]}</td><td>{when_m}</td><td>{e(who)}</td>'
+                       f'<td>{e(r["reporter_name"] or "deleted")}</td><td>{e(r["reported_name"] or "deleted")}</td>'
+                       f'<td>{e(r["reason"])}</td><td style="white-space:pre-line">{e((r.get("body") or r.get("details") or "")[:200])}</td><td>{e(r["status"])}</td><td>{" · ".join(acts)}</td></tr>')
+        body = f"""<section class="phead"><div class="wrap"><span class="eyebrow">admin</span><h1>Review queue</h1>
 <p class="lead">{users} member{'s' if users != 1 else ''} · {ndogs} dog profile{'s' if ndogs != 1 else ''} · {st['photos']} photos using {st['bytes'] / 1048576:.1f} MB of database storage.</p></div></section>
-<section class="section"><div class="wrap"><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody>{''.join(tr) or '<tr><td colspan="7">No reports yet.</td></tr>'}</tbody></table></div></div></section>"""
-        return self.page("Admin: reports", body)
+<section class="section"><div class="wrap"><h2>Content reports</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{''.join(tr) or '<tr><td colspan="7">No reports yet.</td></tr>'}</tbody></table></div>
+<h2 style="margin-top:28px">Member and message reports</h2><div style="overflow-x:auto"><table class="t"><thead><tr><th>#</th><th>When</th><th>What</th><th>Reporter</th><th>Reported</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{''.join(mtr) or '<tr><td colspan="9">No member or message reports yet.</td></tr>'}</tbody></table></div></div></section>"""
+        return self.page("Admin: review queue", body)
 
     def post_admin_reports(self):
         f = self.read_form()
         if f is None or not self._admin_key_ok(f.get("key")):
             return self._emit(404, b"Not found", "text/plain")
         act, rid, dog = f.get("action"), f.get("id"), f.get("dog")
-        if act in ("resolve", "reopen") and rid.isdigit():
-            A.set_report_status(int(rid), "resolved" if act == "resolve" else "open")
+        if act in ("resolve", "dismiss", "reopen") and rid and rid.isdigit():
+            if f.get("kind") == "message":
+                import messages as MS
+                MS.set_report_status(int(rid), "open" if act == "reopen" else "resolved")
+            else:
+                A.set_report_status(int(rid), "resolved" if act in ("resolve", "dismiss") else "open")
+        elif act == "hide_message" and rid and rid.isdigit():
+            import messages as MS
+            MS.delete_reported_message(int(rid))
+        elif act in ("suspend", "unsuspend"):
+            uid = int(f.get("user")) if (f.get("user") or "").isdigit() else None
+            if uid is None and dog and dog.isdigit():
+                row = A.one("SELECT user_id FROM dogs WHERE id=:i", i=int(dog))
+                uid = row[0] if row else None
+            if uid:
+                A.set_suspended(uid, act == "suspend")
         elif act in ("hide", "unhide") and dog.isdigit():
             A.set_dog_hidden(int(dog), act == "hide")
         elif act in ("hide_meetup", "unhide_meetup") and f.get("meetup").isdigit():
@@ -1545,7 +1589,7 @@ dl.addEventListener('click',function(ev){if(ev.target===dl||ev.target.classList.
             if val.isdigit():
                 (feed.set_hidden if fld == "fpost" else feed.set_comment_hidden)(int(val), act.startswith("hide"))
         print(f"admin: report action {act}", flush=True)
-        return self.redirect("/admin/reports?key=" + quote(f.get("key")))
+        return self.redirect("/admin/review?key=" + quote(f.get("key")))
 
     def post_admin_seed(self):
         """Admin-only: run seed.py's idempotent seed with uploaded photos (used when the DB isn't reachable directly)."""

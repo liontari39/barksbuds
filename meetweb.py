@@ -797,7 +797,7 @@ class MeetupRoutes:
             errs["title"] = "This meetup was cancelled. Use \"Repeat next week\" to schedule it again."
         if errs:
             return self.meetup_form_page(old, vals, errs, code=400)
-        if not old and not A.LIMITER.allow(f"mcreate:{u['id']}", 10, 86400):
+        if not old and not A.LIMITER.allow(f"mcreate:{u['id']}", A.cap(u["id"], "meetups_day"), 86400):
             return self.msg_page("Slow down a little", '<p class="sub">You\'ve created a lot of meetups today. Please try again tomorrow.</p>', code=429)
         new_id, promoted = M.save(u["id"], out, mid=mid)
         m = M.get(new_id)
@@ -839,7 +839,7 @@ class MeetupRoutes:
         f = self._form_or_fail()
         if f is None:
             return
-        if not A.LIMITER.allow(f"mcreate:{m['host_user_id']}", 10, 86400):
+        if not A.LIMITER.allow(f"mcreate:{m['host_user_id']}", A.cap(m["host_user_id"], "meetups_day"), 86400):
             return self.msg_page("Slow down a little", '<p class="sub">You\'ve created a lot of meetups today. Please try again tomorrow.</p>', code=429)
         nid = M.duplicate_next_week(m)
         return self.redirect(f"/meetups/{nid}/edit?m=m_repeat")
