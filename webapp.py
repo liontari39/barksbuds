@@ -15,6 +15,7 @@ import accounts as A
 import coowners as CO
 import privacy as PV
 import mailer
+import nativeapp
 import push
 
 e = html.escape
@@ -235,8 +236,9 @@ class AppRoutes:
         return SITE_URL.startswith("https://") and urlsplit(SITE_URL).netloc == (self.headers.get("Host") or "")
 
     def _set_cookie(self, name, value, max_age=None):
-        parts = [f"{name}={value}", "Path=/", "HttpOnly", "SameSite=Lax"]
-        if self._secure():
+        samesite = nativeapp.cookie_samesite()
+        parts = [f"{name}={value}", "Path=/", "HttpOnly", f"SameSite={samesite}"]
+        if self._secure() or samesite == "None":
             parts.append("Secure")
         if max_age is not None:
             parts.append(f"Max-Age={max_age}")
@@ -269,7 +271,7 @@ class AppRoutes:
     def csrf_ok(self, form):
         origin = self.headers.get("Origin")
         if origin:
-            if origin == "null" or urlsplit(origin).netloc != (self.headers.get("Host") or ""):
+            if origin == "null" or not nativeapp.origin_allowed(origin, self.headers.get("Host") or ""):
                 return False
         c = self._cookies().get(CSRF_COOKIE, "")
         tok = form.get("csrf")
@@ -307,6 +309,7 @@ class AppRoutes:
     def _emit(self, code, body, ctype="text/html; charset=utf-8", headers=None):
         if isinstance(body, str):
             body = body.encode("utf-8")
+        headers = nativeapp.cors_headers(self.headers.get("Origin"), self.headers.get("Host") or "", headers)
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -384,7 +387,7 @@ class AppRoutes:
 <link rel="apple-touch-startup-image" href="/img/splash-2048x2732.png?v=jack5" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat+Brush&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/app.css?v=28"><link rel="stylesheet" href="/search.css?v=2">
+<link rel="stylesheet" href="/app.css?v=29"><link rel="stylesheet" href="/search.css?v=2">
 </head><body>
 {ICONS}
 <a class="skip" href="#main">Skip to content</a>
@@ -399,7 +402,7 @@ class AppRoutes:
 <nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
-{scripts}<script src="/pwa.js?v=1" defer></script>{self._pwa_boot()}{SW_REGISTER}
+{scripts}<script src="/pwa.js?v=1" defer></script><script src="/native.js?v=1" defer></script>{self._pwa_boot()}{SW_REGISTER}
 </body></html>"""
         cache = "no-store" if (u or code != 200 or not index) else "no-cache"
         headers = {"Cache-Control": cache, "Vary": "Cookie"}
@@ -473,7 +476,7 @@ class AppRoutes:
                   (r"/me/dogs/(\d+)/delete", self.post_delete_dog), (r"/me/dogs/(\d+)/photos", self.post_photos),
                   (r"/me/dogs/(\d+)/photos/(\d+)/(delete|avatar)", self.post_photo_action),
                   (r"/dogs/([a-z0-9-]{1,60})/report", self.post_report), (r"/admin/reports", self.post_admin_reports),
-                  (r"/admin/seed", self.post_admin_seed), (r"/me/push/subscribe", self.post_push_subscribe), (r"/me/push/unsubscribe", self.post_push_unsubscribe)]
+                  (r"/admin/seed", self.post_admin_seed), (r"/me/push/subscribe", self.post_push_subscribe), (r"/me/push/unsubscribe", self.post_push_unsubscribe), (r"/me/push/device", self.post_push_device)]
         for pat, fn in routes:
             m = re.fullmatch(pat, path)
             if m:
@@ -667,8 +670,11 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
             bits.append(f'window.BB_VAPID={json.dumps(push.vapid_public())};')
         return "<script>" + "".join(bits) + "</script>"
 
+    def is_native_app(self):
+        return "BarksBudsApp" in (self.headers.get("User-Agent") or "")
+
     def push_prefs_html(self, u):
-        if not push.enabled():
+        if not (push.enabled() or self.is_native_app()):
             return ""
         flags = push.user_flags(u["id"])
         on = flags["meetups"] or flags["checkins"]
@@ -679,9 +685,10 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
                     f'{" for check-ins at a run where you already are" if flags["checkins"] else ""}.'
                     ' Off by default; you can turn them off any time.</p>'
                     '<button class="btn btn-ghost btn-sm" type="button" data-push="off">Turn off notifications</button></div>')
+        ios_hint = "" if self.is_native_app() else " On iPhone, add BarksBuds to your home screen first."
         return ('<div class="emailpref" id="push"><p class="small" style="margin:0 0 8px"><b>Phone notifications:</b> Off. '
                 'Get a reminder the day before a meetup you RSVPed to, and a note when a dog arrives at a run where you already are. '
-                'Opt in only — we never turn this on for you. On iPhone, add BarksBuds to your home screen first.</p>'
+                f'Opt in only — we never turn this on for you.{ios_hint}</p>'
                 '<button class="btn btn-ghost btn-sm" type="button" data-push="on" data-kinds="meetups,checkins">Turn on notifications</button></div>')
 
     def _read_json(self, limit=8000):
@@ -718,6 +725,21 @@ what details show and who can message you.</p><a class="btn btn-sm" href="/me/pr
         if not self.csrf_ok({"csrf": data.get("csrf")}):
             return self._emit(403, b'{"ok":false,"error":"csrf"}', "application/json", {"Cache-Control": "no-store"})
         push.drop_subscription(u["id"], data.get("endpoint") or None)
+        return self._emit(200, b'{"ok":true}', "application/json", {"Cache-Control": "no-store"})
+
+    def post_push_device(self):
+        u = self.user()
+        if not u:
+            return self._emit(401, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
+        data = self._read_json() or {}
+        if not self.csrf_ok({"csrf": data.get("csrf")}):
+            return self._emit(403, b'{"ok":false,"error":"csrf"}', "application/json", {"Cache-Control": "no-store"})
+        if (data.get("action") or "").strip().lower() in ("off", "delete", "unsubscribe"):
+            push.drop_device(u["id"], data.get("token") or None)
+            return self._emit(200, b'{"ok":true}', "application/json", {"Cache-Control": "no-store"})
+        kinds = [k for k in (data.get("kinds") or []) if k in push.KINDS] or ["meetups"]
+        if not push.save_device(u["id"], data.get("platform") or "", data.get("token") or "", kinds):
+            return self._emit(400, b'{"ok":false}', "application/json", {"Cache-Control": "no-store"})
         return self._emit(200, b'{"ok":true}', "application/json", {"Cache-Control": "no-store"})
 
     def area_select(self, current, name="area"):

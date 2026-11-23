@@ -285,9 +285,10 @@
 
   var nearBtn = $("#near");
   nearBtn.addEventListener("click", function () {
-    if (!("geolocation" in navigator)) { countEl.textContent = "Your browser can't share location. Try searching a town instead."; return; }
+    var locate = window.bbLocate || (navigator.geolocation && navigator.geolocation.getCurrentPosition.bind(navigator.geolocation));
+    if (!locate) { countEl.textContent = "Your browser can't share location. Try searching a town instead."; return; }
     nearBtn.disabled = true; var lbl = nearBtn.querySelector(".lbl"); var old = lbl.textContent; lbl.textContent = "Locating…";
-    navigator.geolocation.getCurrentPosition(function (p) {
+    locate(function (p) {
       nearBtn.disabled = false; lbl.textContent = "Nearest first";
       state.me = { lat: p.coords.latitude, lng: p.coords.longitude };
       if (map) {

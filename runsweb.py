@@ -225,7 +225,7 @@ class RunRoutes:
 <p class="small muted" style="margin:14px 0 0">Up to {R.DAILY_LIMIT} suggestions a day. Please only suggest public dog runs and dog-friendly spaces.</p></form>
 {mine_html}</div></section>"""
         scripts = ('<link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><script src="/vendor/leaflet/leaflet.js"></script>'
-                   f'<script>window.SG={cfg};</script><script src="/suggest.js?v=1"></script>')
+                   f'<script>window.SG={cfg};</script><script src="/suggest.js?v=2"></script>')
         return self.page(title, body, code=code, active="runs", scripts=scripts)
 
     def _mine_li(self, s):

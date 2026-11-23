@@ -674,3 +674,4 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .a2hs p{margin:0 0 10px}
 .a2hs-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0}
 @media (display-mode: standalone){.a2hs{display:none}}
+.bb-native-photos{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}

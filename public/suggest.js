@@ -54,9 +54,10 @@
   });
   var me = document.getElementById("sgme");
   me.addEventListener("click", function () {
-    if (!("geolocation" in navigator)) { ll.textContent = "Your browser can't share location."; return; }
+    var locate = window.bbLocate || (navigator.geolocation && navigator.geolocation.getCurrentPosition.bind(navigator.geolocation));
+    if (!locate) { ll.textContent = "Your browser can't share location."; return; }
     me.disabled = true;
-    navigator.geolocation.getCurrentPosition(function (p) { me.disabled = false; set(p.coords.latitude, p.coords.longitude, true); },
+    locate(function (p) { me.disabled = false; set(p.coords.latitude, p.coords.longitude, true); },
       function () { me.disabled = false; ll.textContent = "Couldn't get your location. Tap the map instead."; },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
   });

@@ -22,7 +22,7 @@ e = html.escape
 SUGGEST_DAILY = 3
 MAX_TITLE, MAX_TIP = 90, 2000
 CONTACT = "hello@barksbuds.app"
-POLICY_UPDATED = "October 24, 2026"
+POLICY_UPDATED = "November 23, 2026"
 CAT_ICON = {"runs": "i-pin", "health": "i-shield", "community": "i-users", "puppies": "i-paw"}
 
 
@@ -315,6 +315,13 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
 <li><strong>What you do on BarksBuds:</strong> meetups you host or RSVP to, packs you join, posts and comments, dog run and tip suggestions, and reports you send.</li>
 <li><strong>Basic technical logs</strong> kept by our hosting provider to keep the site running and secure, such as IP addresses and the pages requested.</li>
 </ul>
+<h2>The BarksBuds app</h2>
+<p>This policy also applies if you use BarksBuds in our iPhone or Android app. The app shows the same pages as the website.</p>
+<ul>
+<li><strong>Location:</strong> only when you tap to sort dog runs near you, or to drop a pin when suggesting a run. We use it on your device for that moment and we don't save it.</li>
+<li><strong>Camera and photos:</strong> only when you choose to add a photo of your dog. We remove location and other hidden info (EXIF) from uploads, just like on the website.</li>
+<li><strong>Notifications:</strong> off until you turn them on. If you opt in, we store a device token so we can send the meetup reminders and check-in notes you asked for. You can turn them off any time from your account.</li>
+</ul>
 <h2>What's public</h2>
 <p>Dog profiles, your display name, your town or neighborhood, and what you post in meetups and packs can be seen by other people. <strong>Your email address is never shown</strong> on BarksBuds.</p>
 <h2>How we use it</h2>
@@ -325,9 +332,9 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
 </ul>
 <p>We don't sell or rent your information, and we don't use advertising trackers.</p>
 <h2>Cookies</h2>
-<p>We use a small number of cookies that are needed for the site to work: one that keeps you signed in and one that protects forms from forgery. That's it.</p>
+<p>We use a small number of cookies that are needed for the site and the app to work: one that keeps you signed in and one that protects forms from forgery. That's it.</p>
 <h2>Services we rely on</h2>
-<p>We use a few trusted providers to run BarksBuds: Render (hosting and database), Cloudflare (our domain and network), Brevo (sending email), OpenStreetMap (map tiles) and Google Fonts (typefaces). They only get what they need to do their job, such as your email address for sending an email, or your browser's IP address when it loads a map tile or font.</p>
+<p>We use a few trusted providers to run BarksBuds: Render (hosting and database), Cloudflare (our domain and network), Brevo (sending email), OpenStreetMap (map tiles) and Google Fonts (typefaces). If you turn on notifications in the app, we use Apple's or Google's notification service to deliver them, which means they process a device token. Providers only get what they need to do their job, such as your email address for sending an email, or your browser's IP address when it loads a map tile or font.</p>
 <h2>Your choices</h2>
 <ul>
 <li>Edit or delete your dogs, photos and profile at any time from <a href="/me">My dogs</a>.</li>

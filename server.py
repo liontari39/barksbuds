@@ -45,6 +45,7 @@ import runsweb
 import search
 import tipsweb
 import trailsweb
+import nativeapp
 import webapp
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -405,10 +406,11 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
         return True
 
     def _send(self, code, body, ctype, extra=None):
+        extra = nativeapp.cors_headers(self.headers.get("Origin"), self.headers.get("Host") or "", extra)
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        for k, v in (extra or {}).items():
+        for k, v in extra.items():
             self.send_header(k, v)
         self.end_headers()
         if self.command != "HEAD":
@@ -442,15 +444,37 @@ class H(aboutweb.AboutRoutes, maintweb.MaintRoutes, photoweb.PhotoRoutes, privac
                 print("404 page error:", type(ex).__name__, flush=True)
         return super().send_error(code, message, explain)
 
+    def do_OPTIONS(self):
+        origin = self.headers.get("Origin") or ""
+        host = self.headers.get("Host") or ""
+        if not nativeapp.origin_allowed(origin, host):
+            return self.send_error(404)
+        headers = nativeapp.cors_headers(origin, host)
+        self.send_response(204)
+        for k, v in headers.items():
+            self.send_header(k, v)
+        self.end_headers()
+
     def do_GET(self):
         u = urlsplit(self.path)
         q = parse_qs(u.query)
+        if u.path == "/.well-known/apple-app-site-association":
+            body = nativeapp.apple_app_site_association()
+            if not body:
+                return self.send_error(404)
+            return self._send(200, body, "application/json", {"Cache-Control": "public, max-age=3600"})
+        if u.path == "/.well-known/assetlinks.json":
+            body = nativeapp.assetlinks()
+            if not body:
+                return self.send_error(404)
+            return self._send(200, body, "application/json", {"Cache-Control": "public, max-age=3600"})
         self._ref_cookie = None
         if invites.enabled() and "ref" in q:  # partner invite link: remember the partner until sign-up (first one wins)
             ref = invites.valid_ref(q["ref"][0])
             if ref and not invites.parse_cookie(invites.cookie_from_header(self.headers.get("Cookie")))[0]:
-                self._ref_cookie = (f"{invites.COOKIE}={invites.cookie_value(ref)}; Path=/; HttpOnly; SameSite=Lax; Max-Age={invites.COOKIE_TTL}"
-                                    + ("; Secure" if self._secure() else ""))
+                ss = nativeapp.cookie_samesite()
+                self._ref_cookie = (f"{invites.COOKIE}={invites.cookie_value(ref)}; Path=/; HttpOnly; SameSite={ss}; Max-Age={invites.COOKIE_TTL}"
+                                    + ("; Secure" if (self._secure() or ss == "None") else ""))
         if u.path == "/admin/invites":
             if not invites.enabled() or not self._admin_ok(q):
                 return self.send_error(404)
