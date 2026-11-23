@@ -61,7 +61,18 @@ a{color:var(--red);text-underline-offset:3px}
 .field>label,.field>.lab{display:block;font-weight:800;font-size:.95rem;margin-bottom:6px;color:var(--black)}
 .field .opt{color:var(--muted);font-weight:600}
 .field .help{display:block;color:var(--muted);font-size:.86rem;margin-top:5px}
-input[type=text],input[type=email],input[type=date],input[type=number],input[type=search],input[type=url],select,textarea{width:100%;font:inherit;font-size:1.02rem;padding:12px 14px;border-radius:14px;border:2px solid #D9CBAA;background:#FFFDF8;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+input[type=text],input[type=email],input[type=number],input[type=search],input[type=url],select,textarea{width:100%;font:inherit;font-size:1.02rem;padding:12px 14px;border-radius:14px;border:2px solid #D9CBAA;background:#FFFDF8;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+/* iOS Safari: native date/time controls overflow the card, collapse when empty, and ignore width. */
+input[type=date],input[type=time],input[type=datetime-local]{
+  -webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;
+  font:inherit;font-size:max(16px,1.02rem);padding:12px 14px;min-height:calc(12px + 12px + 1.2em);
+  border-radius:14px;border:2px solid #D9CBAA;background:#FFFDF8;color:var(--ink);
+  transition:border-color .15s,box-shadow .15s}
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value,
+input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+.field,.row2,.row3,.carectl,.carerow{min-width:0}
+.row2>.field,.row3>.field{min-width:0}
 textarea{min-height:110px;resize:vertical;line-height:1.55}
 select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:18px;padding-right:40px}
 input:hover,select:hover,textarea:hover{border-color:#BFAE88}
@@ -548,7 +559,7 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .rep summary{cursor:pointer;color:var(--muted);font-weight:700;font-size:.88rem}.rep[open]{width:100%}.rep form{margin-top:10px}
 .carelist{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 .carerow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px}
-.carectl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.carectl input{width:auto}
+.carectl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}.carectl input{width:auto;min-width:0}.carectl input[type=date],.carectl input[type=time],.carectl input[type=datetime-local]{width:100%;max-width:100%;flex:1 1 10rem}
 .badge.red{background:var(--red);border-color:var(--red);color:#fff}.badge.gold{background:var(--gold);border-color:var(--gold-d)}
 .celeb{background:#fff;border:2px solid var(--black);border-radius:var(--r);box-shadow:6px 6px 0 var(--gold);padding:20px 24px 14px;margin-bottom:28px}
 .celeb h2{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:1.3rem}.celeb h2 .ico{color:var(--red)}
