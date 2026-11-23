@@ -89,7 +89,7 @@ class PuppyPodTests(_Clean):
         self.assertIn("Manhasset", listing)
         self.assertNotIn("Oak Street", listing)
         self.assertIn("never at a dog run", listing.lower())
-        self.assertIn("Puppy Pods", listing)
+        self.assertIn("Puppy packs", listing)
         # regular pack list does not include puppy packs
         self.assertNotIn("Saturday backyard play", guest.get("/packs").text)
 
@@ -220,7 +220,7 @@ class PuppyPodTests(_Clean):
         A.q("UPDATE dogs SET birthday=:b WHERE id=:i", b=born(16), i=lid)
         page = host.get(pack_url(pid)).text
         self.assertIn("Graduate to a regular pack", page)
-        self.assertIn("All the puppies in this pod are now 16 weeks or older", page)
+        self.assertIn("All the puppies in this pack are now 16 weeks or older", page)
         r = host.post(f"/packs/{pid}/graduate", {})
         self.assertEqual(r.status, 303)
         self.assertIn("p_graduated", r.headers["Location"])

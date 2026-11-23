@@ -190,7 +190,7 @@ def _community_home_html():
 <a class="commlink" href="/runs"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg><span><b>At the run now</b><small>{here}</small></span></a>
 <a class="commlink" href="/lost-found"><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><span><b>Lost and found</b><small>{lost}</small></span></a>
 <a class="commlink" href="/picks"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg><span><b>Local picks</b><small>Vets, groomers and walkers members use</small></span></a>
-<a class="commlink" href="/packs?kind=puppy"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><span><b>Puppy Pods</b><small>Backyard playdates for puppies under 16 weeks</small></span></a>
+<a class="commlink" href="/packs?kind=puppy"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg><span><b>Puppy packs</b><small>Backyard playdates for puppies under 16 weeks</small></span></a>
 </div></div></section>"""
 
 
@@ -496,6 +496,7 @@ placeholder="Color, size, collar, which way they ran, whether they'll come to st
 <span class="help">Don't include your phone or address. Members contact you through BarksBuds messages.</span></div>
 <div class="formfoot"><button class="btn" type="submit">Post alert</button><a href="/lost-found">Cancel</a></div>
 <p class="small muted" style="margin:12px 0 0">One alert per member per day. Alerts end after 14 days, or sooner when you mark the dog reunited.</p>
+<p class="small muted" style="margin:8px 0 0">Lost-dog alerts are a community helper, not a substitute for contacting animal control, police, shelters or your microchip registry. See our <a href="/terms">Terms</a>.</p>
 </form></div></section>"""
         self.page("Post a lost or found alert", body, code=code, active="community")
 

@@ -746,7 +746,8 @@ class MeetupRoutes:
 {weekly_html}
 <div class="formfoot"><button class="btn" type="submit">{"Save changes" if m else "Publish meetup"}</button>
 <a class="small" href="{e(meetup_path(m)) if m else "/meetups"}">Cancel</a></div>
-<p class="small muted" style="margin:14px 0 0">Please pick dog-friendly places and follow each run's rules and permits.</p></form></div></section>"""
+<p class="small muted" style="margin:14px 0 0">Please pick dog-friendly places and follow each run's rules and permits.</p>
+<p class="small muted" style="margin:8px 0 0">Meetups are organized by members. You're responsible for your dog. See our <a href="/terms">Terms</a>.</p></form></div></section>"""
         js = ("<script>(function(){var f=document.querySelector('form.mform');if(!f)return;function sync(){var c=f.querySelector('input[name=loc]:checked');"
               "var v=c?c.value:'run';f.querySelector('.loc-run').hidden=v!=='run';f.querySelector('.loc-custom').hidden=v!=='custom'}"
               "f.querySelectorAll('input[name=loc]').forEach(function(r){r.addEventListener('change',sync)});sync()})();</script>")
@@ -819,7 +820,7 @@ class MeetupRoutes:
             import puppypods as PP
             pkp = P.get(out["pack_id"])
             if PP.is_puppy_pack(pkp) and (out.get("run_id") or f.get("loc") != "custom"):
-                errs["run_id"] = "Puppy Pod meetups are home or backyard playdates only — pick a place that isn't a dog run."
+                errs["run_id"] = "Puppy pack meetups are home or backyard playdates only — pick a place that isn't a dog run."
                 out.update(run_id="", lat=None, lng=None)
         return out, vals, errs
 
@@ -1379,7 +1380,8 @@ class MeetupRoutes:
 <div class="panel"><h2>About this meetup</h2><p class="bio">{e(desc_txt)}</p></div>
 <div class="panel"><h2>Who's coming <span class="mcount2">{ngoing} dog{"s" if ngoing != 1 else ""} going</span></h2>{self.who_html(att)}</div>
 {series_html}<div class="panel" id="comments"><h2>Meetup chat</h2>{self.comments_html(m, u, is_host, mine)}</div></div>
-<div><div class="panel" id="rsvp"><h2>RSVP</h2>{self.rsvp_panel(m, u, mine)}</div><div class="panel">{''.join(wp)}</div>
+<div><div class="panel" id="rsvp"><h2>RSVP</h2>{self.rsvp_panel(m, u, mine)}
+<p class="small muted" style="margin:14px 0 0">Meetups are organized by members. You're responsible for your dog. See our <a href="/terms">Terms</a>.</p></div><div class="panel">{''.join(wp)}</div>
 <div class="panel" style="background:var(--black);color:#E9E1D3;box-shadow:6px 6px 0 var(--red)"><h2 style="color:#fff">Host your own</h2>
 <p>Pick your favorite run, set a time and invite the regulars.</p><a class="btn btn-gold btn-sm" href="/meetups/new{host_q}">Host a meetup</a></div></div></div>
 {report}</div></section>"""

@@ -166,7 +166,7 @@ APP_SHELL_BOOT = (
     'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
     '<link rel="stylesheet" href="/app-shell.css?v=3">'
 )
-APP_SHELL_JS = '<script src="/app-shell.js?v=6" defer></script>'
+APP_SHELL_JS = '<script src="/app-shell.js?v=7" defer></script>'
 
 
 NAV_CHAT_SVG = ('<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>'
@@ -412,7 +412,7 @@ class AppRoutes:
 <main id="main">{fl}{body}</main>
 <footer><div class="wrap">
 <div class="top"><div><a class="brand" href="/"><img src="/img/icon-nav-40.png?v=jack4" srcset="/img/icon-nav-40.png?v=jack4 1x, /img/icon-nav-80.png?v=jack4 2x, /img/icon-nav-120.png?v=jack4 3x" width="40" height="40" alt="" loading="lazy" decoding="async">BarksBuds</a><p class="tag script">A group of friends that love their dogs</p></div>
-<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/packs?kind=puppy">Puppy Pods</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
+<nav aria-label="Footer"><ul><li><a href="/runs">Dog run map</a></li><li><a href="/trails">Trails</a></li><li><a href="/meetups">Meetups</a></li><li><a href="/packs">Packs</a></li><li><a href="/packs?kind=puppy">Puppy packs</a></li><li><a href="/dogs">Dogs</a></li><li><a href="/photos">Photos</a></li><li><a href="/pixel-pals">Pixel Pals</a></li><li><a href="/tips">Tips</a></li><li><a href="/community">Community</a></li><li><a href="/about">About</a></li>{acct}<li><a href="/signin">Join BarksBuds</a></li></ul></nav></div>
 <div class="bottom"><p>Made with love in Manhasset, NY &middot; <a href="mailto:hello@barksbuds.app">hello@barksbuds.app</a></p><p><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; &copy; {date.today().year} BarksBuds</p></div>
 </div></footer>
 {scripts}<script src="/pwa.js?v=1" defer></script><script src="/native.js?v=1" defer></script>{APP_SHELL_JS}{self._pwa_boot()}{SW_REGISTER}
@@ -689,7 +689,7 @@ It comes from hello@barksbuds.app.</div>
 <a class="btn btn-ghost btn-sm" href="/me/profile">Edit profile</a>
 <a class="btn btn-ghost btn-sm" href="{H.card_path(u["id"])}" data-bb="your-card">See your card</a>
 <a class="btn btn-ghost btn-sm" href="/me/run-alerts">Run alerts</a>
-<a class="btn btn-ghost btn-sm" href="/packs?kind=puppy">Puppy Pods</a>
+<a class="btn btn-ghost btn-sm" href="/packs?kind=puppy">Puppy packs</a>
 <div class="emailpref" id="privacy-settings"><p class="small" style="margin:0;flex:1 1 220px"><b>Privacy</b>: who can see your dogs, how findable they are,
 what details show and who can message you.</p><a class="btn btn-sm" href="/me/privacy">Privacy settings</a></div></div>
 <div class="panel"><h2>Account</h2>

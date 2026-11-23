@@ -186,7 +186,7 @@
 
   // ----- more menu, back, check-in
   var MORE = [
-    ["/trails", "Trails"], ["/packs", "Packs"], ["/packs?kind=puppy", "Puppy Pods"], ["/dogs", "Dogs"], ["/photos", "Photos"],
+    ["/trails", "Trails"], ["/packs", "Packs"], ["/packs?kind=puppy", "Puppy packs"], ["/dogs", "Dogs"], ["/photos", "Photos"],
     ["/pixel-pals", "Pixel Pals"], ["/tips", "Tips"], ["/community", "Community"],
     ["/messages", "Messages"], ["/about", "About"]
   ];

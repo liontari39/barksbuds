@@ -366,6 +366,12 @@ reading play, seasonal safety, meetups and packs.</p><ul class="tipcats" aria-la
 <li>Dog run details come from public sources and members and can change. Check the posted rules and hours before you go.</li>
 <li>Please use good judgment, meet in public places, and leave if anything feels off.</li>
 </ul>
+<h2>Check-ins, alerts and meeting people</h2>
+<ul>
+<li>Check-ins, dog counts at runs, favorite-dog and run alerts, and run health heads-ups come from members. They can be wrong or out of date, and they aren't a guarantee of safety or conditions. Use your own judgment.</li>
+<li>Lost-dog alerts are a community helper, not a substitute for contacting local animal control, police, shelters or your microchip registry. BarksBuds can't guarantee anyone will see an alert.</li>
+<li>Be careful meeting people you don't know: meet in public, and don't share your home address.</li>
+</ul>
 <h2>Your content</h2>
 <p>You own the photos and words you post. By posting, you give BarksBuds permission to show them on the site (for example, on your dog's profile or in a pack) and in previews when someone shares a link. If you delete something, we stop showing it.</p>
 <h2>Tips and information</h2>

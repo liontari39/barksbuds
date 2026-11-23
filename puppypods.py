@@ -15,9 +15,9 @@ MIN_CAP, MAX_CAP = 3, 5
 CREATE_PER_DAY_NEW, CREATE_PER_DAY = 1, 3
 JOIN_PER_DAY_NEW, JOIN_PER_DAY = 2, 8
 SIZE_ORDER = [k for k, _ in A.SIZES]
-BANNER = "Puppy Pods are for home or backyard playdates only — never at a dog run."
+BANNER = "Puppy packs are for home or backyard playdates only — never at a dog run."
 VET_NOTE = "This is a socialization guide, not medical advice. Talk to your vet about what's right for your puppy."
-GRAD_COPY = ("All the puppies in this pod are now 16 weeks or older. Graduate to a regular pack? "
+GRAD_COPY = ("All the puppies in this pack are now 16 weeks or older. Graduate to a regular pack? "
              "Members, the board and meetup history stay. You can add a home run after.")
 
 CHECKLIST = (

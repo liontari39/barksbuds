@@ -351,7 +351,8 @@ class RunPageRoutes:
                    '<label class="switch small" style="margin-bottom:12px"><input type="checkbox" name="anon" value="1">'
                    '<span>Count us, but don\'t show our dogs</span></label>') +
                 f'<button class="btn btn-sm" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg>We\'re here</button>'
-                f'<p class="small muted" style="margin:8px 0 0">Check-ins end on their own after 2 hours. <a href="/me/privacy#details">Privacy settings</a></p></form>')
+                f'<p class="small muted" style="margin:8px 0 0">Check-ins end on their own after 2 hours. <a href="/me/privacy#details">Privacy settings</a></p>'
+                f'<p class="small muted" style="margin:8px 0 0">Check-ins and dog counts come from members and can be out of date. You\'re responsible for your dog. See our <a href="/terms">Terms</a>.</p></form>')
 
     def _park_tools(self, r, org):
         rid = r["id"]
