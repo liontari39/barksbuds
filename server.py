@@ -127,22 +127,39 @@ class SQLiteStore:
         os.replace(tmp, self.csv_path)
 
 
+def pg_connect_params(url):
+    """Parse a Postgres URL into pg8000.native.Connection kwargs.
+
+    Only sslmode and options are read from the query string. Unknown params such
+    as channel_binding (Neon/libpq) are ignored so they are not passed as
+    invalid kwargs. Neon requires SNI; pg8000 already sends it via
+    wrap_socket(..., server_hostname=host). The no-SNI fallback is to put
+    options=endpoint%3D<endpoint-id> in the URL, which is forwarded as
+    startup_params.
+    """
+    u = urlsplit(url)
+    params = dict(user=unquote(u.username or ""), password=unquote(u.password or ""),
+                  host=u.hostname, port=u.port or 5432, database=(u.path or "/").lstrip("/"),
+                  timeout=15)
+    q = parse_qs(u.query)
+    sslmode = q.get("sslmode", ["prefer" if "." in (u.hostname or "") else "disable"])[0]
+    if sslmode in ("require", "prefer", "verify-ca", "verify-full"):
+        ctx = ssl.create_default_context()
+        if sslmode in ("require", "prefer"):
+            ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+        params["ssl_context"] = ctx
+    options = (q.get("options") or [None])[0]
+    if options:
+        params["startup_params"] = {"options": options}
+    return params
+
+
 class PostgresStore:
     kind = "postgres"
 
     def __init__(self, url):
         import pg8000.native  # noqa: F401  (imported lazily so local dev needs no deps)
-        u = urlsplit(url)
-        self.params = dict(user=unquote(u.username or ""), password=unquote(u.password or ""),
-                           host=u.hostname, port=u.port or 5432, database=(u.path or "/").lstrip("/"),
-                           timeout=15)
-        q = parse_qs(u.query)
-        sslmode = q.get("sslmode", ["prefer" if "." in (u.hostname or "") else "disable"])[0]
-        if sslmode in ("require", "prefer", "verify-ca", "verify-full"):
-            ctx = ssl.create_default_context()
-            if sslmode in ("require", "prefer"):
-                ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
-            self.params["ssl_context"] = ctx
+        self.params = pg_connect_params(url)
         self.local = threading.local()
         self._retry(lambda c: c.run("""CREATE TABLE IF NOT EXISTS signups(
             id BIGSERIAL PRIMARY KEY, first_name TEXT NOT NULL, email TEXT NOT NULL,

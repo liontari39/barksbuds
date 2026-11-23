@@ -26,3 +26,5 @@ formtest.py
 
 # local DB backups contain member data; never commit
 backups/
+.venv-restore/
+.neon_url
