@@ -72,6 +72,9 @@ Going/Maybe with their dogs. Capacity counts dogs marked Going; extra RSVPs join
 first-out when a spot opens. Pages: `/meetups` (filters: `area`, `region`, `ns=1` for the North Shore, `when=week|weekend`,
 `view=map`), `/meetups/calendar` (month view with list/calendar/map toggle, `y`/`m` for the month),
 `/meetups/<id>-<slug>` (Open Graph tags, `.ics`, Google Calendar, directions, attendee comments),
+`/meetups/feed.ics` (subscribable iCal of public upcoming meetups; `webcal://` from the Subscribe link),
+a per-member private feed at the same path with a signed `u`/`t` token (pack and members-only meetups they can see,
+plus ones they host or RSVP'd to; enable, rotate or revoke from the account page or the Subscribe panel),
 `/meetups/new`, and `/admin/meetups?key=...` for hiding/deleting meetups (including bulk hide/delete of sample meetups).
 Code: `meetups.py` (data), `meetweb.py` (pages/routes), email templates in `mailer.py`.
 

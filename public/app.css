@@ -664,3 +664,8 @@ div.lfphoto{display:grid;place-items:center;color:var(--gold-d)}div.lfphoto .ico
 .trust strong{display:block}
 .authcard .trustline{display:flex;gap:8px;align-items:center;justify-content:center;margin:16px 0 0;font-size:.95rem;color:var(--ink)}
 .authcard .trustline .ico{width:20px;height:20px;color:var(--red)}
+
+.calsub{margin:0 0 18px;padding:14px 16px;background:#fff;border:1px solid #EADBB9;border-radius:16px}
+.calsub-pub{margin:0 0 8px}
+.calurl{margin:8px 0}
+.calurl input{width:100%;box-sizing:border-box;font:400 13px/1.4 ui-monospace,Menlo,monospace;padding:8px 10px;border:1px solid #EADBB9;border-radius:10px;background:#FFF8EA;color:#2a2622}

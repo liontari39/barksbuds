@@ -27,6 +27,9 @@ W.FLASH.update({
     "waitlist": "This meetup is full, so you're on the waitlist. We'll email you if a spot opens up.",
     "rsvp_cancelled": "Your RSVP was cancelled.", "commented": "Comment posted.", "comment_deleted": "Comment deleted.",
     "emails_on": "Meetup emails are on.", "emails_off": "Meetup emails are off.",
+    "cal_on": "Your private calendar feed is on. Add the link below to your calendar app.",
+    "cal_new": "Your old calendar link no longer works. Add the new one below.",
+    "cal_off": "Your private calendar feed is off.",
 })
 AUTO_REMINDERS = os.environ.get("MEETUP_AUTO_REMINDERS", "1") != "0"
 _tick = {"last": 0.0, "lock": threading.Lock()}
@@ -82,24 +85,39 @@ def gcal_url(base, m):
         "location": ", ".join(x for x in (m["place_name"], m["address"]) if x), "ctz": "America/New_York"})
 
 
-def ics_text(base, m):
-    def esc(s):
-        return str(s).replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
+def host_first_name(m):
+    """First token of the host display name only — never a surname in calendar feeds."""
+    n = (m.get("host_name") or "").strip()
+    first = n.split()[0] if n else ""
+    return first or "a BarksBuds member"
 
-    def fold(line):
-        out, b = [], line.encode("utf-8")
-        while len(b) > 74:
-            cut = 74
-            while cut > 0 and (b[cut] & 0xC0) == 0x80:
-                cut -= 1
-            out.append(b[:cut].decode())
-            b = b" " + b[cut:]
-        out.append(b.decode())
-        return "\r\n".join(out)
+
+def _ics_esc(s):
+    return str(s).replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
+
+
+def _ics_fold(line):
+    out, b = [], line.encode("utf-8")
+    while len(b) > 74:
+        cut = 74
+        while cut > 0 and (b[cut] & 0xC0) == 0x80:
+            cut -= 1
+        out.append(b[:cut].decode())
+        b = b" " + b[cut:]
+    out.append(b.decode())
+    return "\r\n".join(out)
+
+
+def webcal_url(base, path=""):
+    u = urlsplit(base)
+    return "webcal://" + u.netloc + path
+
+
+def vevent_lines(base, m, now_ts=None):
+    esc = _ics_esc
     url = base + meetup_path(m)
-    desc = (m["description"] + "\n\n" if m["description"] else "") + f"Hosted by {m.get('host_name') or 'a BarksBuds member'} on BarksBuds.\n{url}"
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//BarksBuds//Meetups//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-             "BEGIN:VEVENT", f"UID:meetup-{m['id']}@barksbuds.app", f"DTSTAMP:{_utc(int(time.time()))}",
+    desc = (m["description"] + "\n\n" if m["description"] else "") + f"Hosted by {host_first_name(m)} on BarksBuds.\n{url}"
+    lines = ["BEGIN:VEVENT", f"UID:meetup-{m['id']}@barksbuds.app", f"DTSTAMP:{_utc(int(now_ts if now_ts is not None else time.time()))}",
              f"DTSTART:{_utc(m['starts_at'])}", f"DTEND:{_utc(m['ends_at'])}",
              f"SEQUENCE:{max(0, (m['updated_at'] - m['created_at']) // 60)}",
              f"SUMMARY:{esc(m['title'])}", f"LOCATION:{esc(', '.join(x for x in (m['place_name'], m['address']) if x))}",
@@ -108,8 +126,24 @@ def ics_text(base, m):
     if m["lat"] is not None and m["lng"] is not None:
         lines.append(f"GEO:{m['lat']:.6f};{m['lng']:.6f}")
     lines += ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + esc(m["title"]), "TRIGGER:-PT1H", "END:VALARM",
-              "END:VEVENT", "END:VCALENDAR"]
-    return "\r\n".join(fold(l) for l in lines) + "\r\n"
+              "END:VEVENT"]
+    return lines
+
+
+def ics_calendar(base, meetups, calname="BarksBuds meetups"):
+    """A multi-event RFC 5545 calendar (CRLF, folded lines, UID and DTSTAMP on each event)."""
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//BarksBuds//Meetups//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+             f"X-WR-CALNAME:{_ics_esc(calname)}", f"NAME:{_ics_esc(calname)}"]
+    now_ts = int(time.time())
+    for m in meetups:
+        lines += vevent_lines(base, m, now_ts)
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(_ics_fold(l) for l in lines) + "\r\n"
+
+
+def ics_text(base, m):
+    return ics_calendar(base, [m], calname=m["title"])
+
 
 
 def mail_ctx(base, m):
@@ -238,6 +272,8 @@ class MeetupRoutes:
             self.meetup_form_page(None, q=q); return True
         if path in ("/meetups/calendar", "/meetups/calendar/"):
             self.meetups_calendar(q); return True
+        if path in ("/meetups/feed.ics", "/meetups/feed.ics/"):
+            self.meetups_feed(q); return True
         mt = re.fullmatch(r"/meetups/(\d+)\.ics", path)
         if mt:
             self.meetup_ics(int(mt.group(1))); return True
@@ -270,7 +306,7 @@ class MeetupRoutes:
                   (r"/meetups/(\d+)/comments/(\d+)/delete", self.post_comment_delete),
                   (r"/meetups/(\d+)/comments/(\d+)/report", self.post_comment_report),
                   (r"/meetups/(\d+)/report", self.post_meetup_report),
-                  (r"/me/emails", self.post_email_prefs), (r"/emails/meetups", self.post_unsub),
+                  (r"/me/emails", self.post_email_prefs), (r"/me/calendar-feed", self.post_calendar_feed), (r"/emails/meetups", self.post_unsub),
                   (r"/admin/meetups", self.post_admin_meetups), (r"/admin/meetups/reminders", self.post_admin_reminders),
                   (r"/admin/meetups/test-email", self.post_admin_test_email)]
         for pat, fn in routes:
@@ -310,7 +346,8 @@ class MeetupRoutes:
         return (f'<form id="emails" method="post" action="/me/emails" class="emailpref">{self.csrf_field()}'
                 f'<input type="hidden" name="on" value="{0 if on else 1}"><p class="small" style="margin:0 0 8px"><b>Meetup emails:</b> '
                 f'{"On" if on else "Off"}. RSVP confirmations, host notices, cancellations and day-before reminders.</p>'
-                f'<button class="btn btn-ghost btn-sm" type="submit">{"Turn off meetup emails" if on else "Turn on meetup emails"}</button></form>')
+                f'<button class="btn btn-ghost btn-sm" type="submit">{"Turn off meetup emails" if on else "Turn on meetup emails"}</button></form>'
+                + self.calendar_subscribe_html("/me#subscribe"))
 
     def meetups_dashboard(self, u):
         host, att = M.for_user(u["id"])
@@ -432,6 +469,7 @@ class MeetupRoutes:
 <nav aria-label="Filter by area"><ul class="filters">{''.join(chips)}</ul></nav>
 <div class="mbar"><nav aria-label="Filter by date"><ul class="filters">{dchips}</ul></nav><nav aria-label="View"><ul class="filters">{vchips}</ul></nav></div>
 <p class="small muted mcount">{n} upcoming meetup{"s" if n != 1 else ""} in {e("the North Shore" if ns else label)}{when_lab}. All times are Eastern (ET).</p>
+{self.calendar_subscribe_html("/meetups#subscribe")}
 {content}</div></section>"""
         canon = "/meetups" + (f"?region={region}" if region else f"?area={quote(area)}" if area else "")
         return self.page("Dog meetups" + (f" in {label}" if areas else ""), body, index=not (when or view or ns), active="meetups",
@@ -525,6 +563,7 @@ class MeetupRoutes:
 <h2>{e(label_month)}</h2>
 <a class="btn btn-ghost btn-sm" href="{e(cal_link(next_y, next_m))}" rel="next">Next</a></div>
 <p class="small muted mcount">{n} meetup{"s" if n != 1 else ""} in {e(label_month)}{" in " + e("the North Shore" if ns else label) if areas or ns else ""}.</p>
+{self.calendar_subscribe_html("/meetups/calendar#subscribe")}
 <div class="calwrap"><table class="cal" aria-label="Meetups in {e(label_month)}"><thead><tr>{dow}</tr></thead>
 <tbody>{"".join(cells)}</tbody></table></div>{empty if not ms else ""}</div></section>"""
         canon = "/meetups/calendar" + (f"?y={year}&m={month}" if (year, month) != (today.year, today.month) else "")
@@ -879,6 +918,77 @@ class MeetupRoutes:
         fn = (m["slug"] or "meetup") + ".ics"
         return self._emit(200, ics_text(self._base(), m), "text/calendar; charset=utf-8",
                           {"Content-Disposition": f'attachment; filename="{fn}"', "Cache-Control": "no-cache"})
+
+    def meetups_feed(self, q):
+        """Public upcoming-meetups iCal, or a member's signed private feed when ?u=&t= is valid."""
+        uid, tok = q.get("u", [""])[0], q.get("t", [""])[0]
+        if uid or tok:
+            if not (str(uid).isdigit() and M.verify_cal_feed_token(int(uid), tok)):
+                return self._emit(404, b"Not found", "text/plain", {"Cache-Control": "no-store"})
+            items = M.feed_meetups(int(uid))
+            name = "BarksBuds meetups"
+        else:
+            items = M.feed_meetups(None)
+            name = "BarksBuds public meetups"
+        body = ics_calendar(self._base(), items, calname=name)
+        headers = {"Content-Disposition": 'attachment; filename="barksbuds-meetups.ics"',
+                   "Cache-Control": "no-store" if (uid or tok) else "public, max-age=300"}
+        return self._emit(200, body, "text/calendar; charset=utf-8", headers)
+
+    def calendar_subscribe_html(self, next_path="/meetups#subscribe"):
+        """Public webcal subscribe plus, when signed in, a private signed-token feed the member can rotate or revoke."""
+        base = self._base()
+        public = "/meetups/feed.ics"
+        bits = ['<div class="calsub" id="subscribe">',
+                '<p class="calsub-pub"><b>Add to your calendar.</b> Subscribe to upcoming public meetups. '
+                f'<a href="{e(webcal_url(base, public))}">Subscribe</a>'
+                f' · <a href="{e(public)}">Download .ics</a></p>']
+        u = self.user()
+        if u:
+            ver = M.cal_token_ver(u["id"])
+            bits.append(f'<form method="post" action="/me/calendar-feed" class="calsub-me">{self.csrf_field()}'
+                        f'<input type="hidden" name="next" value="{e(next_path)}">')
+            if ver:
+                tok = M.cal_feed_token(u["id"], ver)
+                path = f"/meetups/feed.ics?u={u['id']}&t={tok}"
+                bits.append('<p class="small">Your private feed also includes pack and members-only meetups you can see, plus any you RSVP to. Keep this link to yourself.</p>'
+                            f'<p class="calurl"><label class="sr-only" for="cal-feed-url">Private calendar feed URL</label>'
+                            f'<input id="cal-feed-url" readonly value="{e(base + path)}"></p>'
+                            f'<p class="formfoot"><a class="btn btn-sm" href="{e(webcal_url(base, path))}">Subscribe</a>'
+                            '<button class="btn btn-ghost btn-sm" type="submit" name="action" value="regenerate">Get a new link</button>'
+                            '<button class="btn btn-ghost btn-sm" type="submit" name="action" value="revoke">Turn off</button></p>')
+            else:
+                bits.append('<p class="small">Want pack and RSVP’d meetups in your calendar too? Turn on a private feed — the link is just for you.</p>'
+                            '<button class="btn btn-ghost btn-sm" type="submit" name="action" value="enable">Turn on private feed</button>')
+            bits.append("</form>")
+        bits.append("</div>")
+        return "".join(bits)
+
+    def post_calendar_feed(self):
+        u = self.user()
+        if not u:
+            return self.need_login()
+        f = self._form_or_fail()
+        if f is None:
+            return
+        action = f.get("action")
+        if action == "enable":
+            M.enable_cal_feed(u["id"]); flash = "cal_on"
+        elif action == "regenerate":
+            M.regenerate_cal_feed(u["id"]); flash = "cal_new"
+        elif action == "revoke":
+            M.revoke_cal_feed(u["id"]); flash = "cal_off"
+        else:
+            return self.redirect("/me#subscribe")
+        nxt = f.get("next") or "/me#subscribe"
+        if not nxt.startswith("/") or nxt.startswith("//") or "\n" in nxt or "\r" in nxt:
+            nxt = "/me#subscribe"
+        if "#" in nxt:
+            path, frag = nxt.split("#", 1)
+            loc = path + ("&" if "?" in path else "?") + f"m={flash}#" + frag
+        else:
+            loc = nxt + ("&" if "?" in nxt else "?") + f"m={flash}#subscribe"
+        return self.redirect(loc)
 
     def can_rsvp(self, m, u):
         return not (m.get("members_only") and m.get("pack_id")) or u["id"] == m["host_user_id"] or P.is_member(m["pack_id"], u["id"])

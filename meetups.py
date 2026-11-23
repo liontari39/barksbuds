@@ -73,6 +73,8 @@ def init_schema(store):
     uc = cols("users")
     if "meetup_emails" not in uc:
         store.q(f"ALTER TABLE users ADD COLUMN meetup_emails {INT} NOT NULL DEFAULT 1")
+    if "cal_token_ver" not in uc:
+        store.q(f"ALTER TABLE users ADD COLUMN cal_token_ver {INT} NOT NULL DEFAULT 0")
     rc = cols("reports")
     if "meetup_id" not in rc:
         store.q(f"ALTER TABLE reports ADD COLUMN meetup_id {INT}")
@@ -419,6 +421,86 @@ def unsub_token(uid):
 
 def check_unsub(uid, tok):
     return str(uid).isdigit() and bool(tok) and hmac.compare_digest(unsub_token(int(uid)), tok)
+
+
+def is_public_feed_item(m):
+    """True if this meetup belongs on the public iCal feed (not pack-only, members-only or private)."""
+    vis = m.get("visibility") or "public"
+    if vis in ("private", "members", "pack"):
+        return False
+    if m.get("members_only") and m.get("pack_id"):
+        return False
+    return True
+
+
+def can_include_in_private_feed(m, uid):
+    """Public items, plus pack/members-only the member can see, plus anything they host or RSVP'd to."""
+    if is_public_feed_item(m):
+        return True
+    if uid and m.get("host_user_id") == uid:
+        return True
+    if uid and rsvp_of(m["id"], uid):
+        return True
+    vis = m.get("visibility") or "public"
+    if vis == "members" and uid:
+        return True
+    if vis == "private":
+        return False  # invite list is wired in with private visibility
+    pid = m.get("pack_id")
+    if pid and uid:
+        import packs as P
+        return P.is_member(pid, uid)
+    return False
+
+
+def feed_meetups(uid=None, limit=500):
+    """Upcoming meetups for an iCal feed. uid=None is the public feed."""
+    ms = upcoming(limit=limit)
+    if uid is None:
+        return [m for m in ms if is_public_feed_item(m)]
+    return [m for m in ms if can_include_in_private_feed(m, uid)]
+
+
+def cal_token_ver(uid):
+    r = one("SELECT cal_token_ver FROM users WHERE id=:u", u=uid)
+    return int(r[0] or 0) if r else 0
+
+
+def cal_feed_token(uid, ver=None):
+    ver = cal_token_ver(uid) if ver is None else int(ver)
+    if not ver:
+        return None
+    return hmac.new(A.SECRET, f"meetup-cal:{int(uid)}:{int(ver)}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def set_cal_token_ver(uid, ver):
+    q("UPDATE users SET cal_token_ver=:v WHERE id=:u", v=int(ver), u=uid)
+
+
+def enable_cal_feed(uid):
+    ver = cal_token_ver(uid)
+    if ver <= 0:
+        ver = 1
+        set_cal_token_ver(uid, ver)
+    return ver
+
+
+def regenerate_cal_feed(uid):
+    ver = max(cal_token_ver(uid), 0) + 1
+    set_cal_token_ver(uid, ver)
+    return ver
+
+
+def revoke_cal_feed(uid):
+    set_cal_token_ver(uid, 0)
+
+
+def verify_cal_feed_token(uid, tok):
+    ver = cal_token_ver(uid)
+    if not ver or not tok:
+        return False
+    good = cal_feed_token(uid, ver)
+    return bool(good) and hmac.compare_digest(good, tok)
 
 
 def set_emails(uid, on):

@@ -647,7 +647,7 @@ a{{color:#C8201E}}button{{font:700 17px system-ui,sans-serif;background:#C8201E;
         return self._send(code, page.encode(), "text/html; charset=utf-8", {"Cache-Control": "no-store"})
 
     def log_message(self, fmt, *a):
-        if a and ("/admin/" in str(a[0]) or "/auth?" in str(a[0])):
+        if a and ("/admin/" in str(a[0]) or "/auth?" in str(a[0]) or "feed.ics" in str(a[0])):
             a = (str(a[0]).split("?")[0] + " [query redacted]",) + a[1:]
         print("%s - %s" % (self.client_address[0], fmt % a), flush=True)
 
