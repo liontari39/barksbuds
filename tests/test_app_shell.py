@@ -25,18 +25,18 @@ PUBLIC = ROOT / "public"
 class AppShellAssets(unittest.TestCase):
     def test_pages_link_shell_assets_and_boot_script(self):
         home = Client().get("/").text
-        self.assertIn("/app-shell.css?v=2", home)
+        self.assertIn("/app-shell.css?v=3", home)
         self.assertIn("/app-shell.js?v=6", home)
         self.assertIn("bb-app", home)  # boot script mentions the class
         self.assertNotIn('class="bb-app"', home.split("<body")[0])  # not hardcoded on <html>
         self.assertIn("display-mode:standalone", home)
-        self.assertEqual(Client().get("/app-shell.css?v=2").status, 200)
+        self.assertEqual(Client().get("/app-shell.css?v=3").status, 200)
         self.assertEqual(Client().get("/app-shell.js?v=6").status, 200)
         runs = Client().get("/runs").text
-        self.assertIn("/app-shell.css?v=2", runs)
+        self.assertIn("/app-shell.css?v=3", runs)
         self.assertIn("/app-shell.js?v=6", runs)
         me_signin = Client().get("/signin").text
-        self.assertIn("/app-shell.css?v=2", me_signin)
+        self.assertIn("/app-shell.css?v=3", me_signin)
 
     def test_css_is_gated_and_js_noops_outside_app(self):
         css = (PUBLIC / "app-shell.css").read_text()

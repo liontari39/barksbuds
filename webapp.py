@@ -164,7 +164,7 @@ APP_SHELL_BOOT = (
     'document.documentElement.classList.add("bb-app");'
     'var m=document.querySelector("meta[name=viewport]");'
     'if(m&&m.content.indexOf("viewport-fit")<0)m.setAttribute("content",m.content+", viewport-fit=cover")}}catch(e){}}()</script>'
-    '<link rel="stylesheet" href="/app-shell.css?v=2">'
+    '<link rel="stylesheet" href="/app-shell.css?v=3">'
 )
 APP_SHELL_JS = '<script src="/app-shell.js?v=6" defer></script>'
 

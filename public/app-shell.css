@@ -221,3 +221,6 @@ html.bb-app::view-transition-new(root){animation:bb-in .22s ease-out both}
   html.bb-app::view-transition-old(root),
   html.bb-app::view-transition-new(root){animation:none}
 }
+
+/* Keep Leaflet maps below the fixed app bars and sticky filters (Leaflet panes use z-index 400+). */
+html.bb-app .leaflet-container,html.bb-app .mapwrap,html.bb-app .mmap{z-index:0;isolation:isolate}
